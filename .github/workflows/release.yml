@@ -1,0 +1,142 @@
+name: Create Release
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'LICENSE'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linting
+        run: npm run lint --if-present
+      
+      - name: Run tests
+        run: npm test --if-present
+      
+      - name: Test configuration
+        run: npm run test-config
+      
+      - name: Verify required files
+        run: |
+          node -c src/index.js
+          node -c src/deploy-commands.js
+          test -f package.json || exit 1
+          test -f Dockerfile || exit 1
+
+  create-release:
+    name: Create Release
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.version.outputs.version }}
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from package.json
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Current version: $VERSION"
+
+      - name: Check if tag exists
+        id: tag_check
+        run: |
+          TAG="v${{ steps.version.outputs.version }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "tag_exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Tag $TAG already exists"
+          else
+            echo "tag_exists=false" >> $GITHUB_OUTPUT
+            echo "✅ Tag $TAG does not exist"
+          fi
+
+      - name: Generate changelog
+        id: changelog
+        if: steps.tag_check.outputs.tag_exists == 'false'
+        run: |
+          # Get commit messages since last tag or all if no tags
+          LAST_TAG=$(git tag -l 'v*' --sort=-version:refname | head -1)
+          
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --oneline --no-decorate)
+            RANGE="HEAD"
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-decorate)
+            RANGE="${LAST_TAG}..HEAD"
+          fi
+          
+          # Build changelog
+          CHANGELOG="## Changes
+
+$(echo "$COMMITS" | sed 's/^/- /')
+
+## Installation
+
+### Docker (Recommended)
+\`\`\`bash
+docker run -d \\
+  --name discord-ai-bot \\
+  --restart unless-stopped \\
+  --env-file .env \\
+  ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
+\`\`\`
+
+### Direct Installation
+\`\`\`bash
+npm install
+npm start
+\`\`\`
+
+See [README.md](https://github.com/${{ github.repository }}/blob/main/README.md) for full setup instructions."
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: actions/create-release@v1
+        if: steps.tag_check.outputs.tag_exists == 'false'
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          release_name: Release v${{ steps.version.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          draft: false
+          prerelease: false
+
+      - name: Log release info
+        if: steps.tag_check.outputs.tag_exists == 'false'
+        run: |
+          echo "✅ Release created successfully!"
+          echo "📦 Version: v${{ steps.version.outputs.version }}"
+          echo "🔗 Release URL: ${{ steps.release.outputs.html_url }}"

@@ -2,6 +2,12 @@
 
 A Discord bot with n8n workflow integration for AI Assistant and moderation options.
 
+[![Tests](https://github.com/whiteravens20/exemplar/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/test.yml)
+[![Release](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml)
+[![Docker Build](https://github.com/whiteravens20/exemplar/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/docker.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
+
 ## 📋 Features
 
 ### 🤖 AI Assistant
@@ -201,6 +207,32 @@ Logs are saved in:
 - `error.log` - errors only
 - `combined.log` - all logs
 - Console - screen output
+
+## 🔄 CI/CD Pipeline
+
+This project includes automated GitHub Actions workflows for testing, releases, and Docker builds.
+
+| Workflow | Status | Purpose |
+|----------|--------|---------|
+| **Tests** | [![Tests](https://github.com/whiteravens20/exemplar/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/test.yml) | Code quality checks on every push/PR |
+| **Release** | [![Release](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml) | Automatic releases with changelog |
+| **Docker** | [![Docker Build](https://github.com/whiteravens20/exemplar/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/docker.yml) | Docker image build & push |
+
+**Quick Deploy:**
+```bash
+# Update version in package.json
+npm install && git add package.json package-lock.json
+git commit -m "Bump version to 1.0.1"
+git push origin main
+
+# Workflows automatically:
+# 1. Run tests
+# 2. Create release with changelog
+# 3. Build Docker image
+# 4. Push to ghcr.io
+```
+
+For complete CI/CD documentation, see [CI_CD_GUIDE.md](CI_CD_GUIDE.md).
 
 ## 🤝 Contributing
 

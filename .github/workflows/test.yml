@@ -1,0 +1,73 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linting
+        run: npm run lint --if-present
+
+      - name: Run tests
+        run: npm test --if-present
+
+      - name: Test configuration
+        run: npm run test-config
+
+      - name: Check for syntax errors
+        run: |
+          node -c src/index.js
+          node -c src/deploy-commands.js
+          for file in src/events/*.js; do node -c "$file"; done
+          for file in src/slashcommands/*.js; do node -c "$file"; done
+          for file in src/utils/*.js; do node -c "$file"; done
+
+      - name: Verify required files
+        run: |
+          test -f src/index.js || (echo "src/index.js missing" && exit 1)
+          test -f src/deploy-commands.js || (echo "src/deploy-commands.js missing" && exit 1)
+          test -f package.json || (echo "package.json missing" && exit 1)
+          test -f Dockerfile || (echo "Dockerfile missing" && exit 1)
+          echo "✅ All required files present"
+
+      - name: Verify environment variables
+        run: |
+          test -f .env.example || (echo ".env.example missing" && exit 1)
+          grep -q "DISCORD_TOKEN" .env.example || (echo "DISCORD_TOKEN not in .env.example" && exit 1)
+          grep -q "N8N_WORKFLOW_URL" .env.example || (echo "N8N_WORKFLOW_URL not in .env.example" && exit 1)
+          echo "✅ Environment variables configured"
+
+      - name: Node.js version check
+        run: |
+          REQUIRED_VERSION="20"
+          CURRENT_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
+          if [ "$CURRENT_VERSION" -lt "$REQUIRED_VERSION" ]; then
+            echo "❌ Node.js $REQUIRED_VERSION+ required, got v$(node -v)"
+            exit 1
+          fi
+          echo "✅ Node.js version OK: v$(node -v)"
+
+      - name: Package.json validation
+        run: |
+          npm ls --depth=0 2>&1 | grep -q "ERR!" && (echo "❌ Package.json has issues" && exit 1) || echo "✅ Package.json OK"
