@@ -10,6 +10,14 @@ on:
       - 'Dockerfile'
       - 'package.json'
       - 'src/**'
+  workflow_run:
+    workflows: ["Create Release"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+  packages: write
 
 env:
   REGISTRY: ghcr.io
@@ -19,6 +27,10 @@ jobs:
   test:
     name: Run Tests Before Build
     runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     strategy:
       matrix:
         node-version: [20.x]
@@ -53,6 +65,10 @@ jobs:
     name: Build Docker Image
     needs: test
     runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
+      (github.event_name == 'push') ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     permissions:
       contents: read
       packages: write
@@ -129,7 +145,9 @@ jobs:
     name: Security Scan
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    if: |
+      (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     
     steps:
       - name: Run Trivy vulnerability scanner
