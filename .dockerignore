@@ -13,7 +13,6 @@ CONTRIBUTING.md
 CHANGELOG.md
 LICENSE
 .env
-.env.example
 .env.local
 .env.*.local
 logs

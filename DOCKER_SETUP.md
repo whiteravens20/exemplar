@@ -52,6 +52,7 @@ docker-compose down
 
 ### 3. Build Manually (without Docker Compose)
 
+#### Option 1: Using .env file (Recommended)
 ```bash
 # Build the image
 docker build -t discord-ai-bot:latest .
@@ -66,7 +67,37 @@ docker run -d \
   --memory 512m \
   --cpus 1 \
   discord-ai-bot:latest
+```
 
+#### Option 2: Using Direct Environment Variables (No .env File)
+```bash
+# Build the image
+docker build -t discord-ai-bot:latest .
+
+# Run the container with environment variables directly
+docker run -d \
+  --name discord-ai-bot \
+  --restart unless-stopped \
+  -e DISCORD_TOKEN=your_discord_bot_token_here \
+  -e DISCORD_CLIENT_ID=your_client_id_here \
+  -e DISCORD_SERVER_ID=your_server_id_for_ai_assistant \
+  -e N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/workflow \
+  -e N8N_API_KEY=your_n8n_api_key_here \
+  -e BOT_PREFIX=! \
+  -e HARDCODED_MENTION_RESPONSE="Hi! I'm an AI Assistant. Send me a DM to chat with me." \
+  -e ALLOWED_ROLES_FOR_AI=role_id_1,role_id_2,role_id_3 \
+  -e RESTRICTED_RESPONSE="You don't have permission to use this feature. Please contact the admins." \
+  -e NODE_ENV=production \
+  -e DOCKER=true \
+  -v $(pwd)/logs:/app/logs \
+  --memory 512m \
+  --cpus 1 \
+  discord-ai-bot:latest
+```
+
+### 4. Container Management
+
+```bash
 # View logs
 docker logs -f discord-ai-bot
 

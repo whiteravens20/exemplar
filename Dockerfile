@@ -25,6 +25,9 @@ COPY package*.json ./
 COPY src/ ./src/
 COPY .env.example ./
 
+# Check if .env exists, if not create it from .env.example
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \
