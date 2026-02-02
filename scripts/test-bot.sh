@@ -2,6 +2,8 @@
 
 # Test script to verify bot configuration and dependencies
 
+# Disable strict locale check to avoid issues with grep
+export LC_ALL=C
 set -e
 
 # Colors

@@ -71,10 +71,10 @@ module.exports = {
 
         // Show typing indicator - will repeat every 5 seconds
         await message.channel.sendTyping();
-        const typingInterval = setInterval(async () => {
+         const typingInterval = setInterval(async () => {
           try {
             await message.channel.sendTyping();
-          } catch (error) {
+          } catch (_) {
             clearInterval(typingInterval);
           }
         }, 5000);
