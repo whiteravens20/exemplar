@@ -87,39 +87,37 @@ jobs:
           
           if [ -z "$LAST_TAG" ]; then
             COMMITS=$(git log --oneline --no-decorate)
-            RANGE="HEAD"
           else
             COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-decorate)
-            RANGE="${LAST_TAG}..HEAD"
           fi
           
-          # Build changelog
-          CHANGELOG="## Changes
-
-$(echo "$COMMITS" | sed 's/^/- /')
-
-## Installation
-
-### Docker (Recommended)
-\`\`\`bash
-docker run -d \\
-  --name discord-ai-bot \\
-  --restart unless-stopped \\
-  --env-file .env \\
-  ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}
-\`\`\`
-
-### Direct Installation
-\`\`\`bash
-npm install
-npm start
-\`\`\`
-
-See [README.md](https://github.com/${{ github.repository }}/blob/main/README.md) for full setup instructions."
-          
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          # Build changelog using heredoc
+          {
+            echo 'changelog<<EOF'
+            echo "## Changes"
+            echo ""
+            echo "$COMMITS" | sed 's/^/- /'
+            echo ""
+            echo "## Installation"
+            echo ""
+            echo "### Docker (Recommended)"
+            echo '```bash'
+            echo "docker run -d \\"
+            echo "  --name discord-ai-bot \\"
+            echo "  --restart unless-stopped \\"
+            echo "  --env-file .env \\"
+            echo "  ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
+            echo '```'
+            echo ""
+            echo "### Direct Installation"
+            echo '```bash'
+            echo "npm install"
+            echo "npm start"
+            echo '```'
+            echo ""
+            echo "See [README.md](https://github.com/${{ github.repository }}/blob/main/README.md) for full setup instructions."
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: actions/create-release@v1
