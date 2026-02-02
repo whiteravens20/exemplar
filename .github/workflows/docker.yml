@@ -153,6 +153,9 @@ jobs:
       security-events: write
     
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -161,9 +164,13 @@ jobs:
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           ignore-unfixed: true
+          timeout: '120s'
+
+      - name: Check if Trivy results file exists
+        run: ls -la trivy-results.sarif || echo "Trivy results file not found - creating an empty file" && touch trivy-results.sarif
 
       - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
