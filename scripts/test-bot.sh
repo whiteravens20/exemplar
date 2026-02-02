@@ -4,7 +4,7 @@
 
 # Disable strict locale check to avoid issues with grep
 export LC_ALL=C
-set -e
+#set -e
 
 # Colors
 GREEN='\033[0;32m'
@@ -38,8 +38,27 @@ run_test() {
 
 # 1. Check Node.js version
 echo -e "${BLUE}1️⃣ Checking Node.js...${NC}"
-run_test "Node.js 20+ installed" "node -v | grep -E 'v(2[0-9]|[3-9][0-9])'"
-run_test "npm 10+ installed" "npm -v | grep -E '^(10|[1-9][0-9])'"
+# Get Node.js and npm versions
+NODE_VERSION=$(node -v)
+NPM_VERSION=$(npm -v)
+echo "Node.js version: ${NODE_VERSION}"
+echo "npm version: ${NPM_VERSION}"
+# Check Node.js version
+if [[ "$NODE_VERSION" =~ v(2[0-9]|[3-9][0-9]) ]]; then
+    echo -e "  Testing: Node.js 20+ installed... ${GREEN}✅${NC}"
+    ((TESTS_PASSED++))
+else
+    echo -e "  Testing: Node.js 20+ installed... ${RED}❌${NC}"
+    ((TESTS_FAILED++))
+fi
+# Check npm version
+if [[ "$NPM_VERSION" =~ ^(10|[1-9][0-9]) ]]; then
+    echo -e "  Testing: npm 10+ installed... ${GREEN}✅${NC}"
+    ((TESTS_PASSED++))
+else
+    echo -e "  Testing: npm 10+ installed... ${RED}❌${NC}"
+    ((TESTS_FAILED++))
+fi
 
 # 2. Check dependencies
 echo -e "\n${BLUE}2️⃣ Checking Dependencies...${NC}"
