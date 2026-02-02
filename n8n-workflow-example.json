@@ -1,0 +1,64 @@
+{
+  "name": "Discord AI Assistant Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "/discord",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook_trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Przykładowy AI Assistant w n8n\n// W rzeczywistości tutaj byś użył OpenAI, Anthropic, itp.\n\nconst message = $input.first().json.message;\nconst userName = $input.first().json.userName;\nconst userId = $input.first().json.userId;\n\n// Przykładowa logika\nlet response = '';\n\nif (message.toLowerCase().includes('help')) {\n  response = `Hi ${userName}! I'm an AI Assistant. You can ask me anything and I'll try to help.`;\n} else if (message.toLowerCase().includes('hello')) {\n  response = `Hello ${userName}! Nice to meet you.`;\n} else {\n  // Tutaj mogłbyś integrować z OpenAI API\n  response = `You said: \"${message}\" - Thank you for your message!`;\n}\n\nreturn {\n  response: response,\n  userId: userId,\n  userName: userName,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "function_node",
+      "name": "Process Message",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "respond_webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "webhook_trigger": {
+      "main": [
+        [
+          {
+            "node": "function_node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "function_node": {
+      "main": [
+        [
+          {
+            "node": "respond_webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
