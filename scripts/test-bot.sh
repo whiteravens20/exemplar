@@ -115,7 +115,7 @@ run_test ".dockerignore exists" "test -f .dockerignore"
 echo -e "\n${BLUE}7️⃣ Checking package.json...${NC}"
 run_test "valid JSON" "node -e \"require('./package.json')\""
 run_test "main field set" "node -p \"require('./package.json').main\" | grep -q 'src/index.js'"
-run_test "Node.js 20+ required" "grep -q '\"node\": \">=20.0.0\"' package.json"
+run_test "Node.js 22+ required" "grep -q '\"node\": \">=22.0.0\"' package.json"
 run_test "npm 10+ required" "grep -q '\"npm\": \">=10.0.0\"' package.json"
 
 # 8. Check scripts
