@@ -6,7 +6,7 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 [![Release](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml)
 [![Docker Build](https://github.com/whiteravens20/exemplar/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/docker.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-green.svg)](https://nodejs.org/)
+[![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
 
 ## 📋 Features
 
@@ -22,10 +22,17 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 - `/mute` - Timeout user (configurable duration)
 - `/warn` - Send warning to user
 
+### 🔧 Error Handling
+- Automatic detection of n8n availability issues
+- Detailed error messages for users (network errors, timeouts, 404, auth issues)
+- Automatic retry logic with exponential backoff
+- Comprehensive logging for debugging
+- Customizable error message templates
+
 ## 🚀 Installation
 
 ### 1. Requirements
-- Node.js 20+
+- Node.js 22+
 - npm 10+ or yarn
 
 ### 2. Clone and Install
@@ -233,6 +240,19 @@ git push origin main
 ```
 
 For complete CI/CD documentation, see [CI_CD_GUIDE.md](CI_CD_GUIDE.md).
+
+## 📚 Documentation
+
+| Document | Description |
+|----------|-------------|
+| [SETUP.md](SETUP.md) | Complete setup guide (Discord, n8n, environment variables) |
+| [QUICKSTART.md](QUICKSTART.md) | Quick start guide for getting bot running |
+| [USAGE_GUIDE.md](USAGE_GUIDE.md) | User guide and commands reference |
+| [N8N_INTEGRATION.md](N8N_INTEGRATION.md) | n8n workflow integration details |
+| [ERROR_HANDLING.md](ERROR_HANDLING.md) | Error handling, debugging, and troubleshooting |
+| [DOCKER_SETUP.md](DOCKER_SETUP.md) | Docker deployment guide |
+| [CI_CD_GUIDE.md](CI_CD_GUIDE.md) | CI/CD pipeline documentation |
+| [FAQ.md](FAQ.md) | Frequently asked questions |
 
 ## 🤝 Contributing
 
