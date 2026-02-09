@@ -103,11 +103,13 @@ discord-ai-bot/
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| discord.js | 14.14.0 | Discord API |
-| dotenv | 16.3.1 | .env loading |
-| axios | 1.6.2 | HTTP requests (n8n) |
-| winston | 3.11.0 | Logging |
-| nodemon | 3.0.2 | Dev auto-reload |
+| discord.js | 14.25.1 | Discord API |
+| dotenv | 17.2.4 | .env loading |
+| axios | 1.13.5 | HTTP requests (n8n) |
+| winston | 3.19.0 | Logging |
+| undici | 7.21.0 | HTTP client |
+| eslint | 10.0.0 | Code linting |
+| nodemon | 3.1.11 | Dev auto-reload |
 
 ## 🚀 Scripts
 

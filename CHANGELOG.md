@@ -5,6 +5,28 @@ All important changes in this project will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- 🔼 Upgraded Node.js requirement from 20.x to 22.x LTS
+- 🔼 Updated all dependencies to latest versions:
+  - discord.js: 14.14.0 → 14.25.1
+  - axios: 1.6.2 → 1.13.5
+  - dotenv: 16.3.1 → 17.2.4
+  - winston: 3.11.0 → 3.19.0
+  - undici: 7.20.0 → 7.21.0
+  - eslint: 9.39.2 → 10.0.0
+  - @eslint/js: 9.39.2 → 10.0.1
+  - nodemon: 3.0.2 → 3.1.11
+
+### Fixed
+- 🔒 Resolved security vulnerabilities in undici by adding package overrides
+
+### Infrastructure
+- 🐳 Updated Dockerfile to use Node.js 22-alpine base image
+- 🔧 Updated all GitHub Actions workflows to use Node.js 22.x
+- 📝 Updated documentation to reflect Node.js 22 requirement
+
 ## [1.0.0] - 2024-02-02
 
 ### Added

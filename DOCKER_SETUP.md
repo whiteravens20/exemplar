@@ -331,7 +331,7 @@ kubectl apply -f kubernetes.yaml
 
 ## Image Size Optimization
 
-Current image size: ~200MB (with Node.js 20-alpine and dependencies)
+Current image size: ~200MB (with Node.js 22-alpine and dependencies)
 
 To further reduce size:
 
@@ -339,8 +339,8 @@ To further reduce size:
 # Remove optional dependencies
 RUN npm ci --only=production --no-optional
 
-# Use node:20-alpine3.18 (smallest available)
-FROM node:20-alpine3.18
+# Use node:22-alpine3.18 (smallest available)
+FROM node:22-alpine3.18
 ```
 
 ## Updating the Bot

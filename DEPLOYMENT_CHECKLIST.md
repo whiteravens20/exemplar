@@ -32,7 +32,7 @@
 - [ ] Admins can execute moderation commands
 
 ### 5. Node.js & Dependencies
-- [ ] Node.js 20+ installed
+- [ ] Node.js 22+ installed
 - [ ] Dependencies installed: `npm install`
 - [ ] Configuration test passed: `npm run test-config`
 - [ ] All required variables loaded

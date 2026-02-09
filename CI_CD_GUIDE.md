@@ -12,7 +12,7 @@ Runs on:
 - Manual trigger via GitHub Actions
 
 **What it does:**
-- ✅ Tests Node.js 20.x compatibility
+- ✅ Tests Node.js 22.x compatibility
 - ✅ Installs dependencies
 - ✅ Runs linting (if available)
 - ✅ Runs unit tests (if available)
@@ -20,7 +20,7 @@ Runs on:
 - ✅ Checks JavaScript syntax in all source files
 - ✅ Verifies required files exist
 - ✅ Validates environment variables
-- ✅ Checks Node.js version requirement (20+)
+- ✅ Checks Node.js version requirement (22+)
 - ✅ Validates package.json integrity
 
 **View results:**
@@ -99,7 +99,7 @@ docker pull ghcr.io/{owner}/{repo}:1
 ### Prerequisites
 
 All workflows require:
-- ✅ Node.js 20+
+- ✅ Node.js 22+
 - ✅ npm 10+
 - ✅ Valid `package.json`
 - ✅ `.env.example` file with required variables
@@ -168,7 +168,7 @@ The test workflow checks:
 ✅ File structure (all required directories)
 ✅ JavaScript syntax (all .js files)
 ✅ Configuration files (.env.example)
-✅ Node.js version (20+)
+✅ Node.js version (22+)
 ✅ npm version (10+)
 ✅ package.json validity
 ✅ npm scripts exist
@@ -319,7 +319,7 @@ Edit `.github/workflows/*.yml`:
 ```yaml
 strategy:
   matrix:
-    node-version: [20.x]  # Change here
+    node-version: [22.x]  # Change here
 ```
 
 ### Change Test Conditions
