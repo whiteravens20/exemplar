@@ -16,42 +16,71 @@ module.exports = {
   async execute(interaction) {
     if (!isModeratorOrAdmin(interaction.member)) {
       return interaction.reply({
-        content: '❌ You do not have permission to use this command.',
+        content: '❌ Nie masz uprawnień do użycia tej komendy.',
         ephemeral: true
       });
     }
 
     const target = interaction.options.getUser('user');
-    const reason = interaction.options.getString('reason') || 'No reason provided';
+    const reason = interaction.options.getString('reason') || 'Nie podano powodu';
 
     try {
-      // Try to send DM to the user
-      const dm = await target.createDM();
-      await dm.send({
-        embeds: [{
-          color: 0xFFAA00,
-          title: '⚠️ Warning',
-          description: `You have been warned on **${interaction.guild.name}**`,
-          fields: [
-            {
-              name: 'Reason',
-              value: reason
-            }
-          ],
-          timestamp: new Date()
-        }]
-      });
-
-      logger.info(`User warned: ${target.username}`, { userId: target.id, reason });
+      const member = await interaction.guild.members.fetch(target.id).catch(() => null);
       
+      // Check role hierarchy if member is in guild
+      if (member) {
+        if (member.roles.highest.position >= interaction.member.roles.highest.position) {
+          return interaction.reply({
+            content: '❌ Nie możesz ostrzec tego użytkownika (hierarchia ról).',
+            ephemeral: true
+          });
+        }
+
+        if (member.id === interaction.guild.ownerId) {
+          return interaction.reply({
+            content: '❌ Nie można ostrzec właściciela serwera.',
+            ephemeral: true
+          });
+        }
+      }
+
+      // Try to send DM to the user
+      let dmSent = false;
+      try {
+        const dm = await target.createDM();
+        await dm.send({
+          embeds: [{
+            color: 0xFFAA00,
+            title: '⚠️ Ostrzeżenie',
+            description: `Otrzymałeś ostrzeżenie na **${interaction.guild.name}**`,
+            fields: [
+              {
+                name: 'Powód',
+                value: reason
+              }
+            ],
+            timestamp: new Date()
+          }]
+        });
+        dmSent = true;
+      } catch (dmError) {
+        logger.warn('Could not send DM to user', { 
+          userId: target.id, 
+          error: dmError.message 
+        });
+      }
+
+      logger.info(`User warned: ${target.username}`, { userId: target.id, reason, dmSent });
+      
+      const dmStatus = dmSent ? '' : ' (DM nie doręczono - użytkownik może mieć wyłączone wiadomości prywatne)';
       await interaction.reply({
-        content: `⚠️ **${target.username}** has been warned.\n**Reason:** ${reason}`,
+        content: `⚠️ **${target.username}** został ostrzeony${dmStatus}.\n**Powód:** ${reason}`,
         ephemeral: false
       });
     } catch (error) {
       logger.error('Error warning user', { error: error.message, userId: target.id });
       await interaction.reply({
-        content: `❌ Failed to warn user: ${error.message}`,
+        content: `❌ Nie udało się ostrzec użytkownika: ${error.message}`,
         ephemeral: true
       });
     }

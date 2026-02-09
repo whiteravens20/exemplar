@@ -8,24 +8,24 @@ module.exports = {
   async execute(interaction) {
     const embed = {
       color: 0x0099FF,
-      title: '🤖 AI Assistant Bot - Help',
-      description: 'Available commands and features:',
+      title: '🤖 AI Assistant Bot - Pomoc',
+      description: 'Dostępne komendy i funkcje:',
       fields: [
         {
-          name: '💬 AI Assistant',
-          value: 'Send me a DM to chat with me! I can help with questions and provide information.'
+          name: '💬 Asystent AI',
+          value: 'Wyślij mi wiadomość prywatną, aby ze mną porozmawiać! Mogę pomoc z pytaniami i udzielić informacji.'
         },
         {
-          name: '🛡️ Moderation Commands (Admin Only)',
-          value: '`/kick` - Kick a user\n`/ban` - Ban a user\n`/mute` - Mute a user\n`/warn` - Warn a user'
+          name: '🛡️ Komendy Moderacyjne (Tylko Admin)',
+          value: '`/kick` - Wyrzuca użytkownika\n`/ban` - Banuje użytkownika\n`/mute` - Wycisza użytkownika\n`/warn` - Ostrzega użytkownika'
         },
         {
-          name: '📌 Features',
-          value: '• Mention me in chat for a quick response\n• Send DMs for full AI conversation\n• Full moderation suite for administrators'
+          name: '📌 Funkcje',
+          value: '• Oznacz mnie na czacie, aby uzyskać szybką odpowiedź\n• Wyślij DM, aby porozmawiać z AI\n• Pełny zestaw narzędzi moderacyjnych dla administratorów'
         },
         {
-          name: '⚠️ Note',
-          value: 'AI Assistant access may be restricted to specific roles. If you cannot send messages, contact server administrators.'
+          name: '⚠️ Uwaga',
+          value: 'Dostęp do Asystenta AI może być ograniczony do określonych ról. Jeśli nie możesz wysyłać wiadomości, skontaktuj się z administratorami serwera.'
         }
       ],
       timestamp: new Date()

@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes, Partials } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const logger = require('./utils/logger');
@@ -21,6 +21,10 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildModeration
+  ],
+  partials: [
+    Partials.Channel, // Required for DM support
+    Partials.Message  // Required for uncached messages
   ]
 });
 
@@ -84,7 +88,6 @@ async function start() {
     logger.info('🤖 Starting Discord bot...');
     await registerCommands();
     await client.login(config.config.discord.token);
-    logger.info('✅ Bot connected to Discord');
   } catch (error) {
     logger.error('Failed to start bot', { error: error.message });
     process.exit(1);
@@ -96,6 +99,34 @@ process.on('SIGINT', async () => {
   logger.info('Shutting down bot...');
   await client.destroy();
   process.exit(0);
+});
+
+// Error handlers
+process.on('unhandledRejection', (error) => {
+  logger.error('Unhandled promise rejection', { 
+    error: error.message, 
+    stack: error.stack 
+  });
+});
+
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught exception', { 
+    error: error.message, 
+    stack: error.stack 
+  });
+  process.exit(1);
+});
+
+// Discord.js warnings
+client.on('warn', (info) => {
+  logger.warn('Discord client warning', { info });
+});
+
+client.on('debug', (info) => {
+  // Only log important debug info
+  if (info.includes('Heartbeat') || info.includes('Session')) {
+    logger.debug(info);
+  }
 });
 
 start();

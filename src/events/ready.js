@@ -18,10 +18,13 @@ module.exports = {
       status: 'online'
     });
 
+    logger.info(`🎭 Set initial status: ${status.name}`);
+
     // Rotate statuses every 30 seconds
     setInterval(() => {
       const newStatus = getRandomStatus();
       client.user.setActivity(newStatus.name, { type: newStatus.type });
+      logger.info(`🎭 Rotated status: ${newStatus.name}`);
     }, 30000);
 
     logger.info(`✅ Bot is ready! Serving ${client.guilds.cache.size} guild(s)`);

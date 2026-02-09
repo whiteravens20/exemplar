@@ -1,4 +1,8 @@
 const winston = require('winston');
+const path = require('path');
+
+// Ensure logs directory exists (done in config.js, but double-check)
+const logDir = path.join(process.cwd(), 'logs');
 
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -9,8 +13,13 @@ const logger = winston.createLogger({
   ),
   defaultMeta: { service: 'discord-bot' },
   transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'error.log'), 
+      level: 'error' 
+    }),
+    new winston.transports.File({ 
+      filename: path.join(logDir, 'combined.log') 
+    }),
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),

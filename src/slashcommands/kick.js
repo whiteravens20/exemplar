@@ -16,20 +16,37 @@ module.exports = {
   async execute(interaction) {
     if (!isModeratorOrAdmin(interaction.member)) {
       return interaction.reply({
-        content: '❌ You do not have permission to use this command.',
+        content: '❌ Nie masz uprawnień do użycia tej komendy.',
         ephemeral: true
       });
     }
 
     const target = interaction.options.getUser('user');
-    const reason = interaction.options.getString('reason') || 'No reason provided';
+    const reason = interaction.options.getString('reason') || 'Nie podano powodu';
 
     try {
       const member = await interaction.guild.members.fetch(target.id);
       
+      // Check if bot can kick the user
       if (!member.kickable) {
         return interaction.reply({
-          content: '❌ I cannot kick this user (insufficient permissions).',
+          content: '❌ Nie mogę wyrzucić tego użytkownika (niewystarczające uprawnienia).',
+          ephemeral: true
+        });
+      }
+
+      // Check role hierarchy - moderator cannot kick users with equal or higher roles
+      if (member.roles.highest.position >= interaction.member.roles.highest.position) {
+        return interaction.reply({
+          content: '❌ Nie możesz wyrzucić tego użytkownika (hierarchia ról).',
+          ephemeral: true
+        });
+      }
+
+      // Prevent kicking server owner
+      if (member.id === interaction.guild.ownerId) {
+        return interaction.reply({
+          content: '❌ Nie można wyrzucić właściciela serwera.',
           ephemeral: true
         });
       }
@@ -39,13 +56,13 @@ module.exports = {
       logger.info(`User kicked: ${target.username}`, { userId: target.id, reason });
       
       await interaction.reply({
-        content: `✅ **${target.username}** has been kicked.\n**Reason:** ${reason}`,
+        content: `✅ **${target.username}** został wyrzucony.\n**Powód:** ${reason}`,
         ephemeral: false
       });
     } catch (error) {
       logger.error('Error kicking user', { error: error.message, userId: target.id });
       await interaction.reply({
-        content: `❌ Failed to kick user: ${error.message}`,
+        content: `❌ Nie udało się wyrzucić użytkownika: ${error.message}`,
         ephemeral: true
       });
     }
