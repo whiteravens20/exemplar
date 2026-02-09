@@ -4,6 +4,8 @@
 
 Discord Bot sends messages to an n8n workflow via Webhook. n8n processes the message and returns a response, which the bot sends back to the user.
 
+**Important:** Bot works **only in DMs** (Direct Messages). All channel commands are ignored.
+
 ## Payload Sent to n8n
 
 ```json
@@ -12,8 +14,39 @@ Discord Bot sends messages to an n8n workflow via Webhook. n8n processes the mes
   "userName": "discord_username",
   "message": "message from user",
   "serverId": "discord_server_id",
+  "mode": "chat",
   "timestamp": "2024-02-02T10:30:00.000Z",
   "platform": "discord"
+}
+```
+
+### Field Descriptions
+
+- `userId` - Discord user ID
+- `userName` - Discord username
+- `message` - User's message content (with `!code` prefix removed if applicable)
+- `serverId` - Discord server ID (from bot configuration)
+- `mode` - **"chat"** (default) or **"code"** (when user uses `!code` command)
+- `timestamp` - ISO timestamp
+- `platform` - Always "discord"
+
+### Mode Field
+
+The `mode` field allows you to route messages to different LLMs:
+
+- **`"chat"`** - General conversation, use GPT-3.5/GPT-4 or similar
+- **`"code"`** - Programming/coding help, use code-optimized LLM or system prompt
+
+**User activates code mode by:**
+```
+!code write a function to sort an array
+```
+
+Bot will send:
+```json
+{
+  "message": "write a function to sort an array",
+  "mode": "code"
 }
 ```
 
@@ -52,28 +85,61 @@ Just set `N8N_WORKFLOW_URL` to the n8n endpoint that forwards requests.
 
 ## Workflow Examples
 
-### 1. Simple Echo Bot
+### 1. Mode-Based Routing (Recommended)
+
+Use an IF node to route based on `mode`:
+
+```javascript
+// IF Node condition:
+// $json.mode === "code"
+
+// TRUE branch (Coding LLM):
+const message = $json.message;
+const userName = $json.userName;
+
+// Use OpenAI with coding system prompt
+// or specialized coding LLM
+return {
+  response: `Here's the code solution...`,
+  mode: 'code'
+};
+
+// FALSE branch (Chat LLM):
+const message = $json.message;
+const userName = $json.userName;
+
+// Use general conversational LLM
+return {
+  response: `Hi ${userName}, let me help you...`,
+  mode: 'chat'
+};
+```
+
+### 2. Simple Echo Bot
 
 ```javascript
 // Function Node
 const message = $input.first().json.message;
 const userName = $input.first().json.userName;
+const mode = $input.first().json.mode;
 
 return {
-  response: `You said: "${message}", ${userName}!`
+  response: `[${mode}] You said: "${message}", ${userName}!`
 };
 ```
 
-### 2. OpenAI Integration
+### 3. OpenAI Integration
 
 ```
-Webhook -> HTTP Request (OpenAI API) -> Format Response -> Return Response
+Webhook -> Check Mode (IF) -> 
+  ├─ [code] -> OpenAI (with code system prompt) -> Return Response
+  └─ [chat] -> OpenAI (with chat system prompt) -> Return Response
 ```
 
-### 3. Database Integration
+### 4. Database Integration
 
 ```
-Webhook -> Save to DB -> Query DB for context -> Call LLM -> Return Response
+Webhook -> Save to DB -> Query DB for context -> Check Mode -> Call appropriate LLM -> Return Response
 ```
 
 ## Monitoring and Debugging
@@ -91,7 +157,7 @@ tail -f error.log             # Errors only
 ### Testing Workflow
 
 ```bash
-# Send test payload with curl
+# Test chat mode (default)
 curl -X POST https://your-n8n.com/webhook/discord \
   -H "Content-Type: application/json" \
   -d '{
@@ -99,6 +165,20 @@ curl -X POST https://your-n8n.com/webhook/discord \
     "userName": "testuser",
     "message": "hello",
     "serverId": "456",
+    "mode": "chat",
+    "timestamp": "2024-02-02T10:00:00Z",
+    "platform": "discord"
+  }'
+
+# Test code mode
+curl -X POST https://your-n8n.com/webhook/discord \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "123",
+    "userName": "testuser",
+    "message": "write a function to sort array",
+    "serverId": "456",
+    "mode": "code",
     "timestamp": "2024-02-02T10:00:00Z",
     "platform": "discord"
   }'

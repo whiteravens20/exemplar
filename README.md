@@ -11,16 +11,18 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 ## 📋 Features
 
 ### 🤖 AI Assistant
-- Bot responds to mentions with hardcoded message in chat
-- PM (Direct Messages) triggers n8n workflow
+- **Bot works only in DM (Direct Messages)** - all commands on channels are ignored
+- Bot responds to mentions (@mention) on channel with a hardcoded message
+- Private messages (DM) trigger n8n workflow
 - AI Assistant available only for specific roles
 - Other users receive hardcoded response
+- **Coding Mode:** Command `!code` switches to coding-specialized LLM
 
 ### 🛡️ Moderation Commands (Slash Commands)
-- `/kick` - Kick user from server
-- `/ban` - Ban user from server
-- `/mute` - Timeout user (configurable duration)
-- `/warn` - Send warning to user
+- `/kick`, `/ban`, `/mute`, `/warn` - **Not available manually**
+- Reserved for future automatic moderation
+- Bot will use them automatically when detecting violations
+- `/help` - Available only in DM, shows help
 
 ### 🔧 Error Handling
 - Automatic detection of n8n availability issues
@@ -128,26 +130,53 @@ User: @AIBot help
 Bot: Hi! I'm an AI Assistant. Send me a DM to chat with me.
 ```
 
+**Note:** Bot ignores all slash commands and `!` commands on channels.
+
 ### Direct Messages (PM)
 
-#### For Authorized Users (with allowed roles):
-1. User sends PM to bot
+**Bot works ONLY in Direct Messages (DM).** All functionality is available only via PM.
+
+#### Basic Chat Mode (Default):
+1. User sends PM to bot: `"What is the weather?"`
 2. Bot checks if user has allowed role in server
-3. If YES - message is sent to n8n workflow
-4. Bot waits for response from n8n and sends it to user
+3. If YES - message is sent to n8n workflow with `mode: "chat"`
+4. n8n routes to general conversational LLM
+5. Bot sends response back to user
+
+#### Code Mode:
+1. User sends PM with `!code` prefix: `"!code write a function to sort array"`
+2. Bot removes `!code` prefix and sends to n8n with `mode: "code"`
+3. n8n routes to coding-specialized LLM
+4. Bot sends code-focused response back to user
+
+**Payload sent to n8n:**
+```json
+{
+  "userId": "123456789",
+  "userName": "TestUser",
+  "message": "write a function to sort array",
+  "serverId": "987654321",
+  "mode": "code",
+  "timestamp": "2026-02-09T10:30:00.000Z",
+  "platform": "discord"
+}
+```
 
 #### For Unauthorized Users:
 - They receive hardcoded response about access denial
 
 ### Moderation Commands
 
-All moderators and admins can use slash commands:
+Moderation slash commands (`/kick`, `/ban`, `/mute`, `/warn`) are **blocked for manual use**.
 
-```
-/kick @user [reason]
-/ban @user [reason]
-/mute @user [duration] [reason]
-/warn @user [reason]
+They will be used by the bot automatically in the future for:
+- Detecting spam
+- Inappropriate content
+- Rule violations
+- Other automated moderation tasks
+
+**Available commands:**
+- `/help` - Shows help message (only in DM)
 ```
 
 ## 🔐 Environment Variables

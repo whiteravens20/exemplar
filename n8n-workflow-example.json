@@ -1,5 +1,5 @@
 {
-  "name": "Discord AI Assistant Workflow",
+  "name": "Discord AI Assistant Workflow (Exemplar Bot)",
   "nodes": [
     {
       "parameters": {
@@ -8,30 +8,74 @@
         "options": {}
       },
       "id": "webhook_trigger",
-      "name": "Webhook",
+      "name": "Discord Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
-      "position": [250, 300]
+      "position": [250, 400],
+      "notes": "Webhook endpoint for Discord bot DM messages"
     },
     {
       "parameters": {
-        "functionCode": "// Przykładowy AI Assistant w n8n\n// W rzeczywistości tutaj byś użył OpenAI, Anthropic, itp.\n\nconst message = $input.first().json.message;\nconst userName = $input.first().json.userName;\nconst userId = $input.first().json.userId;\n\n// Przykładowa logika\nlet response = '';\n\nif (message.toLowerCase().includes('help')) {\n  response = `Hi ${userName}! I'm an AI Assistant. You can ask me anything and I'll try to help.`;\n} else if (message.toLowerCase().includes('hello')) {\n  response = `Hello ${userName}! Nice to meet you.`;\n} else {\n  // Tutaj mogłbyś integrować z OpenAI API\n  response = `You said: \"${message}\" - Thank you for your message!`;\n}\n\nreturn {\n  response: response,\n  userId: userId,\n  userName: userName,\n  timestamp: new Date().toISOString()\n};"
+        "functionCode": "// Extract payload from Discord bot\nconst payload = $input.first().json;\n\nreturn {\n  userId: payload.userId,\n  userName: payload.userName,\n  message: payload.message,\n  serverId: payload.serverId,\n  mode: payload.mode || 'chat',\n  timestamp: payload.timestamp,\n  platform: payload.platform\n};"
       },
-      "id": "function_node",
-      "name": "Process Message",
+      "id": "extract_payload",
+      "name": "Extract Payload",
       "type": "n8n-nodes-base.function",
       "typeVersion": 1,
-      "position": [450, 300]
+      "position": [450, 400],
+      "notes": "Parse incoming Discord message data"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.mode }}",
+              "operation": "equals",
+              "value2": "code"
+            }
+          ]
+        }
+      },
+      "id": "check_mode",
+      "name": "Check Mode",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 400],
+      "notes": "Route to different LLMs based on mode (chat vs code)"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Coding Assistant with specialized LLM\n// Use GPT-4, Claude, or coding-specific model\n\nconst message = $json.message;\nconst userName = $json.userName;\nconst userId = $json.userId;\n\n// REPLACE THIS WITH YOUR CODING LLM INTEGRATION\n// Example: OpenAI with system prompt for coding\n\nconst response = `🔧 **Tryb kodowania aktywny**\\n\\nTwoje zapytanie: \"${message}\"\\n\\n\\`\\`\\`javascript\\n// Przykładowa odpowiedź kodu\\nfunction example() {\\n  return 'Tutaj powinna być odpowiedź od LLM specjalizującego się w kodowaniu';\\n}\\n\\`\\`\\`\\n\\nUżyj OpenAI, Anthropic Claude lub innego LLM z odpowiednim system prompt dla kodowania.`;\n\nreturn {\n  response: response,\n  userId: userId,\n  userName: userName,\n  mode: 'code',\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "code_llm",
+      "name": "Coding LLM",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "notes": "LLM optimized for code/programming help"
+    },
+    {
+      "parameters": {
+        "functionCode": "// Chat Assistant with general LLM\n// Use GPT-3.5, GPT-4, Claude, etc.\n\nconst message = $json.message;\nconst userName = $json.userName;\nconst userId = $json.userId;\n\n// REPLACE THIS WITH YOUR CHAT LLM INTEGRATION\n// Example: OpenAI Chat Completion API\n\nlet response = '';\n\nif (message.toLowerCase().includes('help')) {\n  response = `Cześć ${userName}! 👋\\n\\nJestem botem AI działającym tylko w wiadomościach prywatnych.\\n\\n**Jak mogę pomóc:**\\n• Odpowiem na Twoje pytania\\n• Udzielę informacji\\n• Pomogę z różnymi zadaniami\\n\\n**Tryb kodowania:**\\nUżyj \\`!code\\` przed wiadomością, aby przełączyć na pomoc programistyczną.\\nPrzykład: \\`!code napisz funkcję do sortowania\\``;\n} else if (message.toLowerCase().includes('hello') || message.toLowerCase().includes('cześć')) {\n  response = `Cześć ${userName}! Miło Cię poznać. W czym mogę pomóc?`;\n} else {\n  // Tutaj powinna być integracja z OpenAI/Anthropic/innym LLM\n  response = `Otrzymałem Twoją wiadomość: \"${message}\"\\n\\nZastąp ten kod integracją z prawdziwym LLM (OpenAI, Anthropic Claude, itp.)`;\n}\n\nreturn {\n  response: response,\n  userId: userId,\n  userName: userName,\n  mode: 'chat',\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "chat_llm",
+      "name": "Chat LLM",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [850, 500],
+      "notes": "General conversational LLM"
     },
     {
       "parameters": {
         "options": {}
       },
       "id": "respond_webhook",
-      "name": "Respond to Webhook",
+      "name": "Send Response to Discord",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
-      "position": [650, 300]
+      "position": [1050, 400],
+      "notes": "Return response to Discord bot"
     }
   ],
   "connections": {
@@ -39,14 +83,54 @@
       "main": [
         [
           {
-            "node": "function_node",
+            "node": "extract_payload",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "function_node": {
+    "extract_payload": {
+      "main": [
+        [
+          {
+            "node": "check_mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_mode": {
+      "main": [
+        [
+          {
+            "node": "code_llm",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "chat_llm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code_llm": {
+      "main": [
+        [
+          {
+            "node": "respond_webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "chat_llm": {
       "main": [
         [
           {
@@ -60,5 +144,8 @@
   },
   "settings": {
     "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Przykładowy workflow dla bota Discord Exemplar.\n\nFunkcjonalności:\n- Bot działa tylko w DM (wiadomościach prywatnych)\n- Dwa tryby: 'chat' (domyślny) i 'code' (aktywowany przez !code)\n- Routing do różnych LLM w zależności od trybu\n- Automatyczna moderacja (komendy /kick, /ban, /mute, /warn zarezerwowane dla automatyki)\n\nPayload structure:\n{\n  userId: string,\n  userName: string,\n  message: string,\n  serverId: string,\n  mode: 'chat' | 'code',\n  timestamp: ISO string,\n  platform: 'discord'\n}\n\nZastąp node'y 'Coding LLM' i 'Chat LLM' prawdziwymi integracjami z:\n- OpenAI (GPT-3.5, GPT-4)\n- Anthropic (Claude)\n- Lub innym LLM"
   }
 }
