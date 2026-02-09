@@ -9,7 +9,7 @@ class N8NClient {
     this.retryDelay = options.retryDelay || 1000; // ms
     
     this.client = axios.create({
-      timeout: options.timeout || 30000,
+      timeout: options.timeout || 120000, // 2 minutes for thinking LLM
       headers: {
         'Content-Type': 'application/json'
       }
@@ -55,7 +55,15 @@ class N8NClient {
 
       logger.info('✅ Workflow triggered successfully', { 
         status: response.status,
-        hasData: !!response.data 
+        hasData: !!response.data,
+        dataType: typeof response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        hasResponseField: response.data?.response !== undefined
+      });
+
+      // Debug: log full response data
+      logger.debug('n8n response data:', { 
+        data: JSON.stringify(response.data).substring(0, 200) 
       });
 
       return {

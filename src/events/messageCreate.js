@@ -5,6 +5,7 @@ const RateLimiter = require('../utils/rate-limiter');
 const { hasPermission } = require('../utils/permissions');
 const config = require('../config/config');
 const { getTemplate } = require('../config/response-templates');
+const { splitMessage } = require('../utils/message-splitter');
 
 const n8nClient = new N8NClient(
   config.config.n8n.workflowUrl,
@@ -196,19 +197,34 @@ module.exports = {
         clearInterval(typingInterval);
 
         if (result.success) {
+          // Debug: log what we received from n8n
+          logger.debug('n8n result:', {
+            hasData: !!result.data,
+            dataType: typeof result.data,
+            hasResponseField: result.data?.response !== undefined,
+            dataPreview: JSON.stringify(result.data).substring(0, 200)
+          });
+
           const response = result.data?.response || 'Twoja wiadomość została przetworzona.';
           
-          // Split long messages (Discord limit: 2000 chars)
-          if (response.length > 2000) {
-            const chunks = response.match(/[\s\S]{1,2000}/g);
-            for (const chunk of chunks) {
-              await message.reply({ content: chunk });
-            }
-          } else {
-            await message.reply({ content: response });
+          logger.info('Extracted response', {
+            responseLength: response.length,
+            responsePreview: response.substring(0, 100)
+          });
+          
+          // Split long messages intelligently (Discord limit: 2000 chars)
+          // Splits by paragraphs, preserves code blocks, avoids breaking words
+          const chunks = splitMessage(response);
+          
+          for (const chunk of chunks) {
+            await message.reply({ content: chunk });
           }
           
-          logger.info('✅ n8n workflow processed successfully', { userId: message.author.id });
+          logger.info('✅ n8n workflow processed successfully', { 
+            userId: message.author.id,
+            responseLength: response.length,
+            chunks: chunks.length
+          });
         } else {
           // Detailed error handling based on error type
           let errorMessage;
