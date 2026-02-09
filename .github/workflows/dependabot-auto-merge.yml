@@ -38,11 +38,10 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Auto-approve minor updates
+      - name: Label minor updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-minor'
         run: |
-          gh pr review --approve "$PR_URL"
-          gh pr comment "$PR_URL" --body "✅ Auto-approved minor dependency update. Please review and merge manually."
+          gh pr comment "$PR_URL" --body "✅ Minor dependency update detected. Please review and merge when ready."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
