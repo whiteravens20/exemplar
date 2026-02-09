@@ -149,7 +149,6 @@ test('Should provide correct stats', () => {
 
 test('Should handle edge case - zero requests', () => {
   const limiter = new RateLimiter(5, 60000);
-  const userId = 'user9';
 
   const stats = limiter.getStats();
   assertEquals(stats.totalUsers, 0, 'Should start with 0 users');
