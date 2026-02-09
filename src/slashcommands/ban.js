@@ -14,6 +14,21 @@ module.exports = {
     ),
   
   async execute(interaction) {
+    // Block manual use - this command is reserved for automated moderation
+    return interaction.reply({
+      content: '❌ Ta komenda jest niedostępna do ręcznego użycia. Bot używa jej automatycznie w ramach moderacji.',
+      ephemeral: true
+    });
+
+    /* RESERVED FOR AUTOMATED USE
+    // Must be used in a guild (server), not in DMs
+    if (!interaction.guild) {
+      return interaction.reply({
+        content: '❌ Ta komenda może być użyta tylko na serwerze, nie w prywatnych wiadomościach.',
+        ephemeral: true
+      });
+    }
+
     if (!isModeratorOrAdmin(interaction.member)) {
       return interaction.reply({
         content: '❌ Nie masz uprawnień do użycia tej komendy.',

@@ -1,4 +1,4 @@
-const { Events } = require('discord.js');
+const { Events, ChannelType } = require('discord.js');
 const logger = require('../utils/logger');
 
 module.exports = {
@@ -10,6 +10,16 @@ module.exports = {
 
     if (!command) {
       logger.warn('Unknown command', { command: interaction.commandName });
+      return;
+    }
+
+    // Only allow slash commands in DMs - silently ignore on channels
+    if (interaction.channel.type !== ChannelType.DM) {
+      logger.info('Slash command ignored in channel', {
+        command: interaction.commandName,
+        userId: interaction.user.id,
+        guildId: interaction.guildId
+      });
       return;
     }
 

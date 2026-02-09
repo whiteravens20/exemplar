@@ -65,6 +65,12 @@ module.exports = {
     const botMention = `<@${message.client.user.id}>`;
     const botNicknameMention = `<@!${message.client.user.id}>`;
 
+    // Ignore messages starting with ! in channels (not DMs)
+    if (message.channel.type !== ChannelType.DM && message.content.startsWith(config.config.bot.prefix)) {
+      logger.info('Ignoring ! command in channel', { userId: message.author.id });
+      return;
+    }
+
     // Handle bot mentions in public channels
     if (message.content.includes(botMention) || message.content.includes(botNicknameMention)) {
       if (message.channel.type !== ChannelType.DM) {
@@ -136,7 +142,7 @@ module.exports = {
         }
 
         // Sanitize message content
-        const sanitizedContent = message.content.trim();
+        let sanitizedContent = message.content.trim();
         
         if (!sanitizedContent) {
           await message.reply({
@@ -145,12 +151,27 @@ module.exports = {
           return;
         }
 
+        // Check for !code command to enable coding mode
+        let mode = 'chat';
+        if (sanitizedContent.startsWith('!code ')) {
+          mode = 'code';
+          sanitizedContent = sanitizedContent.substring(6).trim(); // Remove '!code ' prefix
+          
+          if (!sanitizedContent) {
+            await message.reply({
+              content: '❌ Podaj treść po komendzie !code'
+            });
+            return;
+          }
+        }
+
         // Send to n8n workflow
         logger.info('📤 Sending message to n8n', {
           userId: message.author.id,
           userName: message.author.username,
           messageLength: sanitizedContent.length,
-          remaining: rateLimit.remaining
+          remaining: rateLimit.remaining,
+          mode
         });
 
         // Show typing indicator - will repeat every 5 seconds
@@ -167,7 +188,8 @@ module.exports = {
           message.author.id,
           message.author.username,
           sanitizedContent,
-          config.config.discord.serverId
+          config.config.discord.serverId,
+          mode
         );
 
         // Stop typing indicator

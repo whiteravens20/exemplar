@@ -95,7 +95,7 @@ class N8NClient {
     }
   }
 
-  async sendMessage(userId, userName, message, serverId) {
+  async sendMessage(userId, userName, message, serverId, mode = 'chat') {
     // Validate input
     if (!userId || !userName || !message) {
       logger.error('Invalid input to sendMessage', { userId, userName, messagePresent: !!message });
@@ -110,6 +110,7 @@ class N8NClient {
       userName,
       message,
       serverId,
+      mode,
       timestamp: new Date().toISOString(),
       platform: 'discord'
     };
