@@ -1,6 +1,4 @@
 const { SlashCommandBuilder } = require('discord.js');
-const logger = require('../utils/logger');
-const { isModeratorOrAdmin } = require('../utils/permissions');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -95,5 +93,6 @@ module.exports = {
         ephemeral: true
       });
     }
+    */
   }
 };
