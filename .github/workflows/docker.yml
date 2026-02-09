@@ -33,7 +33,7 @@ jobs:
       (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     strategy:
       matrix:
-        node-version: [20.x]
+        node-version: [22.x]
     steps:
       - uses: actions/checkout@v4
       
@@ -49,11 +49,14 @@ jobs:
       - name: Run linting
         run: npm run lint --if-present
       
-      - name: Run tests
-        run: npm test --if-present
+      - name: Run all tests
+        run: npm run test:all
       
-      - name: Test configuration
-        run: npm run test-config
+      - name: Security audit
+        run: |
+          npm audit --production --audit-level=high || true
+          echo "⚠️ Security audit completed (warnings only)"
+        continue-on-error: true
       
       - name: Verify required files
         run: |
