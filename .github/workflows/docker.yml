@@ -10,10 +10,6 @@ on:
       - 'Dockerfile'
       - 'package.json'
       - 'src/**'
-  workflow_run:
-    workflows: ["Create Release"]
-    types: [completed]
-    branches: [main]
 
 permissions:
   contents: read
@@ -29,8 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-      (github.event_name == 'push') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     strategy:
       matrix:
         node-version: [22.x]
@@ -70,8 +65,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-      (github.event_name == 'push') ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       contents: read
       packages: write
@@ -150,7 +144,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       contents: read
       security-events: write
