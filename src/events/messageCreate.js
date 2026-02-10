@@ -205,7 +205,7 @@ module.exports = {
             dataPreview: JSON.stringify(result.data).substring(0, 200)
           });
 
-          const response = result.data?.response || 'Twoja wiadomość została przetworzona.';
+          const response = result.data?.response || 'Twoja wiadomość została przetworzona, ale wystąpił problem z odpowiedzią.';
           
           logger.info('Extracted response', {
             responseLength: response.length,

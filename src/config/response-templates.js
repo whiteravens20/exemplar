@@ -43,7 +43,7 @@ const templates = {
     processing: '❌ Błąd w przetwarzaniu wiadomości. Spróbuj ponownie później.',
     n8nDown: '⚠️ Backend jest chwilowo niedostępny. Spróbuj ponownie za moment.',
     timeout: '⏱️ Przekroczono czas oczekiwania. Przetwarzanie trwało zbyt długo.',
-    notFound: '⚠️ Nie znaleziono workflow w backendzie. Sprawdź konfigurację n8n.',
+    notFound: '⚠️ Nie znaleziono workflow w backendzie. Sprawdź konfigurację.',
     generic: '💥 Coś poszło nie tak! Spróbuj ponownie lub skontaktuj się z supportem.'
   },
 

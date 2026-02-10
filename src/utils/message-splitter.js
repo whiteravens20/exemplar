@@ -18,7 +18,6 @@ function splitMessage(text, maxLength = SAFE_LENGTH) {
   }
 
   const chunks = [];
-  let currentChunk = '';
 
   // Check if message contains code blocks
   const codeBlockRegex = /```[\s\S]*?```/g;
@@ -128,7 +127,6 @@ function splitLargeCodeBlock(codeBlock, maxLength) {
   
   // Extract opening ```language
   const firstLine = lines[0];
-  const lastLine = lines[lines.length - 1];
   const language = firstLine.replace('```', '');
   
   let currentChunk = '```' + language + '\n';

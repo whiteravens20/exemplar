@@ -2,23 +2,23 @@ const { ActivityType } = require('discord.js');
 
 const statuses = [
   {
-    name: '/help for commands',
+    name: 'DM /help dla komend',
     type: ActivityType.Listening
   },
   {
-    name: 'Discord messages',
+    name: 'obserwuję wiadomości Discord',
     type: ActivityType.Watching
   },
   {
-    name: 'DMs for AI chat',
+    name: 'DM dla czatu z AI',
     type: ActivityType.Listening
   },
   {
-    name: 'server activity',
+    name: 'sprawdzam aktywność serwera',
     type: ActivityType.Watching
   },
   {
-    name: 'your messages',
+    name: 'monitoruję wiadomości w imperium',
     type: ActivityType.Watching
   }
 ];
