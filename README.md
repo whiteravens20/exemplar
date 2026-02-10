@@ -194,27 +194,82 @@ They will be used by the bot automatically in the future for:
 
 ## 📁 Project Structure
 
-```
 discord-ai-bot/
-├── src/
-│   ├── index.js                 # Main bot file
-│   ├── slashcommands/           # Slash commands
-│   │   ├── kick.js
-│   │   ├── ban.js
-│   │   ├── mute.js
-│   │   └── warn.js
-│   ├── events/                  # Event handlers
-│   │   ├── ready.js
-│   │   ├── messageCreate.js     # Message handling
-│   │   └── interactionCreate.js # Command handling
-│   └── utils/
-│       ├── logger.js            # Logger
-│       ├── n8n-client.js        # n8n integration
-│       └── permissions.js       # Permission helpers
-├── .env.example                 # Variables template
-├── .gitignore
-├── package.json
-└── README.md
+├── 📄 README.md                  # Main documentation
+├── 📄 SETUP.md                   # Configuration instructions
+├── 📄 QUICKSTART.md              # Quick start guide
+├── 📄 N8N_INTEGRATION.md         # n8n documentation
+├── 📄 DOCKER_SETUP.md            # Docker deployment guide
+├── 📄 CI_CD_GUIDE.md             # CI/CD pipeline documentation
+├── 📄 CONTRIBUTING.md            # Contributing guidelines
+├── 📄 FAQ.md                     # Frequently asked questions
+├── 📄 CHANGELOG.md               # Version history
+├── 📄 LICENSE                    # MIT License
+├── 📄 package.json               # Dependencies and scripts
+├── 📄 .env.example               # Environment variables template
+│
+├── 🚀 src/
+│   ├── 📄 index.js               # Main bot entry point
+│   ├── 📄 deploy-commands.js     # Slash commands deployment
+│   │
+│   ├── 📁 slashcommands/         # Slash commands
+│   │   ├── kick.js               # /kick command
+│   │   ├── ban.js                # /ban command
+│   │   ├── mute.js               # /mute command
+│   │   ├── warn.js               # /warn command
+│   │   └── help.js               # /help command
+│   │
+│   ├── 📁 commands/              # Legacy prefix commands
+│   │   └── moderation/
+│   │       ├── kick.js
+│   │       ├── ban.js
+│   │       ├── mute.js
+│   │       └── warn.js
+│   │
+│   ├── 📁 events/                # Discord event handlers
+│   │   ├── ready.js              # Bot startup
+│   │   ├── messageCreate.js      # Message & DM handling
+│   │   ├── interactionCreate.js  # Slash command handling
+│   │   └── error.js              # Error handling
+│   │
+│   ├── 📁 utils/                 # Utility modules
+│   │   ├── logger.js             # Winston logger
+│   │   ├── n8n-client.js         # n8n integration
+│   │   ├── openai-client.js      # OpenAI integration
+│   │   ├── permissions.js        # Role checking
+│   │   ├── error-handler.js      # Error utilities
+│   │   ├── rate-limiter.js       # Rate limiting
+│   │   └── message-splitter.js   # Message splitting for Discord
+│   │
+│   └── 📁 config/                # Configuration files
+│       ├── config.js             # Config manager
+│       ├── bot-statuses.js       # Bot activity statuses
+│       └── response-templates.js # Response templates
+│
+├── 📁 scripts/                   # Utility scripts
+│   ├── test-bot.sh               # Bot testing script
+│   ├── verify-dm-config.sh       # DM configuration validation
+│   └── create-release-package.sh # Release packaging
+│
+├── 📁 tests/                     # Test files
+│   └── rate-limiter.test.js      # Rate limiter tests
+│
+├── 📁 logs/                      # Log files (auto-generated)
+│   ├── combined.log              # All logs
+│   └── error.log                 # Error logs only
+│
+├── 📁 .github/                   # GitHub workflows
+│   └── workflows/
+│       ├── test.yml              # CI tests
+│       ├── release.yml           # Release automation
+│       ├── docker.yml            # Docker builds
+│       ├── codeql.yml            # Security scanning
+│       └── security.yml          # Dependency audits
+│
+├── 📄 Dockerfile                 # Docker image definition
+├── 📄 docker-compose.yml         # Docker compose config
+├── 📄 start.sh                   # Quick start script
+└── 📄 test-config.js             # Configuration validator
 ```
 
 ## 🔧 Customization
