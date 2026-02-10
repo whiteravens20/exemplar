@@ -5,7 +5,6 @@
 
 const config = require('../src/config/config');
 const N8NClient = require('../src/utils/n8n-client');
-const logger = require('../src/utils/logger');
 
 console.log('='.repeat(70));
 console.log('n8n !code Command Diagnostics');

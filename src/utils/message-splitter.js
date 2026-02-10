@@ -154,11 +154,9 @@ function splitLargeCodeBlock(codeBlock, maxLength) {
   
   // Extract opening ```language
   const firstLine = lines[0];
-  const lastLine = lines[lines.length - 1];
   const language = firstLine.replace('```', '').trim();
   
   let currentChunk = '```' + language + '\n';
-  const codeBlockOverhead = ('```' + language + '\n```').length;
   
   // Process lines between opening and closing ```
   for (let i = 1; i < lines.length - 1; i++) {
