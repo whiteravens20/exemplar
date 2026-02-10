@@ -3,6 +3,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Update npm to 11+ for security fixes (tar, glob, diff vulnerabilities)
+RUN npm install -g npm@latest
+
 # Copy package files
 COPY package*.json ./
 
@@ -13,6 +16,9 @@ RUN npm ci --only=production
 FROM node:22-alpine
 
 WORKDIR /app
+
+# Update npm to 11+ for security fixes
+RUN npm install -g npm@latest
 
 # Install dumb-init to handle signals properly
 RUN apk add --no-cache dumb-init
