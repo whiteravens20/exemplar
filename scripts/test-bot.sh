@@ -52,11 +52,11 @@ else
     ((TESTS_FAILED++))
 fi
 # Check npm version
-if [[ "$NPM_VERSION" =~ ^(10|[1-9][0-9]) ]]; then
-    echo -e "  Testing: npm 10+ installed... ${GREEN}✅${NC}"
+if [[ "$NPM_VERSION" =~ ^(1[1-9]|[2-9][0-9]|[1-9][0-9][0-9]) ]]; then
+    echo -e "  Testing: npm 11+ installed... ${GREEN}✅${NC}"
     ((TESTS_PASSED++))
 else
-    echo -e "  Testing: npm 10+ installed... ${RED}❌${NC}"
+    echo -e "  Testing: npm 11+ installed... ${RED}❌${NC}"
     ((TESTS_FAILED++))
 fi
 
@@ -116,7 +116,7 @@ echo -e "\n${BLUE}7️⃣ Checking package.json...${NC}"
 run_test "valid JSON" "node -e \"require('./package.json')\""
 run_test "main field set" "node -p \"require('./package.json').main\" | grep -q 'src/index.js'"
 run_test "Node.js 22+ required" "grep -q '\"node\": \">=22.0.0\"' package.json"
-run_test "npm 10+ required" "grep -q '\"npm\": \">=10.0.0\"' package.json"
+run_test "npm 11+ required" "grep -q '\"npm\": \">=11.0.0\"' package.json"
 
 # 8. Check scripts
 echo -e "\n${BLUE}8️⃣ Checking npm Scripts...${NC}"
