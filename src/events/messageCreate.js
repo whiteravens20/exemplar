@@ -202,12 +202,28 @@ module.exports = {
             hasData: !!result.data,
             dataType: typeof result.data,
             hasResponseField: result.data?.response !== undefined,
-            dataPreview: JSON.stringify(result.data).substring(0, 200)
+            dataKeys: result.data ? Object.keys(result.data) : [],
+            dataPreview: JSON.stringify(result.data).substring(0, 300)
           });
 
-          const response = result.data?.response || 'Twoja wiadomość została przetworzona, ale wystąpił problem z odpowiedzią.';
+          // Check if response field exists
+          if (!result.data?.response) {
+            logger.error('❌ n8n response missing "response" field', {
+              mode,
+              receivedData: JSON.stringify(result.data).substring(0, 500),
+              dataKeys: result.data ? Object.keys(result.data) : []
+            });
+            
+            await message.reply({
+              content: `❌ Błąd konfiguracji n8n workflow.\n\n**Problem:** Brak pola "response" w odpowiedzi.\n**Tryb:** ${mode}\n**Otrzymane dane:** ${JSON.stringify(Object.keys(result.data || {}))}\n\nSprawdź workflow n8n - node dla trybu "${mode}" powinien zwracać:\n\`\`\`json\n{ "response": "treść odpowiedzi" }\n\`\`\``
+            });
+            return;
+          }
+
+          const response = result.data.response;
           
           logger.info('Extracted response', {
+            mode,
             responseLength: response.length,
             responsePreview: response.substring(0, 100)
           });
