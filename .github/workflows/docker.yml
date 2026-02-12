@@ -12,9 +12,6 @@ on:
       - 'package-lock.json'
       - 'src/**'
       - '.dockerignore'
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
 
 permissions:
   contents: read
