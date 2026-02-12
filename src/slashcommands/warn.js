@@ -18,7 +18,6 @@ module.exports = {
       ephemeral: true
     });
 
-
     /* RESERVED FOR AUTOMATED BOT MODERATION
     
     This slash command will be used by the bot itself for automated moderation.
@@ -26,7 +25,5 @@ module.exports = {
     
     Implementation placeholder for future automated moderation system.
     */
-  }
-};
   }
 };

@@ -100,6 +100,19 @@ async function start() {
     await healthServer.start();
     
     // Start database cleanup job
+    cleanupJob.start();
+    
+    await registerCommands();
+    await client.login(config.config.discord.token);
+  } catch (error) {
+    logger.error('Failed to start bot', { error: error.message });
+    process.exit(1);
+  }
+}
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  logger.info('Shutting down bot...');
   
   // Stop cleanup job
   cleanupJob.stop();
@@ -120,19 +133,6 @@ process.on('SIGTERM', async () => {
   await db.close();
   await client.destroy();
   
-    
-    await registerCommands();
-    await client.login(config.config.discord.token);
-  } catch (error) {
-    logger.error('Failed to start bot', { error: error.message });
-    process.exit(1);
-  }
-}
-
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  logger.info('Shutting down bot...');
-  await client.destroy();
   process.exit(0);
 });
 

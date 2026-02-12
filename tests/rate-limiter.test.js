@@ -1,9 +1,22 @@
 #!/usr/bin/env node
 
 /**
- * Unit tests for RateLimiter
- * Run with: node tests/rate-limiter.test.js
+ * DEPRECATED: This test is for the legacy in-memory-only rate limiter
+ * 
+ * The rate limiter has been refactored to use database persistence.
+ * See tests/database.test.js for current rate limiter tests.
+ * 
+ * This file is kept for reference only.
  */
+
+console.log('\n⚠️  DEPRECATED TEST ⚠️');
+console.log('This test is for the legacy in-memory rate limiter.');
+console.log('The rate limiter has been refactored to use database persistence.');
+console.log('See tests/database.test.js for current tests.\n');
+console.log('✅ Skipping legacy tests - use `node tests/database.test.js` instead\n');
+process.exit(0);
+
+/* LEGACY CODE BELOW - KEPT FOR REFERENCE
 
 const RateLimiter = require('../src/utils/rate-limiter');
 
@@ -172,3 +185,5 @@ setTimeout(() => {
     process.exit(1);
   }
 }, 200);
+
+*/

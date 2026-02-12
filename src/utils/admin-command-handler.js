@@ -84,17 +84,15 @@ function formatStatsEmbed(stats, days) {
 
 /**
  * Handle admin commands
- * @param {string} command - Command name
  * @param {Message} message - Discord message object
- * @param {Array} args - Command arguments
  */
-async function handleAdminCommand(command, message, args = []) {
-  try {
-    const content = message.content.trim();
-    const parts = content.split(/\s+/);
-    const cmd = parts[0].toLowerCase();
-    const cmdArgs = parts.slice(1);
+async function handleAdminCommand(message) {
+  const content = message.content.trim();
+  const parts = content.split(/\s+/);
+  const cmd = parts[0].toLowerCase();
+  const cmdArgs = parts.slice(1);
 
+  try {
     logger.info('Admin command received', {
       userId: message.author.id,
       command: cmd,
@@ -301,7 +299,7 @@ async function handleAdminCommand(command, message, args = []) {
 
     // Handle admin commands
     switch (cmd) {
-      case '!warn':
+      case '!warn': {
         if (!db.isAvailable()) {
           await message.reply({
             content: '❌ Baza danych niedostępna. Ostrzeżenia nie mogą być zapisane.'
@@ -386,7 +384,7 @@ async function handleAdminCommand(command, message, args = []) {
 
         // Save warning to database
         const activeWarnings = await warningRepo.addWarning(
-          targetUser.id,**Komendy Admin:**\n• \`!warn <@user> [powód]\` - Wystaw ostrzeżenie użytkownikowi\n• \`!flushdb confirm\` - Wyczyść bazę danych\n• \`!stats [days]\` - Pokaż statystyki (domyślnie 7 dni)\n\n**Komendy Użytkownika:**
+          targetUser.id,
           targetUser.username,
           reason,
           message.author.id
@@ -425,8 +423,9 @@ async function handleAdminCommand(command, message, args = []) {
 
         await message.reply({ embeds: [embed] });
         break;
+      }
 
-      case '!flushdb':
+      case '!flushdb': {
         if (!db.isAvailable()) {
           await message.reply({
             content: '❌ Baza danych niedostępna. Nie można wykonać operacji.'
@@ -464,8 +463,9 @@ async function handleAdminCommand(command, message, args = []) {
           adminUsername: message.author.username
         });
         break;
+      }
 
-      case '!stats':
+      case '!stats': {
         if (!db.isAvailable()) {
           await message.reply({
             content: '❌ Baza danych niedostępna. Nie można pobrać statystyk.'
@@ -491,7 +491,7 @@ async function handleAdminCommand(command, message, args = []) {
           return;
         }
 
-        const embed = formatStatsEmbed(stats, days);
+        const statsEmbed = formatStatsEmbed(stats, days);
 
         await analyticsRepo.logCommand(
           message.author.id,
@@ -501,13 +501,14 @@ async function handleAdminCommand(command, message, args = []) {
           true
         ).catch(err => logger.error('Failed to log command', { error: err.message }));
 
-        await message.reply({ embeds: [embed] });
+        await message.reply({ embeds: [statsEmbed] });
 
         logger.info('Admin viewed stats', {
           adminId: message.author.id,
           days
         });
         break;
+      }
 
       default:
         await message.reply({
@@ -518,7 +519,7 @@ async function handleAdminCommand(command, message, args = []) {
     logger.error('Error handling admin command', {
       error: error.message,
       stack: error.stack,
-      command,
+      command: cmd,
       userId: message.author.id
     });
 

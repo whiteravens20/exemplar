@@ -192,9 +192,9 @@ module.exports = {
           return;
         }
 
-        // Check for admin commands (!flushdb, !flushmemory, !stats, !warn)
+        // Check for admin commands (!flushdb, !flushmemory, !stats, !warn, !warnings)
         if (sanitizedContent.startsWith('!flush') || sanitizedContent.startsWith('!stats') || sanitizedContent.startsWith('!warn')) {
-          await handleAdminCommand(sanitizedContent, message);
+          await handleAdminCommand(message);
           return;
         }
 

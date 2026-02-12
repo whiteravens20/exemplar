@@ -149,7 +149,6 @@ class RateLimitRepository {
     }
 
     try {
-      const cutoffTime = Date.now() - windowMs;
       const result = await db.query(
         `DELETE FROM rate_limits
          WHERE updated_at < NOW() - INTERVAL '${windowMs / 1000} seconds'
