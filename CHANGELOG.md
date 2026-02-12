@@ -18,6 +18,9 @@ and project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Removed
+- Removed `/help` slash command - now available only as `!help` prefix command in DM
+
 ### Changed
 - Removed `/warnings` slash command - now available only as `!warnings` prefix command
 - `!warnings` accessible to all users (view own warnings) and admins (view all or specific user)

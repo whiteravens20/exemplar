@@ -172,8 +172,12 @@ module.exports = {
                 value: 'Użyj `!code` przed swoją wiadomością, aby przełączyć na tryb pomocy programistycznej.\n**Przykład:** `!code napisz funkcję do sortowania tablicy`'
               },
               {
-                name: '📋 Dostępne komendy',
-                value: '• `!help` - Pokazuje tę wiadomość pomocy\n• `!code <pytanie>` - Tryb programistyczny\n• `!flushmemory` - Wyczyść pamięć konwersacji\n• `!warn <@user> [powód]` - Wystaw ostrzeżenie (admin)\n• `!stats [days]` - Statystyki bota (admin)\n• `!flushdb confirm` - Wyczyść bazę danych (admin)'
+                name: '📋 Dostępne komendy użytkownika',
+                value: '• `!help` - Pokazuje tę wiadomość pomocy\n• `!code <pytanie>` - Tryb programistyczny\n• `!flushmemory` - Wyczyść pamięć konwersacji\n• `!warnings` - Pokaż swoje ostrzeżenia'
+              },
+              {
+                name: '🔐 Komendy administratora',
+                value: '• `!warn <@user> [powód]` - Wystaw ostrzeżenie\n• `!warnings [@user]` - Pokaż wszystkie ostrzeżenia\n• `!stats [days]` - Statystyki bota (domyślnie 7 dni)\n• `!flushdb confirm` - Wyczyść bazę danych'
               },
               {
                 name: '📌 Funkcje',

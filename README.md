@@ -31,13 +31,13 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 **Slash Commands (reserved for bot automation):**
 - `/warn <user> [reason]` - Reserved for automated moderation
 - `/kick`, `/ban`, `/mute` - Reserved for future automatic moderation
-- `/help` - Available only in DM, shows help
 
 **Prefix Commands (for admins/moderators):**
 - `!warn <@user> [reason]` - Issue warning to user (DM only, admin/moderator)
 - `!warnings [@user]` - View all warnings or specific user (admin only)
 
 **User Commands (DM only):**
+- `!help` - Show help message with available commands
 - `!warnings` - View your active warnings
 - `!flushmemory` - Clear your conversation history
 
@@ -237,8 +237,7 @@ They will be used by the bot automatically in the future for:
 - Rule violations
 - Other automated moderation tasks
 
-**Available commands:**
-- `/help` - Shows help message (only in DM)
+**Note:** Slash commands are reserved for automated bot actions, not manual use.
 ```
 
 ## 🔐 Environment Variables
@@ -283,8 +282,7 @@ discord-ai-bot/
 │   │   ├── kick.js               # /kick command
 │   │   ├── ban.js                # /ban command
 │   │   ├── mute.js               # /mute command
-│   │   ├── warn.js               # /warn command
-│   │   └── help.js               # /help command
+│   │   └── warn.js               # /warn command
 │   │
 │   ├── 📁 commands/              # Legacy prefix commands
 │   │   └── moderation/
