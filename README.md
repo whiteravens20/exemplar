@@ -17,12 +17,26 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 - AI Assistant available only for specific roles
 - Other users receive hardcoded response
 - **Coding Mode:** Command `!code` switches to coding-specialized LLM
+- **Conversation Memory:** Last 20 messages per user with 24H retention
 
-### 🛡️ Moderation Commands (Slash Commands)
-- `/kick`, `/ban`, `/mute`, `/warn` - **Not available manually**
-- Reserved for future automatic moderation
-- Bot will use them automatically when detecting violations
+### 💾 Persistent Storage (PostgreSQL)
+- **Conversation History:** Last 20 messages per user, 24H retention
+- **Rate Limiting:** Persistent across bot restarts
+- **User Warnings:** 30-day retention per warning
+- **Usage Analytics:** 90-day retention with admin statistics
+- **Graceful Degradation:** Bot works with in-memory fallback if DB unavailable
+- **Health Monitoring:** `/health` endpoint for orchestration
+
+### 👮 Moderation Commands
+- `/warn <user> [reason]` - Issue warning to user (stored in database)
+- `/warnings` - View your active warnings
+- `/kick`, `/ban`, `/mute` - Reserved for future automatic moderation
 - `/help` - Available only in DM, shows help
+
+### 🔐 Admin Commands (DM only)
+- `!stats [days]` - View bot usage statistics (default: 7 days)
+- `!flushdb confirm` - Clear all database data (except users/warnings)
+- `!flushmemory` - Clear your conversation history (available to all users)
 
 ### 🔧 Error Handling
 - Automatic detection of n8n availability issues
@@ -35,7 +49,8 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 
 ### 1. Requirements
 - Node.js 22+
-- npm 10+ or yarn
+- npm 11+ or yarn
+- PostgreSQL 14+ (or use included Docker Compose)
 
 ### 2. Clone and Install
 ```bash
@@ -61,6 +76,18 @@ DISCORD_SERVER_ID=your_server_id
 N8N_WORKFLOW_URL=https://your-n8n.com/webhook/workflow
 N8N_API_KEY=your_api_key
 
+# Database (PostgreSQL)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=discord_bot
+DB_USER=bot_user
+DB_PASSWORD=your_secure_password
+# DB_SSL=false  # Optional: enable SSL
+# DB_MAX_CONNECTIONS=10  # Optional: connection pool size
+
+# Health Check
+HEALTH_CHECK_PORT=3000
+
 # Bot Configuration
 BOT_PREFIX=!
 HARDCODED_MENTION_RESPONSE=Hi! I'm an AI Assistant. Send me a DM to chat with me.
@@ -73,7 +100,33 @@ RESTRICTED_RESPONSE=You don't have permission to use this feature.
 NODE_ENV=production
 ```
 
-### 4. Running
+### 4. Database Setup
+
+**Using Docker Compose (Recommended):**
+```bash
+# Start PostgreSQL
+docker-compose up -d postgres
+
+# Run migrations
+npm run migrate:up
+
+# Verify
+curl http://localhost:3000/health
+```
+
+**Manual PostgreSQL Setup:**
+```bash
+# Create database
+createdb discord_bot
+createuser bot_user
+
+# Run migrations
+npm run migrate:up
+```
+
+See [DATABASE.md](docs/DATABASE.md) for detailed database documentation.
+
+### 5. Running
 
 **Production:**
 ```bash
@@ -85,7 +138,7 @@ npm start
 npm run dev
 ```
 
-### 5. Running in Docker
+### 6. Running in Docker
 
 For detailed Docker setup instructions, see [DOCKER_SETUP.md](docs/DOCKER_SETUP.md).
 

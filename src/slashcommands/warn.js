@@ -1,4 +1,8 @@
 const { SlashCommandBuilder } = require('discord.js');
+const { isModeratorOrAdmin } = require('../utils/permissions');
+const logger = require('../utils/logger');
+const warningRepo = require('../db/repositories/warning-repository');
+const analyticsRepo = require('../db/repositories/analytics-repository');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -12,13 +16,6 @@ module.exports = {
     ),
   
   async execute(interaction) {
-    // Block manual use - this command is reserved for automated moderation
-    return interaction.reply({
-      content: '❌ Ta komenda jest niedostępna do ręcznego użycia. Bot używa jej automatycznie w ramach moderacji.',
-      ephemeral: true
-    });
-
-    /* RESERVED FOR AUTOMATED USE
     // Must be used in a guild (server), not in DMs
     if (!interaction.guild) {
       return interaction.reply({
@@ -83,20 +80,55 @@ module.exports = {
         });
       }
 
-      logger.info(`User warned: ${target.username}`, { userId: target.id, reason, dmSent });
+      // Save warning to database
+      const activeWarnings = await warningRepo.addWarning(
+        target.id,
+        target.username,
+        reason,
+        interaction.user.id
+      );
+
+      // Log command usage
+      await analyticsRepo.logCommand(
+        interaction.user.id,
+        interaction.user.username,
+        'warn',
+        false,
+        true
+      ).catch(err => logger.error('Failed to log command', { error: err.message }));
+
+      logger.info(`User warned: ${target.username}`, { 
+        userId: target.id, 
+        reason, 
+        dmSent,
+        activeWarnings 
+      });
       
       const dmStatus = dmSent ? '' : ' (DM nie doręczono - użytkownik może mieć wyłączone wiadomości prywatne)';
+      const warningStatus = activeWarnings > 0 ? `\n**Aktywne ostrzeżenia:** ${activeWarnings}` : '';
+      
       await interaction.reply({
-        content: `⚠️ **${target.username}** został ostrzeony${dmStatus}.\n**Powód:** ${reason}`,
+        content: `⚠️ **${target.username}** został ostrzeony${dmStatus}.\n**Powód:** ${reason}${warningStatus}`,
         ephemeral: false
       });
     } catch (error) {
       logger.error('Error warning user', { error: error.message, userId: target.id });
+      
+      // Log failed command
+      await analyticsRepo.logCommand(
+        interaction.user.id,
+        interaction.user.username,
+        'warn',
+        false,
+        false
+      ).catch(err => logger.error('Failed to log command', { error: err.message }));
+      
       await interaction.reply({
         content: `❌ Nie udało się ostrzec użytkownika: ${error.message}`,
         ephemeral: true
       });
     }
-    */
+  }
+};
   }
 };

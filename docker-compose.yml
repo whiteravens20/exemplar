@@ -1,4 +1,42 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: discord-bot-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-discord_bot}
+      POSTGRES_USER: ${DB_USER:-bot_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password required}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - bot-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bot_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=postgres"
+
   discord-bot:
     build:
       context: .
@@ -9,11 +47,23 @@ services:
       - .env
     environment:
       NODE_ENV: production
+      DB_HOST: postgres
     volumes:
       # Optional: Mount logs directory to persist logs
       - ./logs:/app/logs
     networks:
       - bot-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${HEALTH_CHECK_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     # Resource limits
     deploy:
       resources:
@@ -42,3 +92,6 @@ services:
 networks:
   bot-network:
     driver: bridge
+
+volumes:
+  postgres_data:

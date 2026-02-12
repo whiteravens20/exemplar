@@ -12,7 +12,10 @@
     "test-config": "node test-config.js",
     "deploy-commands": "node src/deploy-commands.js",
     "release-package": "bash scripts/create-release-package.sh",
-    "lint": "eslint src --fix"
+    "lint": "eslint src --fix",
+    "migrate:up": "node scripts/migrate.js up",
+    "migrate:down": "node scripts/migrate.js down",
+    "db:seed": "bash scripts/seed-test-data.sh"
   },
   "keywords": [
     "discord",
@@ -27,6 +30,8 @@
     "axios": "^1.13.5",
     "discord.js": "^14.25.1",
     "dotenv": "^17.2.4",
+    "express": "^4.19.2",
+    "pg": "^8.11.3",
     "undici": "^7.21.0",
     "winston": "^3.19.0"
   },

@@ -20,8 +20,8 @@ WORKDIR /app
 # Update npm to 11+ for security fixes
 RUN npm install -g npm@latest
 
-# Install dumb-init to handle signals properly
-RUN apk add --no-cache dumb-init
+# Install dumb-init and wget for health checks
+RUN apk add --no-cache dumb-init wget
 
 # Copy built node_modules from builder
 COPY --from=builder /app/node_modules ./node_modules
@@ -29,6 +29,8 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy application files
 COPY package*.json ./
 COPY src/ ./src/
+COPY migrations/ ./migrations/
+COPY scripts/ ./scripts/
 COPY .env.example ./
 
 # Check if .env exists, if not create it from .env.example

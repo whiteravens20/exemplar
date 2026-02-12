@@ -18,7 +18,57 @@ and project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+- 💾 **PostgreSQL Database Integration** - Persistent storage for bot data
+  - Conversation history (20 messages per user, 24H retention)
+  - Rate limiting persistence across restarts
+  - User warnings with 30-day retention
+  - Usage analytics with 90-day retention
+  - Graceful degradation - bot works with in-memory fallback if DB unavailable
+- 📊 **Analytics System** - Message and command usage tracking
+  - Admin command `!stats [days]` for usage statistics
+  - Tracks message types, response times, and user activity
+  - Peak hours analysis and top users/commands reporting
+- 🔐 **Admin Commands** - New prefix commands in DM
+  - `!stats [days]` - View bot statistics (admin only)
+  - `!flushdb confirm` - Clear database (admin only)
+  - `!flushmemory` - Clear conversation history (all users)
+- 🏥 **Health Check Endpoint** - HTTP health monitoring
+  - `/health` - Overall health status with DB connectivity
+  - `/alive` - Liveness probe for orchestration
+  - `/ready` - Readiness probe for load balancers
+- 🧹 **Automatic Data Cleanup** - Hourly background jobs
+  - Removes conversations older than 24H
+  - Removes expired warnings (30D)
+  - Removes analytics older than 90D
+- 📝 **Conversation Context** - AI has access to recent conversation history
+  - Last 20 messages passed to n8n workflows
+  - Enables context-aware AI responses
+- ⚠️ **Active Warning System** - Slash command `/warn` now functional
+  - Stores warnings in database with automatic expiry
+  - `/warnings` command to view active warnings
+  - DM notifications for warned users
+- 🐳 **PostgreSQL Docker Service** - Integrated database in docker-compose
+  - PostgreSQL 16 Alpine image
+  - Persistent volume storage
+  - Health checks and automatic restarts
+- 📚 **Comprehensive Documentation** - New DATABASE.md guide
+  - Database schema and architecture
+  - Repository pattern examples
+  - n8n integration with database
+  - Backup and recovery procedures
+  - Performance optimization tips
+
+### Changed
+- 🔄 **Rate Limiter** - Now uses database with in-memory fallback
+  - Persistent across bot restarts
+  - Supports multiple bot instances
+- 🧪 **Test Suite** - Added database integration tests
+- 📦 **Dependencies** - Added `pg` (PostgreSQL driver) and `express` (health endpoint)
+
+### Fixed
+- 🐛 Fixed rate limiting not persisting across restarts
+- 🐛 Fixed conversation context loss on bot restart
 
 ---
 
