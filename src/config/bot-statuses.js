@@ -2,7 +2,7 @@ const { ActivityType } = require('discord.js');
 
 const statuses = [
   {
-    name: 'DM /help dla komend',
+    name: 'DM !help dla komend',
     type: ActivityType.Listening
   },
   {
@@ -18,7 +18,7 @@ const statuses = [
     type: ActivityType.Watching
   },
   {
-    name: 'monitoruję wiadomości w imperium',
+    name: 'monitoruję wiadomości w Imperium',
     type: ActivityType.Watching
   }
 ];
