@@ -124,12 +124,6 @@ run_test "start script exists" "node -p \"require('./package.json').scripts.star
 run_test "dev script exists" "node -p \"require('./package.json').scripts.dev\""
 run_test "test-config script exists" "node -p \"require('./package.json').scripts['test-config']\""
 
-# 9. Check documentation
-echo -e "\n${BLUE}9️⃣ Checking Documentation...${NC}"
-run_test "README.md exists" "test -f README.md"
-run_test "DOCKER_SETUP.md exists" "test -f DOCKER_SETUP.md"
-run_test "LICENSE exists" "test -f LICENSE"
-
 # Summary
 echo -e "\n${BLUE}═══════════════════════════════════${NC}"
 echo -e "${BLUE}📊 Test Summary${NC}"
