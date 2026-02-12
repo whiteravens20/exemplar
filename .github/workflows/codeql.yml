@@ -3,8 +3,18 @@ name: CodeQL Security Scan
 on:
   push:
     branches: [ main, dev ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
   pull_request:
     branches: [ main, dev ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
   schedule:
     # Weekly on Monday at 00:00 UTC
     - cron: '0 0 * * 1'

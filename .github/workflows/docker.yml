@@ -9,7 +9,12 @@ on:
     paths:
       - 'Dockerfile'
       - 'package.json'
+      - 'package-lock.json'
       - 'src/**'
+      - '.dockerignore'
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 permissions:
   contents: read
