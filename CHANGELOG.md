@@ -205,6 +205,7 @@ npm run deploy-commands # Deploy slash commands
 
 ### v2.2.0 (Planned Q3 2026)
 - [ ] AI-driven automated moderation (activate existing commands)
+- [ ] Manual moderation commands with prefix ```!```
 - [ ] Content filtering and sentiment analysis
 - [ ] Multi-language support (i18n)
 - [ ] Advanced logging dashboard (web interface)
