@@ -28,14 +28,19 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 - **Health Monitoring:** `/health` endpoint for orchestration
 
 ### 👮 Moderation Commands
-- `/warn <user> [reason]` - Issue warning to user (stored in database)
+**Slash Commands (reserved for bot automation):**
+- `/warn <user> [reason]` - Reserved for automated moderation
 - `/warnings` - View your active warnings
 - `/kick`, `/ban`, `/mute` - Reserved for future automatic moderation
 - `/help` - Available only in DM, shows help
 
+**Prefix Commands (for admins/moderators):**
+- `!warn <@user> [reason]` - Issue warning to user (DM only, admin/moderator)
+
 ### 🔐 Admin Commands (DM only)
-- `!stats [days]` - View bot usage statistics (default: 7 days)
-- `!flushdb confirm` - Clear all database data (except users/warnings)
+- `!warn <@user> [reason]` - Issue warning to user (moderator/admin)
+- `!stats [days]` - View bot usage statistics (default: 7 days, admin)
+- `!flushdb confirm` - Clear all database data (except users/warnings, admin)
 - `!flushmemory` - Clear your conversation history (available to all users)
 
 ### 🔧 Error Handling

@@ -44,10 +44,12 @@ and project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - 📝 **Conversation Context** - AI has access to recent conversation history
   - Last 20 messages passed to n8n workflows
   - Enables context-aware AI responses
-- ⚠️ **Active Warning System** - Slash command `/warn` now functional
-  - Stores warnings in database with automatic expiry
-  - `/warnings` command to view active warnings
+- ⚠️ **Active Warning System** - Admin prefix command `!warn` for manual moderation
+  - `!warn <@user> [reason]` in DM for admins/moderators
+  - Stores warnings in database with automatic expiry (30D)
+  - `/warnings` slash command to view active warnings
   - DM notifications for warned users
+  - `/warn` slash command reserved for bot automation
 - 🐳 **PostgreSQL Docker Service** - Integrated database in docker-compose
   - PostgreSQL 16 Alpine image
   - Persistent volume storage

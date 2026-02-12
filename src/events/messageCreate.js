@@ -173,7 +173,7 @@ module.exports = {
               },
               {
                 name: '📋 Dostępne komendy',
-                value: '• `!help` - Pokazuje tę wiadomość pomocy\n• `!code <pytanie>` - Tryb programistyczny\n• `!flushmemory` - Wyczyść pamięć konwersacji\n• `!stats [days]` - Statystyki bota (tylko admin)\n• `!flushdb confirm` - Wyczyść bazę danych (tylko admin)'
+                value: '• `!help` - Pokazuje tę wiadomość pomocy\n• `!code <pytanie>` - Tryb programistyczny\n• `!flushmemory` - Wyczyść pamięć konwersacji\n• `!warn <@user> [powód]` - Wystaw ostrzeżenie (admin)\n• `!stats [days]` - Statystyki bota (admin)\n• `!flushdb confirm` - Wyczyść bazę danych (admin)'
               },
               {
                 name: '📌 Funkcje',
@@ -192,8 +192,8 @@ module.exports = {
           return;
         }
 
-        // Check for admin commands (!flushdb, !flushmemory, !stats)
-        if (sanitizedContent.startsWith('!flush') || sanitizedContent.startsWith('!stats')) {
+        // Check for admin commands (!flushdb, !flushmemory, !stats, !warn)
+        if (sanitizedContent.startsWith('!flush') || sanitizedContent.startsWith('!stats') || sanitizedContent.startsWith('!warn')) {
           await handleAdminCommand(sanitizedContent, message);
           return;
         }

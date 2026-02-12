@@ -2,6 +2,7 @@ const logger = require('./logger');
 const { isModeratorOrAdmin } = require('./permissions');
 const conversationRepo = require('../db/repositories/conversation-repository');
 const analyticsRepo = require('../db/repositories/analytics-repository');
+const warningRepo = require('../db/repositories/warning-repository');
 const db = require('../db/connection');
 const { EmbedBuilder } = require('discord.js');
 
@@ -166,6 +167,131 @@ async function handleAdminCommand(command, message, args = []) {
 
     // Handle admin commands
     switch (cmd) {
+      case '!warn':
+        if (!db.isAvailable()) {
+          await message.reply({
+            content: '❌ Baza danych niedostępna. Ostrzeżenia nie mogą być zapisane.'
+          });
+          return;
+        }
+
+        // Parse command: !warn @user reason or !warn userID reason
+        const warnArgs = cmdArgs.join(' ').trim();
+        let targetId = null;
+        let reason = 'Nie podano powodu';
+
+        // Try to extract user mention
+        const mentionMatch = warnArgs.match(/^<@!?(\d+)>\s*(.*)/);
+        if (mentionMatch) {
+          targetId = mentionMatch[1];
+          reason = mentionMatch[2] || reason;
+        } else {
+          // Try to parse as userID followed by reason
+          const parts = warnArgs.split(/\s+/);
+          if (parts.length > 0 && /^\d+$/.test(parts[0])) {
+            targetId = parts[0];
+            reason = parts.slice(1).join(' ') || reason;
+          }
+        }
+
+        if (!targetId) {
+          await message.reply({
+            content: '❌ **Użycie:** `!warn <@user> [powód]` lub `!warn <userID> [powód]`\n\n**Przykład:**\n```\n!warn @JanKowalski Spam w czacie\n!warn 123456789012345678 Niewłaściwe zachowanie\n```'
+          });
+          return;
+        }
+
+        // Try to fetch the user
+        let targetUser;
+        try {
+          targetUser = await message.client.users.fetch(targetId);
+        } catch (error) {
+          await message.reply({
+            content: `❌ Nie można znaleźć użytkownika o ID: ${targetId}`
+          });
+          logger.warn('User not found for warn command', { targetId, error: error.message });
+          return;
+        }
+
+        // Check if trying to warn bot
+        if (targetUser.bot) {
+          await message.reply({
+            content: '❌ Nie można ostrzec bota.'
+          });
+          return;
+        }
+
+        // Try to send DM to the user
+        let dmSent = false;
+        try {
+          const dm = await targetUser.createDM();
+          await dm.send({
+            embeds: [{
+              color: 0xFFAA00,
+              title: '⚠️ Ostrzeżenie',
+              description: 'Otrzymałeś ostrzeżenie od moderacji',
+              fields: [
+                {
+                  name: 'Powód',
+                  value: reason
+                }
+              ],
+              footer: {
+                text: 'Kontynuowanie niewłaściwego zachowania może skutkować dalszymi sankcjami'
+              },
+              timestamp: new Date()
+            }]
+          });
+          dmSent = true;
+        } catch (dmError) {
+          logger.warn('Could not send DM to warned user', {
+            userId: targetId,
+            error: dmError.message
+          });
+        }
+
+        // Save warning to database
+        const activeWarnings = await warningRepo.addWarning(
+          targetUser.id,**Komendy Admin:**\n• \`!warn <@user> [powód]\` - Wystaw ostrzeżenie użytkownikowi\n• \`!flushdb confirm\` - Wyczyść bazę danych\n• \`!stats [days]\` - Pokaż statystyki (domyślnie 7 dni)\n\n**Komendy Użytkownika:**
+          targetUser.username,
+          reason,
+          message.author.id
+        );
+
+        // Log admin command
+        await analyticsRepo.logCommand(
+          message.author.id,
+          message.author.username,
+          'warn',
+          true,
+          true
+        ).catch(err => logger.error('Failed to log command', { error: err.message }));
+
+        logger.info('User warned via admin command', {
+          targetId: targetUser.id,
+          targetUsername: targetUser.username,
+          reason,
+          issuedBy: message.author.id,
+          dmSent,
+          activeWarnings
+        });
+
+        const dmStatus = dmSent ? '✅' : '⚠️ (DM nie doręczono)';
+        const embed = new EmbedBuilder()
+          .setColor(0xFFAA00)
+          .setTitle('⚠️ Ostrzeżenie Wydane')
+          .addFields(
+            { name: 'Użytkownik', value: `${targetUser.username} (${targetUser.id})`, inline: true },
+            { name: 'Aktywne ostrzeżenia', value: `${activeWarnings}`, inline: true },
+            { name: 'DM Status', value: dmStatus, inline: true },
+            { name: 'Powód', value: reason }
+          )
+          .setTimestamp()
+          .setFooter({ text: `Wydane przez ${message.author.username}` });
+
+        await message.reply({ embeds: [embed] });
+        break;
+
       case '!flushdb':
         if (!db.isAvailable()) {
           await message.reply({
