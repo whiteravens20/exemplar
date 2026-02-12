@@ -390,4 +390,4 @@ For issues or questions:
 1. Check [FAQ.md](FAQ.md)
 2. Review [N8N_INTEGRATION.md](N8N_INTEGRATION.md)
 3. Check logs: `docker-compose logs discord-bot`
-4. See [CONTRIBUTING.md](CONTRIBUTING.md) for support options
+4. See [CONTRIBUTING.md](../CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) for support options
