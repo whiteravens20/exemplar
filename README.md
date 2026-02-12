@@ -87,7 +87,7 @@ npm run dev
 
 ### 5. Running in Docker
 
-For detailed Docker setup instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
+For detailed Docker setup instructions, see [DOCKER_SETUP.md](docs/DOCKER_SETUP.md).
 
 **Quick Start with Docker Compose:**
 ```bash
@@ -196,17 +196,22 @@ They will be used by the bot automatically in the future for:
 
 discord-ai-bot/
 ├── 📄 README.md                  # Main documentation
-├── 📄 SETUP.md                   # Configuration instructions
-├── 📄 QUICKSTART.md              # Quick start guide
-├── 📄 N8N_INTEGRATION.md         # n8n documentation
-├── 📄 DOCKER_SETUP.md            # Docker deployment guide
-├── 📄 CI_CD_GUIDE.md             # CI/CD pipeline documentation
-├── 📄 CONTRIBUTING.md            # Contributing guidelines
-├── 📄 FAQ.md                     # Frequently asked questions
 ├── 📄 CHANGELOG.md               # Version history
+├── 📄 CONTRIBUTING.md            # Contributing guidelines
+├── 📄 CODE_OF_CONDUCT.md         # Community guidelines
+├── 📄 SECURITY.md                # Security policy
 ├── 📄 LICENSE                    # MIT License
 ├── 📄 package.json               # Dependencies and scripts
 ├── 📄 .env.example               # Environment variables template
+├── 📁 docs/                      # Documentation
+│   ├── 📄 SETUP.md               # Configuration instructions
+│   ├── 📄 QUICKSTART.md          # Quick start guide
+│   ├── 📄 N8N_INTEGRATION.md     # n8n documentation
+│   ├── 📄 DOCKER_SETUP.md        # Docker deployment guide
+│   ├── 📄 CI_CD_GUIDE.md         # CI/CD pipeline documentation
+│   ├── 📄 FAQ.md                 # Frequently asked questions
+│   ├── 📄 PROJECT_STRUCTURE.md   # Detailed code structure
+│   └── 📄 DEPLOYMENT_CHECKLIST.md # Production deployment guide
 │
 ├── 🚀 src/
 │   ├── 📄 index.js               # Main bot entry point
@@ -323,24 +328,40 @@ git push origin main
 # 4. Push to ghcr.io
 ```
 
-For complete CI/CD documentation, see [CI_CD_GUIDE.md](CI_CD_GUIDE.md).
+For complete CI/CD documentation, see [CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md).
 
 ## 📚 Documentation
 
 | Document | Description |
 |----------|-------------|
-| [SETUP.md](SETUP.md) | Complete setup guide (Discord, n8n, environment variables) |
-| [QUICKSTART.md](QUICKSTART.md) | Quick start guide for getting bot running |
-| [USAGE_GUIDE.md](USAGE_GUIDE.md) | User guide and commands reference |
-| [N8N_INTEGRATION.md](N8N_INTEGRATION.md) | n8n workflow integration details |
-| [ERROR_HANDLING.md](ERROR_HANDLING.md) | Error handling, debugging, and troubleshooting |
-| [DOCKER_SETUP.md](DOCKER_SETUP.md) | Docker deployment guide |
-| [CI_CD_GUIDE.md](CI_CD_GUIDE.md) | CI/CD pipeline documentation |
-| [FAQ.md](FAQ.md) | Frequently asked questions |
+| [SETUP.md](docs/SETUP.md) | Complete setup guide (Discord, n8n, environment variables) |
+| [QUICKSTART.md](docs/QUICKSTART.md) | Quick start guide for getting bot running |
+| [USAGE_GUIDE.md](docs/USAGE_GUIDE.md) | User guide and commands reference |
+| [N8N_INTEGRATION.md](docs/N8N_INTEGRATION.md) | n8n workflow integration details |
+| [ERROR_HANDLING.md](docs/ERROR_HANDLING.md) | Error handling, debugging, and troubleshooting |
+| [DOCKER_SETUP.md](docs/DOCKER_SETUP.md) | Docker deployment guide |
+| [CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md) | CI/CD pipeline documentation |
+| [FAQ.md](docs/FAQ.md) | Frequently asked questions |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to this project |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community guidelines and standards |
+| [SECURITY.md](SECURITY.md) | Security policy and vulnerability reporting |
 
 ## 🤝 Contributing
 
-Pull requests welcome!
+We'd love your help making this project better! 🌟
+
+Whether you're fixing bugs 🐛, adding features ✨, or improving docs 📚 - all contributions are welcome! Check out our [Contributing Guide](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) to get started.
+
+**Security:** Found a vulnerability? Please report it responsibly via our [Security Policy](SECURITY.md). 🔒
+
+**Quick Start for Contributors:**
+1. 🍴 Fork the repository
+2. 🌿 Create a feature branch
+3. 💻 Make your changes
+4. ✅ Test thoroughly
+5. 🚀 Submit a pull request
+
+Have questions? Open an issue or start a discussion - we're here to help! 💬
 
 ## 📄 License
 
