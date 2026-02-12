@@ -183,7 +183,7 @@ No unreleased changes.
 - Docker support
 
 ### Configuration
-See [SETUP.md](SETUP.md) for configuration details.
+See [SETUP.md](docs/SETUP.md) for configuration details.
 
 ### Scripts
 ```bash
@@ -198,11 +198,10 @@ npm run deploy-commands # Deploy slash commands
 ## Future Roadmap
 
 ### v2.1.0 (Next Release - Planned Q2 2026)
-- [ ] Conversation history tracking with context management
-- [ ] Persistent rate limit storage (Redis)
-- [ ] Advanced message analytics and usage statistics
-- [ ] Custom AI prompt templates per user
-- [ ] Conversation export functionality
+- [ ] Database integration for persistent storage
+- [ ] Persistent rate limit and moderation storage
+- [ ] Message analytics and usage statistics
+- [ ] Reactions based commands
 
 ### v2.2.0 (Planned Q3 2026)
 - [ ] AI-driven automated moderation (activate existing commands)
@@ -212,12 +211,10 @@ npm run deploy-commands # Deploy slash commands
 - [ ] User feedback and rating system
 
 ### v3.0.0 (Vision - 2027)
-- [ ] Database integration (MongoDB/PostgreSQL) for persistent storage
 - [ ] Multi-server/multi-bot support
 - [ ] Web dashboard for bot management
 - [ ] Plugin system for extensibility
 - [ ] Scheduled messages and reminders
-- [ ] Mobile app integration
 - [ ] Voice channel AI integration
 - [ ] Advanced role templates and permissions
 
@@ -269,11 +266,13 @@ npm run deploy-commands # Deploy slash commands
 
 **IMPORTANT:** Don't publish security issues publicly!
 
-For security vulnerabilities, please:
-1. **Email:** Create issue with label `security` (private repository)
-2. **Response Time:** We aim to respond within 48 hours
-3. **Fix Timeline:** Critical vulnerabilities patched within 7 days
-4. **Credit:** Security researchers will be credited in release notes
+For detailed information on reporting security vulnerabilities and our security practices, please see our [SECURITY.md](SECURITY.md).
+
+**Quick summary:**
+1. **Report:** Use GitHub Security Advisory or email maintainers privately
+2. **Response Time:** We aim to respond within 24-48 hours depending on severity
+3. **Fix Timeline:** Critical vulnerabilities patched within 1-3 days
+4. **Credit:** Security researchers will be credited in release notes and Security Hall of Fame
 
 ### Security Audit History
 - **2026-02-09**: v2.0.0 security audit completed
@@ -359,7 +358,7 @@ npm start
 - Add mode routing: check `$json.mode` field
 - Route "code" to specialized LLM
 - Route "chat" to general LLM
-- See: [N8N_INTEGRATION.md](N8N_INTEGRATION.md)
+- See: [N8N_INTEGRATION.md](docs/N8N_INTEGRATION.md)
 
 #### Configuration Changes
 - No breaking environment variable changes
@@ -482,8 +481,8 @@ ps aux | grep node
 - Keep logs from previous version
 
 ### Getting Help
-- Check [FAQ.md](FAQ.md) for common questions
-- Review [USAGE_GUIDE.md](USAGE_GUIDE.md) for detailed usage
+- Check [FAQ.md](docs/FAQ.md) for common questions
+- Review [USAGE_GUIDE.md](docs/USAGE_GUIDE.md) for detailed usage
 - Check GitHub Issues for known problems
 - Create new issue with detailed logs if needed
 
