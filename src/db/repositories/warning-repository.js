@@ -97,13 +97,13 @@ class WarningRepository {
 
     try {
       const query = includeExpired
-        ? `SELECT w.*, u.username as issued_by_username
+        ? `SELECT w.*, u.username as issued_by_username, u.discord_id as user_discord_id
            FROM warnings w
            JOIN users u ON u.id = w.user_id
            LEFT JOIN users issuer ON issuer.discord_id = w.issued_by
            WHERE u.discord_id = $1
            ORDER BY w.issued_at DESC`
-        : `SELECT w.*, u.username as issued_by_username
+        : `SELECT w.*, u.username as issued_by_username, u.discord_id as user_discord_id
            FROM warnings w
            JOIN users u ON u.id = w.user_id
            LEFT JOIN users issuer ON issuer.discord_id = w.issued_by
@@ -116,6 +116,43 @@ class WarningRepository {
       logger.error('Failed to get warning history', {
         error: error.message,
         discordId
+      });
+      return [];
+    }
+  }
+
+  /**
+   * Get all warnings (admin operation)
+   * @param {boolean} includeExpired - Include expired warnings
+   * @returns {Promise<Array>} Array of warning objects with user info
+   */
+  async getAllWarnings(includeExpired = false) {
+    if (!db.isAvailable()) {
+      logger.debug('Database unavailable, cannot get all warnings');
+      return [];
+    }
+
+    try {
+      const query = includeExpired
+        ? `SELECT w.*, u.username, u.discord_id as user_discord_id,
+                  issuer.username as issued_by_username
+           FROM warnings w
+           JOIN users u ON u.id = w.user_id
+           LEFT JOIN users issuer ON issuer.discord_id = w.issued_by
+           ORDER BY w.issued_at DESC`
+        : `SELECT w.*, u.username, u.discord_id as user_discord_id,
+                  issuer.username as issued_by_username
+           FROM warnings w
+           JOIN users u ON u.id = w.user_id
+           LEFT JOIN users issuer ON issuer.discord_id = w.issued_by
+           WHERE w.expires_at > NOW()
+           ORDER BY w.issued_at DESC`;
+
+      const result = await db.query(query);
+      return result.rows;
+    } catch (error) {
+      logger.error('Failed to get all warnings', {
+        error: error.message
       });
       return [];
     }

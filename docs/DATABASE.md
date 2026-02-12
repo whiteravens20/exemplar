@@ -142,15 +142,21 @@ Cleanup job runs **every hour** and removes:
 
 ### Manual Cleanup
 
-Admin commands (DM only):
+**Admin commands (DM only):**
 ```bash
-!warn <@user> [reason]  # Issue warning to user (admin/moderator)
-!flushdb confirm        # Clear all data (except users/warnings)
-!flushmemory            # Clear your conversation history (available to all)
-!stats [days]           # View bot statistics
+!warn <@user> [reason]     # Issue warning to user (admin/moderator)
+!warnings [@user]          # View all warnings or specific user
+!flushdb confirm           # Clear all data (except users/warnings)
+!stats [days]              # View bot statistics (default: 7 days)
 ```
 
-**Note:** Slash command `/warn` is reserved for bot automation. Admins should use prefix command `!warn`.
+**User commands (DM only):**
+```bash
+!warnings                  # View your active warnings
+!flushmemory               # Clear your conversation history
+```
+
+**Note:** Slash commands (`/warn`, etc.) are reserved for bot automation. Users and admins should use prefix commands (`!warn`, `!warnings`, etc.).
 
 ## Repository Pattern
 

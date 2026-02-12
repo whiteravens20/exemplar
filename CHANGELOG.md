@@ -18,6 +18,11 @@ and project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Removed `/warnings` slash command - now available only as `!warnings` prefix command
+- `!warnings` accessible to all users (view own warnings) and admins (view all or specific user)
+- Updated admin command help to separate admin and user commands
+
 ### Added
 - 💾 **PostgreSQL Database Integration** - Persistent storage for bot data
   - Conversation history (20 messages per user, 24H retention)

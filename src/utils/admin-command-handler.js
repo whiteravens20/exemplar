@@ -124,6 +124,140 @@ async function handleAdminCommand(command, message, args = []) {
       return;
     }
 
+    // Handle !warnings - available to all users (show own) and admins (show all or specific user)
+    if (cmd === '!warnings') {
+      if (!db.isAvailable()) {
+        await message.reply({
+          content: '❌ Baza danych niedostępna. Nie można pobrać ostrzeżeń.'
+        });
+        return;
+      }
+
+      // Get member for permission checking
+      const serverId = require('../config/config').config.discord.serverId;
+      const guild = message.client.guilds.cache.get(serverId);
+      const member = guild ? await guild.members.fetch(message.author.id).catch(() => null) : null;
+      const isAdmin = member && isModeratorOrAdmin(member);
+
+      let targetId = null;
+      let targetUsername = null;
+
+      // Check if admin is querying specific user
+      if (isAdmin && cmdArgs.length > 0) {
+        // Try to extract user mention
+        const mentionMatch = cmdArgs[0].match(/^<@!?(\d+)>$/);
+        if (mentionMatch) {
+          targetId = mentionMatch[1];
+        } else if (/^\d+$/.test(cmdArgs[0])) {
+          targetId = cmdArgs[0];
+        }
+
+        // If targetId provided, try to fetch user
+        if (targetId) {
+          try {
+            const targetUser = await message.client.users.fetch(targetId);
+            targetUsername = targetUser.username;
+          } catch (error) {
+            await message.reply({
+              content: `❌ Nie można znaleźć użytkownika o ID: ${targetId}`
+            });
+            logger.warn('User not found for warnings command', { targetId, error: error.message });
+            return;
+          }
+        }
+      }
+
+      let warnings = [];
+      let embedTitle = '';
+      let embedDescription = '';
+
+      if (isAdmin && !targetId) {
+        // Admin viewing all warnings
+        warnings = await warningRepo.getAllWarnings(false);
+        embedTitle = '⚠️ Wszystkie Aktywne Ostrzeżenia';
+        embedDescription = warnings.length > 0 
+          ? `Znaleziono **${warnings.length}** aktywnych ostrzeżeń.`
+          : 'Brak aktywnych ostrzeżeń w systemie.';
+      } else if (targetId) {
+        // Admin viewing specific user
+        warnings = await warningRepo.getWarningHistory(targetId, false);
+        embedTitle = `⚠️ Ostrzeżenia: ${targetUsername}`;
+        embedDescription = warnings.length > 0
+          ? `Użytkownik ma **${warnings.length}** aktywnych ostrzeżeń.`
+          : 'Użytkownik nie ma aktywnych ostrzeżeń.';
+      } else {
+        // Regular user viewing own warnings
+        warnings = await warningRepo.getWarningHistory(message.author.id, false);
+        embedTitle = '⚠️ Twoje Ostrzeżenia';
+        embedDescription = warnings.length > 0
+          ? `Masz **${warnings.length}** aktywnych ostrzeżeń.`
+          : 'Nie masz aktywnych ostrzeżeń! ✅';
+      }
+
+      // Log command usage
+      await analyticsRepo.logCommand(
+        message.author.id,
+        message.author.username,
+        'warnings',
+        false,
+        true
+      ).catch(err => logger.error('Failed to log command', { error: err.message }));
+
+      if (warnings.length === 0) {
+        await message.reply({
+          content: embedDescription
+        });
+        return;
+      }
+
+      const embed = new EmbedBuilder()
+        .setColor(0xFFAA00)
+        .setTitle(embedTitle)
+        .setDescription(embedDescription)
+        .setTimestamp();
+
+      // Limit to 25 warnings (Discord embed field limit)
+      const displayWarnings = warnings.slice(0, 25);
+      
+      displayWarnings.forEach((warning, index) => {
+        const expiresAt = new Date(warning.expires_at);
+        const issuedAt = new Date(warning.issued_at);
+        const daysLeft = Math.ceil((expiresAt - Date.now()) / (1000 * 60 * 60 * 24));
+        
+        let fieldName = `Ostrzeżenie ${index + 1}`;
+        if (isAdmin && !targetId) {
+          // Show username when displaying all warnings
+          fieldName = `${warning.username || warning.user_discord_id}`;
+        }
+
+        let fieldValue = `**Powód:** ${warning.reason}\n**Wydano:** ${issuedAt.toLocaleDateString('pl-PL')}\n**Wygasa za:** ${daysLeft} dni`;
+        
+        if (isAdmin && warning.issued_by_username) {
+          fieldValue += `\n**Wydane przez:** ${warning.issued_by_username}`;
+        }
+
+        embed.addFields({
+          name: fieldName,
+          value: fieldValue,
+          inline: false
+        });
+      });
+
+      if (warnings.length > 25) {
+        embed.setFooter({ text: `Pokazano 25 z ${warnings.length} ostrzeżeń` });
+      }
+
+      await message.reply({ embeds: [embed] });
+
+      logger.info('User checked warnings', { 
+        userId: message.author.id,
+        isAdmin,
+        targetId: targetId || null,
+        warningCount: warnings.length 
+      });
+      return;
+    }
+
     // Get member for permission checking (for admin-only commands)
     const serverId = require('../config/config').config.discord.serverId;
     const guild = message.client.guilds.cache.get(serverId);
@@ -377,7 +511,7 @@ async function handleAdminCommand(command, message, args = []) {
 
       default:
         await message.reply({
-          content: `❌ Nieznana komenda: ${cmd}\n\nDostępne komendy admin:\n• \`!flushdb confirm\` - Wyczyść bazę danych\n• \`!stats [days]\` - Pokaż statystyki (domyślnie 7 dni)\n• \`!flushmemory\` - Wyczyść własną pamięć konwersacji (dostępne dla wszystkich)`
+          content: `❌ Nieznana komenda: ${cmd}\n\n**Komendy Admin:**\n• \`!warn <@user> [powód]\` - Wystaw ostrzeżenie użytkownikowi\n• \`!warnings [@user]\` - Pokaż wszystkie ostrzeżenia lub konkretnego użytkownika\n• \`!flushdb confirm\` - Wyczyść bazę danych\n• \`!stats [days]\` - Pokaż statystyki (domyślnie 7 dni)\n\n**Komendy Użytkownika:**\n• \`!flushmemory\` - Wyczyść własną pamięć konwersacji\n• \`!warnings\` - Pokaż swoje ostrzeżenia`
         });
     }
   } catch (error) {
