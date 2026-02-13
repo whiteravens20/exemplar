@@ -218,6 +218,61 @@ const stats = await analyticsRepo.getGlobalStats(7); // Last 7 days
 
 ## n8n Integration
 
+### Conversation Context in Payload
+
+The bot includes conversation history in the payload sent to n8n:
+
+```json
+{
+  "userId": "123...",
+  "message": "current message",
+  "conversationContext": [
+    {
+      "userMessage": "previous user message",
+      "aiResponse": "previous AI response",
+      "timestamp": "2026-02-12T..."
+    }
+  ]
+}
+```
+
+This allows n8n workflows to:
+- Access user's conversation history
+- Provide contextual AI responses
+- Build upon previous interactions
+
+### AI Agent PostgreSQL Memory
+
+For n8n AI Agent nodes, you can configure PostgreSQL as the memory backend:
+
+**Benefits:**
+- **Persistent memory** across bot restarts
+- **Per-user isolation** using `sessionId: {{ $json.userId }}`
+- **Automatic memory management** by n8n
+- **Shared database** - same PostgreSQL instance as the bot
+
+**Configuration:**
+```javascript
+AI Agent Node → Memory Settings:
+- Memory Type: PostgreSQL
+- Connection: Use bot's PostgreSQL credentials
+- Session ID: {{ $json.userId }}
+- Window Size: 20 messages
+```
+
+**Database Credentials (same as bot):**
+```bash
+Host: localhost (or postgres in docker-compose)
+Port: 5432
+Database: exemplar
+User: dbot_user
+Password: [from .env]
+```
+
+n8n will automatically create the `n8n_chat_histories` table to store AI Agent memory.
+
+See `docs/N8N_INTEGRATION.md` for detailed setup instructions.
+
 ### Database Access from n8n
 
 n8n workflows can access the same database using **PostgreSQL node**.
