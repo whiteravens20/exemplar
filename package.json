@@ -7,7 +7,7 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "test": "bash scripts/test-bot.sh",
-    "test:unit": "node tests/database.test.js && node tests/final-result.test.js",
+    "test:unit": "node tests/database.test.js && node tests/admin-stats-types.test.js && node tests/final-result.test.js",
     "test:all": "npm run test && npm run test:unit",
     "test-config": "node test-config.js",
     "deploy-commands": "node src/deploy-commands.js",
