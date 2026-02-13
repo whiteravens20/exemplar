@@ -16,17 +16,22 @@ function formatStatsEmbed(stats, days) {
     .setFooter({ text: `Statistics for the last ${days} days` })
     .setTimestamp();
 
+  // Convert numeric values from PostgreSQL (they come as strings)
+  const totalMessages = parseInt(stats.total_messages) || 0;
+  const uniqueUsers = parseInt(stats.unique_users) || 0;
+  const avgResponseTime = parseFloat(stats.avg_response_time_ms) || 0;
+
   // Overview
   embed.addFields({
     name: '📈 Overview',
-    value: `**Total Messages:** ${stats.total_messages?.toLocaleString() || 0}\n**Unique Users:** ${stats.unique_users?.toLocaleString() || 0}\n**Avg Response Time:** ${stats.avg_response_time_ms?.toFixed(0) || 0}ms`,
+    value: `**Total Messages:** ${totalMessages.toLocaleString()}\n**Unique Users:** ${uniqueUsers.toLocaleString()}\n**Avg Response Time:** ${avgResponseTime.toFixed(0)}ms`,
     inline: false
   });
 
   // Message types
   if (stats.messages_by_type && typeof stats.messages_by_type === 'object') {
     const types = Object.entries(stats.messages_by_type)
-      .map(([type, count]) => `**${type}:** ${count}`)
+      .map(([type, count]) => `**${type}:** ${parseInt(count) || 0}`)
       .join('\n') || 'No data';
     
     embed.addFields({
@@ -40,7 +45,7 @@ function formatStatsEmbed(stats, days) {
   if (Array.isArray(stats.top_users) && stats.top_users.length > 0) {
     const topUsersText = stats.top_users
       .slice(0, 5)
-      .map((user, idx) => `${idx + 1}. ${user.username || user.userId} (${user.count})`)
+      .map((user, idx) => `${idx + 1}. ${user.username || user.userId} (${parseInt(user.count) || 0})`)
       .join('\n');
     
     embed.addFields({
@@ -53,9 +58,9 @@ function formatStatsEmbed(stats, days) {
   // Peak hours
   if (stats.peak_hours && typeof stats.peak_hours === 'object') {
     const hours = Object.entries(stats.peak_hours)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a, b) => (parseInt(b[1]) || 0) - (parseInt(a[1]) || 0))
       .slice(0, 3)
-      .map(([hour, count]) => `**${hour}:00** - ${count} msgs`)
+      .map(([hour, count]) => `**${hour}:00** - ${parseInt(count) || 0} msgs`)
       .join('\n') || 'No data';
     
     embed.addFields({
@@ -69,7 +74,7 @@ function formatStatsEmbed(stats, days) {
   if (Array.isArray(stats.top_commands) && stats.top_commands.length > 0) {
     const commandsText = stats.top_commands
       .slice(0, 5)
-      .map((cmd, idx) => `${idx + 1}. /${cmd.command} (${cmd.count})`)
+      .map((cmd, idx) => `${idx + 1}. /${cmd.command} (${parseInt(cmd.count) || 0})`)
       .join('\n');
     
     embed.addFields({
