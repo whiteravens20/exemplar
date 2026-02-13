@@ -3,6 +3,8 @@ services:
     image: postgres:16-alpine
     container_name: discord-bot-db
     restart: unless-stopped
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_DB: ${DB_NAME:-discord_bot}
       POSTGRES_USER: ${DB_USER:-bot_user}

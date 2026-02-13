@@ -26,6 +26,7 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 - **Usage Analytics:** 90-day retention with admin statistics
 - **Graceful Degradation:** Bot works with in-memory fallback if DB unavailable
 - **Health Monitoring:** `/health` endpoint for orchestration
+- **Automatic Migrations:** Database schema updates automatically on startup
 
 ### 👮 Moderation Commands
 **Slash Commands (reserved for bot automation):**
@@ -113,23 +114,28 @@ NODE_ENV=production
 
 **Using Docker Compose (Recommended):**
 ```bash
-# Start PostgreSQL
-docker-compose up -d postgres
+# Start all services (Bot + PostgreSQL)
+docker compose up -d
 
-# Run migrations
-npm run migrate:up
+# Database migrations run automatically on startup!
+# No manual migration steps needed.
 
-# Verify
+# Verify health
 curl http://localhost:3000/health
 ```
 
-**Manual PostgreSQL Setup:**
+The bot automatically:
+1. Waits for PostgreSQL to be ready
+2. Runs pending database migrations
+3. Starts serving Discord
+
+**Manual PostgreSQL Setup (without Docker):**
 ```bash
 # Create database
 createdb discord_bot
 createuser bot_user
 
-# Run migrations
+# Run migrations manually
 npm run migrate:up
 ```
 
@@ -156,19 +162,28 @@ For detailed Docker setup instructions, see [DOCKER_SETUP.md](docs/DOCKER_SETUP.
 # Copy and configure environment file
 cp .env.example .env
 
-# Build and run
-docker-compose up -d
+# Start all services (migrations run automatically!)
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f discord-bot
+
+# Check database status
+docker compose ps
 ```
+
+**What happens automatically:**
+- ✅ PostgreSQL starts and becomes healthy
+- ✅ Bot waits for database to be ready
+- ✅ Database migrations run (creates/updates schema)
+- ✅ Bot starts serving Discord
 
 **Manual Docker Commands:**
 ```bash
 # Build image
 docker build -t discord-ai-bot:latest .
 
-# Run container
+# Run container (without automatic migrations)
 docker run -d \
   --name discord-ai-bot \
   --restart unless-stopped \

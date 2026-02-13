@@ -37,7 +37,7 @@ CREATE OR REPLACE FUNCTION get_user_context(
 RETURNS TABLE (
   user_message TEXT,
   ai_response TEXT,
-  timestamp TIMESTAMP
+  "timestamp" TIMESTAMP
 ) AS $$
 BEGIN
   RETURN QUERY

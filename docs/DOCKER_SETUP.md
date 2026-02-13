@@ -34,21 +34,38 @@ RESTRICTED_RESPONSE=You don't have permission to use this feature. Please contac
 NODE_ENV=production
 ```
 
-### 2. Build and Run with Docker Compose
+### 2. Start with Docker Compose (Recommended)
+
+The bot automatically handles database initialization. No manual migration steps required!
 
 ```bash
-# Build the Docker image
-docker-compose build
+# Start all services (PostgreSQL + Bot)
+docker compose up -d
 
-# Start the bot in the background
-docker-compose up -d
+# The bot will automatically:
+# 1. Wait for PostgreSQL to be ready
+# 2. Run database migrations (if needed)
+# 3. Start the Discord bot
 
 # View logs
-docker-compose logs -f discord-bot
+docker compose logs -f discord-bot
+
+# Check status
+docker compose ps
 
 # Stop the bot
-docker-compose down
+docker compose down
 ```
+
+**What happens on startup:**
+- 🔍 **Database detection**: Automatically waits for PostgreSQL
+- 📊 **Migration handling**: Runs pending migrations or skips if already applied
+- 🚀 **Bot startup**: Connects to database and starts serving
+
+**Fresh installation vs updates:**
+- **First run**: Creates all database tables and functions automatically
+- **Updates**: Only applies new migrations, leaving existing data intact
+- **Restart**: Skips migrations if schema is up-to-date
 
 ### 3. Build Manually (without Docker Compose)
 
