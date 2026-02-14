@@ -117,7 +117,8 @@ async function handleAdminCommand(message) {
       ).catch(err => logger.error('Failed to log command', { error: err.message }));
 
       await message.reply({
-        content: `✅ Twoja pamięć konwersacji została wyczyszczona (${deletedCount} wiadomości usuniętych).`
+        content: `✅ Twoja pamięć konwersacji została wyczyszczona.
+📊 Usunięto **${deletedCount}** wiadomości (bot + n8n AI Agent).`
       });
       
       logger.info('User flushed their conversation memory', {
@@ -440,7 +441,7 @@ async function handleAdminCommand(message) {
 
         // Confirmation required
         await message.reply({
-          content: '⚠️ **UWAGA:** Ta operacja usunie wszystkie konwersacje, rate limity i statystyki z bazy danych!\n\nCzy na pewno chcesz kontynuować? Wpisz `!flushdb confirm` aby potwierdzić.'
+          content: '⚠️ **UWAGA:** Ta operacja usunie wszystkie konwersacje (bot + n8n AI Agent), rate limity i statystyki z bazy danych!\n\nCzy na pewno chcesz kontynuować? Wpisz `!flushdb confirm` aby potwierdzić.'
         });
 
         if (cmdArgs[0] !== 'confirm') {
@@ -448,7 +449,7 @@ async function handleAdminCommand(message) {
         }
 
         // Flush all tables except users and warnings
-        await conversationRepo.flushAllConversations();
+        const deletedCount = await conversationRepo.flushAllConversations();
         await db.query('TRUNCATE rate_limits, message_stats, command_usage');
 
         await analyticsRepo.logCommand(
@@ -460,7 +461,7 @@ async function handleAdminCommand(message) {
         ).catch(err => logger.error('Failed to log command', { error: err.message }));
 
         await message.reply({
-          content: '✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).'
+          content: `✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **${deletedCount}** wiadomości konwersacji (bot + n8n AI Agent).`
         });
 
         logger.warn('Database flushed by admin', {

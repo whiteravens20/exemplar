@@ -40,13 +40,13 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 **User Commands (DM only):**
 - `!help` - Show help message with available commands
 - `!warnings` - View your active warnings
-- `!flushmemory` - Clear your conversation history
+- `!flushmemory` - Clear your conversation history (bot + n8n AI Agent memory)
 
 ### 🔐 Admin Commands (DM only)
 - `!warn <@user> [reason]` - Issue warning to user (moderator/admin)
 - `!warnings [@user]` - View all warnings or specific user
 - `!stats [days]` - View bot usage statistics (default: 7 days)
-- `!flushdb confirm` - Clear all database data (except users/warnings)
+- `!flushdb confirm` - Clear all database data (bot + n8n AI Agent, preserves users/warnings)
 
 ### 🔧 Error Handling
 - Automatic detection of n8n availability issues

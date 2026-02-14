@@ -63,6 +63,7 @@ class ConversationRepository {
 
   /**
    * Flush conversation history for a specific user
+   * Clears both bot conversations and n8n AI Agent memory
    * @param {string} discordId - Discord user ID
    * @returns {Promise<number>} Number of deleted rows, or 0 on error
    */
@@ -73,18 +74,30 @@ class ConversationRepository {
     }
 
     try {
-      const result = await db.query(
+      // Delete from bot conversations table
+      const conversationsResult = await db.query(
         `DELETE FROM conversations
          WHERE user_id = (SELECT id FROM users WHERE discord_id = $1)`,
         [discordId]
       );
       
-      logger.info('User conversations flushed', {
+      // Delete from n8n chat histories (AI Agent memory)
+      const n8nResult = await db.query(
+        `DELETE FROM n8n_chat_histories
+         WHERE session_id = $1`,
+        [discordId]
+      );
+      
+      const totalDeleted = conversationsResult.rowCount + n8nResult.rowCount;
+      
+      logger.info('User conversations and n8n memory flushed', {
         discordId,
-        deletedCount: result.rowCount
+        botConversations: conversationsResult.rowCount,
+        n8nMemory: n8nResult.rowCount,
+        totalDeleted
       });
       
-      return result.rowCount;
+      return totalDeleted;
     } catch (error) {
       logger.error('Failed to flush user conversations', {
         error: error.message,
@@ -96,6 +109,7 @@ class ConversationRepository {
 
   /**
    * Flush all conversations (admin operation)
+   * Clears both bot conversations and n8n AI Agent memory
    * @returns {Promise<number>} Number of deleted rows, or 0 on error
    */
   async flushAllConversations() {
@@ -105,13 +119,26 @@ class ConversationRepository {
     }
 
     try {
-      const result = await db.query('TRUNCATE conversations');
+      // Count before truncating
+      const countResult = await db.query(
+        'SELECT (SELECT COUNT(*) FROM conversations) as bot_count, (SELECT COUNT(*) FROM n8n_chat_histories) as n8n_count'
+      );
+      const counts = countResult.rows[0];
       
-      logger.warn('All conversations flushed', {
-        operation: 'admin_flush_all'
+      // Truncate both tables
+      await db.query('TRUNCATE conversations');
+      await db.query('TRUNCATE n8n_chat_histories');
+      
+      const totalDeleted = parseInt(counts.bot_count) + parseInt(counts.n8n_count);
+      
+      logger.warn('All conversations and n8n memory flushed', {
+        operation: 'admin_flush_all',
+        botConversations: counts.bot_count,
+        n8nMemory: counts.n8n_count,
+        totalDeleted
       });
       
-      return result.rowCount || 0;
+      return totalDeleted;
     } catch (error) {
       logger.error('Failed to flush all conversations', {
         error: error.message

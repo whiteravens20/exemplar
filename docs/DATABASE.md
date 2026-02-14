@@ -146,17 +146,20 @@ Cleanup job runs **every hour** and removes:
 ```bash
 !warn <@user> [reason]     # Issue warning to user (admin/moderator)
 !warnings [@user]          # View all warnings or specific user
-!flushdb confirm           # Clear all data (except users/warnings)
+!flushdb confirm           # Clear all data (bot + n8n AI Agent memory)
 !stats [days]              # View bot statistics (default: 7 days)
 ```
 
 **User commands (DM only):**
 ```bash
 !warnings                  # View your active warnings
-!flushmemory               # Clear your conversation history
+!flushmemory               # Clear your conversation history (bot + n8n AI Agent)
 ```
 
-**Note:** Slash commands (`/warn`, etc.) are reserved for bot automation. Users and admins should use prefix commands (`!warn`, `!warnings`, etc.).
+**Note:** 
+- Slash commands (`/warn`, etc.) are reserved for bot automation. Users and admins should use prefix commands (`!warn`, `!warnings`, etc.).
+- `!flushmemory` clears both bot conversations table AND n8n AI Agent memory (`n8n_chat_histories`)
+- `!flushdb` preserves users and warnings but clears all conversations, rate limits, stats, and n8n memory
 
 ## Repository Pattern
 
@@ -172,8 +175,11 @@ await conversationRepo.saveMessage(discordId, username, userMsg, aiResponse);
 // Get recent messages
 const history = await conversationRepo.getRecentMessages(discordId, 20);
 
-// Flush user history
+// Flush user history (clears both bot conversations and n8n AI Agent memory)
 await conversationRepo.flushUserConversations(discordId);
+
+// Flush all conversations (admin - clears both bot and n8n memory)
+await conversationRepo.flushAllConversations();
 ```
 
 #### RateLimitRepository
@@ -270,6 +276,11 @@ Password: [from .env]
 ```
 
 n8n will automatically create the `n8n_chat_histories` table to store AI Agent memory.
+
+**Clearing n8n AI Agent Memory:**
+- **User command:** `!flushmemory` - clears both bot conversations AND n8n AI Agent memory for that user
+- **Admin command:** `!flushdb confirm` - clears ALL conversations (bot + n8n) for all users
+- **Manual SQL:** `DELETE FROM n8n_chat_histories WHERE session_id = 'user_discord_id'`
 
 See `docs/N8N_INTEGRATION.md` for detailed setup instructions.
 
