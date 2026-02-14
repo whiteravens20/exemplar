@@ -201,7 +201,6 @@ npm run deploy-commands # Deploy slash commands
 - [ ] Database integration for persistent storage
 - [ ] Persistent rate limit and moderation storage
 - [ ] Message analytics and usage statistics
-- [ ] Reactions based commands
 
 ### v2.2.0 (Planned Q3 2026)
 - [ ] AI-driven automated moderation (activate existing commands)
@@ -212,7 +211,7 @@ npm run deploy-commands # Deploy slash commands
 - [ ] User feedback and rating system
 
 ### v3.0.0 (Vision - 2027)
-- [ ] Multi-server/multi-bot support
+- [ ] Reactions based commands
 - [ ] Web dashboard for bot management
 - [ ] Plugin system for extensibility
 - [ ] Scheduled messages and reminders
