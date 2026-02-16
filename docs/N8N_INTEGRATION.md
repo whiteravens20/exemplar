@@ -234,21 +234,108 @@ X-API-Key: your_api_key_here
 
 ## Advanced
 
-### Persistent Conversation History
+### Using PostgreSQL as AI Agent Memory
 
-You can keep conversation history in n8n Database:
+The bot sends `conversationContext` in the payload (last 20 messages), but you can configure the **AI Agent node** in n8n to use PostgreSQL as persistent memory storage.
 
+#### Setup PostgreSQL Memory in n8n:
+
+**1. Create PostgreSQL Credential in n8n:**
+```
+Settings → Credentials → Add Credential → Postgres account
+- Host: postgres (if n8n is in docker-compose) or 192.168.2.16 (external)
+- Port: 5432
+- Database: exemplar (or your DB_NAME)
+- User: dbot_user (or your DB_USER)
+- Password: [your DB_PASSWORD]
+```
+
+**2. Configure AI Agent Node:**
 ```javascript
-// In workflow
-const userId = $input.first().json.userId;
+AI Agent Node Settings:
+┌─────────────────────────────┐
+│ Memory                      │
+│ ✓ Use Memory               │
+│                             │
+│ Memory Type: PostgreSQL     │ ← Select this
+│                             │
+│ Connection:                 │
+│   [Select PostgreSQL Cred]  │
+│                             │
+│ Session ID:                 │
+│   {{ $json.userId }}        │ ← Important: Use Discord user ID
+│                             │
+│ Window Size: 20             │ ← Number of messages to remember
+└─────────────────────────────┘
+```
 
-// Query history
-const history = $input.item.binaryData.data; // or from DB
+**3. Memory Schema (Auto-created by n8n):**
+```sql
+-- n8n will create this table automatically:
+CREATE TABLE IF NOT EXISTS n8n_chat_histories (
+  session_id VARCHAR(255) PRIMARY KEY,
+  messages JSONB,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+```
 
-// Add to conversation
-messages.push({ role: 'user', content: message });
+#### Benefits:
 
-// Save updated history
+1. **Persistent Memory** - Conversations survive bot restarts
+2. **Per-User Memory** - Each user has isolated conversation history
+3. **Automatic Management** - n8n handles memory lifecycle
+4. **Window Control** - Limits memory to last N messages (recommended: 20)
+
+#### Example Workflow:
+
+```
+┌────────────────┐
+│ Webhook Trigger│ ← Receives Discord message
+└────────┬───────┘
+         │
+┌────────▼─────────────────────────┐
+│ AI Agent Node                    │
+│                                  │
+│ Memory: PostgreSQL               │
+│ Session ID: {{ $json.userId }}  │
+│ Window: 20 messages              │
+│                                  │
+│ Model: ChatOpenAI                │
+│ System Prompt: "You are..."     │
+└────────┬─────────────────────────┘
+         │
+┌────────▼────────┐
+│ Return Response │
+└─────────────────┘
+```
+
+#### How It Works:
+
+1. Discord bot sends message with `userId`
+2. AI Agent looks up memory by `sessionId` (userId)
+3. Loads last 20 messages from PostgreSQL
+4. Processes new message with context
+5. Saves updated conversation to PostgreSQL
+6. Returns response
+
+#### Optional: Use Bot's Conversation Context
+
+The bot already sends conversation history in the payload. You can choose:
+
+**Option A: Use AI Agent PostgreSQL Memory (Recommended)**
+- Clean and automatic
+- Managed by n8n
+- Separate from bot's analytics
+
+**Option B: Use Bot's `conversationContext` Payload**
+- Already available in webhook payload
+- Good for temporary context
+- Shared with bot's analytics database
+
+**Option C: Hybrid Approach**
+```javascript
+// Use both: bot context + AI Agent memory
+// AI Agent will merge them automatically
 ```
 
 ### Multi-Language Support

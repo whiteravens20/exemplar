@@ -103,7 +103,7 @@ class N8NClient {
     }
   }
 
-  async sendMessage(userId, userName, message, serverId, mode = 'chat') {
+  async sendMessage(userId, userName, message, serverId, mode = 'chat', conversationContext = null) {
     // Validate input
     if (!userId || !userName || !message) {
       logger.error('Invalid input to sendMessage', { userId, userName, messagePresent: !!message });
@@ -122,6 +122,19 @@ class N8NClient {
       timestamp: new Date().toISOString(),
       platform: 'discord'
     };
+
+    // Add conversation context if available
+    if (conversationContext && Array.isArray(conversationContext) && conversationContext.length > 0) {
+      payload.conversationContext = conversationContext.map(msg => ({
+        userMessage: msg.user_message,
+        aiResponse: msg.ai_response,
+        timestamp: msg.timestamp
+      }));
+      
+      logger.debug('Added conversation context to payload', {
+        contextMessages: conversationContext.length
+      });
+    }
 
     return this.triggerWorkflow(payload);
   }

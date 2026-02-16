@@ -7,12 +7,15 @@
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "test": "bash scripts/test-bot.sh",
-    "test:unit": "node tests/rate-limiter.test.js",
+    "test:unit": "node tests/database.test.js && node tests/admin-stats-types.test.js && node tests/final-result.test.js",
     "test:all": "npm run test && npm run test:unit",
     "test-config": "node test-config.js",
     "deploy-commands": "node src/deploy-commands.js",
     "release-package": "bash scripts/create-release-package.sh",
-    "lint": "eslint src --fix"
+    "lint": "eslint src --fix",
+    "migrate:up": "node scripts/migrate.js up",
+    "migrate:down": "node scripts/migrate.js down",
+    "db:seed": "bash scripts/seed-test-data.sh"
   },
   "keywords": [
     "discord",
@@ -26,7 +29,9 @@
   "dependencies": {
     "axios": "^1.13.5",
     "discord.js": "^14.25.1",
-    "dotenv": "^17.2.4",
+    "dotenv": "^17.3.1",
+    "express": "^4.22.1",
+    "pg": "^8.18.0",
     "undici": "^7.21.0",
     "winston": "^3.19.0"
   },

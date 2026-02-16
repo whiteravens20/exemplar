@@ -6,6 +6,10 @@ const { hasPermission } = require('../utils/permissions');
 const config = require('../config/config');
 const { getTemplate } = require('../config/response-templates');
 const { splitMessage } = require('../utils/message-splitter');
+const conversationRepo = require('../db/repositories/conversation-repository');
+const analyticsRepo = require('../db/repositories/analytics-repository');
+const { estimateTokens } = require('../utils/token-estimator');
+const { handleAdminCommand } = require('../utils/admin-command-handler');
 
 const n8nClient = new N8NClient(
   config.config.n8n.workflowUrl,
@@ -118,7 +122,7 @@ module.exports = {
         }
 
         // Check rate limit
-        const rateLimit = rateLimiter.checkLimit(message.author.id);
+        const rateLimit = await rateLimiter.checkLimit(message.author.id);
         if (!rateLimit.allowed) {
           await message.reply({
             content: `⏳ Przekroczono limit wiadomości. Poczekaj ${rateLimit.retryAfter} sekund przed wysłaniem kolejnej wiadomości.`
@@ -168,8 +172,12 @@ module.exports = {
                 value: 'Użyj `!code` przed swoją wiadomością, aby przełączyć na tryb pomocy programistycznej.\n**Przykład:** `!code napisz funkcję do sortowania tablicy`'
               },
               {
-                name: '📋 Dostępne komendy',
-                value: '• `!help` - Pokazuje tę wiadomość pomocy\n• `!code <pytanie>` - Tryb programistyczny'
+                name: '📋 Dostępne komendy użytkownika',
+                value: '• `!help` - Pokazuje tę wiadomość pomocy\n• `!code <pytanie>` - Tryb programistyczny\n• `!flushmemory` - Wyczyść pamięć konwersacji\n• `!warnings` - Pokaż swoje ostrzeżenia'
+              },
+              {
+                name: '🔐 Komendy administratora',
+                value: '• `!warn <@user> [powód]` - Wystaw ostrzeżenie\n• `!warnings [@user]` - Pokaż wszystkie ostrzeżenia\n• `!stats [days]` - Statystyki bota (domyślnie 7 dni)\n• `!flushdb confirm` - Wyczyść bazę danych'
               },
               {
                 name: '📌 Funkcje',
@@ -185,6 +193,12 @@ module.exports = {
 
           await message.reply({ embeds: [embed] });
           logger.info('✅ Sent help command response', { userId: message.author.id });
+          return;
+        }
+
+        // Check for admin commands (!flushdb, !flushmemory, !stats, !warn, !warnings)
+        if (sanitizedContent.startsWith('!flush') || sanitizedContent.startsWith('!stats') || sanitizedContent.startsWith('!warn')) {
+          await handleAdminCommand(message);
           return;
         }
 
@@ -211,6 +225,9 @@ module.exports = {
           mode
         });
 
+        // Get conversation context from database
+        const conversationContext = await conversationRepo.getRecentMessages(message.author.id, 20);
+
         // Show typing indicator - will repeat every 5 seconds
         await message.channel.sendTyping();
          const typingInterval = setInterval(async () => {
@@ -221,13 +238,16 @@ module.exports = {
           }
         }, 5000);
 
+        const startTime = Date.now();
         const result = await n8nClient.sendMessage(
           message.author.id,
           message.author.username,
           sanitizedContent,
           config.config.discord.serverId,
-          mode
+          mode,
+          conversationContext
         );
+        const responseTime = Date.now() - startTime;
 
         // Stop typing indicator
         clearInterval(typingInterval);
@@ -257,6 +277,25 @@ module.exports = {
           }
 
           const response = result.data.response;
+
+          // Save conversation to database
+          await conversationRepo.saveMessage(
+            message.author.id,
+            message.author.username,
+            sanitizedContent,
+            response
+          ).catch(err => logger.error('Failed to save conversation', { error: err.message }));
+
+          // Log analytics
+          const totalTokens = estimateTokens(sanitizedContent + response);
+          await analyticsRepo.logMessage(
+            message.author.id,
+            message.author.username,
+            'dm',
+            mode,
+            responseTime,
+            totalTokens
+          ).catch(err => logger.error('Failed to log analytics', { error: err.message }));
           
           logger.info('Extracted response', {
             mode,

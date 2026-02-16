@@ -25,6 +25,20 @@ class ConfigManager {
       logging: {
         level: process.env.LOG_LEVEL || 'info',
         dir: path.join(process.cwd(), 'logs')
+      },
+      database: {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432', 10),
+        name: process.env.DB_NAME || 'discord_bot',
+        user: process.env.DB_USER || 'bot_user',
+        password: process.env.DB_PASSWORD,
+        ssl: process.env.DB_SSL === 'true',
+        maxConnections: parseInt(process.env.DB_MAX_CONNECTIONS || '10', 10),
+        idleTimeoutMs: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
+        connectionTimeoutMs: parseInt(process.env.DB_CONNECTION_TIMEOUT || '5000', 10)
+      },
+      health: {
+        port: parseInt(process.env.HEALTH_CHECK_PORT || '3000', 10)
       }
     };
 
