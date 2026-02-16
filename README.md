@@ -17,12 +17,36 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 - AI Assistant available only for specific roles
 - Other users receive hardcoded response
 - **Coding Mode:** Command `!code` switches to coding-specialized LLM
+- **Conversation Memory:** Last 20 messages per user with 24H retention
 
-### 🛡️ Moderation Commands (Slash Commands)
-- `/kick`, `/ban`, `/mute`, `/warn` - **Not available manually**
-- Reserved for future automatic moderation
-- Bot will use them automatically when detecting violations
-- `/help` - Available only in DM, shows help
+### 💾 Persistent Storage (PostgreSQL)
+- **Conversation History:** Last 20 messages per user, 24H retention
+- **Rate Limiting:** Persistent across bot restarts
+- **User Warnings:** 30-day retention per warning
+- **Usage Analytics:** 90-day retention with admin statistics
+- **Graceful Degradation:** Bot works with in-memory fallback if DB unavailable
+- **Health Monitoring:** `/health` endpoint for orchestration
+- **Automatic Migrations:** Database schema updates automatically on startup
+
+### 👮 Moderation Commands
+**Slash Commands (reserved for bot automation):**
+- `/warn <user> [reason]` - Reserved for automated moderation
+- `/kick`, `/ban`, `/mute` - Reserved for future automatic moderation
+
+**Prefix Commands (for admins/moderators):**
+- `!warn <@user> [reason]` - Issue warning to user (DM only, admin/moderator)
+- `!warnings [@user]` - View all warnings or specific user (admin only)
+
+**User Commands (DM only):**
+- `!help` - Show help message with available commands
+- `!warnings` - View your active warnings
+- `!flushmemory` - Clear your conversation history (bot + n8n AI Agent memory)
+
+### 🔐 Admin Commands (DM only)
+- `!warn <@user> [reason]` - Issue warning to user (moderator/admin)
+- `!warnings [@user]` - View all warnings or specific user
+- `!stats [days]` - View bot usage statistics (default: 7 days)
+- `!flushdb confirm` - Clear all database data (bot + n8n AI Agent, preserves users/warnings)
 
 ### 🔧 Error Handling
 - Automatic detection of n8n availability issues
@@ -35,7 +59,8 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 
 ### 1. Requirements
 - Node.js 22+
-- npm 10+ or yarn
+- npm 11+ or yarn
+- PostgreSQL 14+ (or use included Docker Compose)
 
 ### 2. Clone and Install
 ```bash
@@ -61,6 +86,18 @@ DISCORD_SERVER_ID=your_server_id
 N8N_WORKFLOW_URL=https://your-n8n.com/webhook/workflow
 N8N_API_KEY=your_api_key
 
+# Database (PostgreSQL)
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=discord_bot
+DB_USER=bot_user
+DB_PASSWORD=your_secure_password
+# DB_SSL=false  # Optional: enable SSL
+# DB_MAX_CONNECTIONS=10  # Optional: connection pool size
+
+# Health Check
+HEALTH_CHECK_PORT=3000
+
 # Bot Configuration
 BOT_PREFIX=!
 HARDCODED_MENTION_RESPONSE=Hi! I'm an AI Assistant. Send me a DM to chat with me.
@@ -73,7 +110,38 @@ RESTRICTED_RESPONSE=You don't have permission to use this feature.
 NODE_ENV=production
 ```
 
-### 4. Running
+### 4. Database Setup
+
+**Using Docker Compose (Recommended):**
+```bash
+# Start all services (Bot + PostgreSQL)
+docker compose up -d
+
+# Database migrations run automatically on startup!
+# No manual migration steps needed.
+
+# Verify health
+curl http://localhost:3000/health
+```
+
+The bot automatically:
+1. Waits for PostgreSQL to be ready
+2. Runs pending database migrations
+3. Starts serving Discord
+
+**Manual PostgreSQL Setup (without Docker):**
+```bash
+# Create database
+createdb discord_bot
+createuser bot_user
+
+# Run migrations manually
+npm run migrate:up
+```
+
+See [DATABASE.md](docs/DATABASE.md) for detailed database documentation.
+
+### 5. Running
 
 **Production:**
 ```bash
@@ -85,7 +153,7 @@ npm start
 npm run dev
 ```
 
-### 5. Running in Docker
+### 6. Running in Docker
 
 For detailed Docker setup instructions, see [DOCKER_SETUP.md](docs/DOCKER_SETUP.md).
 
@@ -94,19 +162,28 @@ For detailed Docker setup instructions, see [DOCKER_SETUP.md](docs/DOCKER_SETUP.
 # Copy and configure environment file
 cp .env.example .env
 
-# Build and run
-docker-compose up -d
+# Start all services (migrations run automatically!)
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f discord-bot
+
+# Check database status
+docker compose ps
 ```
+
+**What happens automatically:**
+- ✅ PostgreSQL starts and becomes healthy
+- ✅ Bot waits for database to be ready
+- ✅ Database migrations run (creates/updates schema)
+- ✅ Bot starts serving Discord
 
 **Manual Docker Commands:**
 ```bash
 # Build image
 docker build -t discord-ai-bot:latest .
 
-# Run container
+# Run container (without automatic migrations)
 docker run -d \
   --name discord-ai-bot \
   --restart unless-stopped \
@@ -175,8 +252,7 @@ They will be used by the bot automatically in the future for:
 - Rule violations
 - Other automated moderation tasks
 
-**Available commands:**
-- `/help` - Shows help message (only in DM)
+**Note:** Slash commands are reserved for automated bot actions, not manual use.
 ```
 
 ## 🔐 Environment Variables
@@ -221,8 +297,7 @@ discord-ai-bot/
 │   │   ├── kick.js               # /kick command
 │   │   ├── ban.js                # /ban command
 │   │   ├── mute.js               # /mute command
-│   │   ├── warn.js               # /warn command
-│   │   └── help.js               # /help command
+│   │   └── warn.js               # /warn command
 │   │
 │   ├── 📁 commands/              # Legacy prefix commands
 │   │   └── moderation/

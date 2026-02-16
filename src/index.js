@@ -5,6 +5,9 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('./utils/logger');
 const config = require('./config/config');
+const db = require('./db/connection');
+const HealthCheckServer = require('./api/server');
+const cleanupJob = require('./jobs/database-cleanup');
 
 // Validate configuration
 if (!config.validateRequiredConfig()) {
@@ -86,6 +89,19 @@ async function registerCommands() {
 async function start() {
   try {
     logger.info('🤖 Starting Discord bot...');
+    
+    // Initialize database connection
+    logger.info('Connecting to database...');
+    await db.initialize();
+    
+    // Start health check server
+    const healthPort = config.config.health.port;
+    const healthServer = new HealthCheckServer(healthPort);
+    await healthServer.start();
+    
+    // Start database cleanup job
+    cleanupJob.start();
+    
     await registerCommands();
     await client.login(config.config.discord.token);
   } catch (error) {
@@ -97,7 +113,26 @@ async function start() {
 // Graceful shutdown
 process.on('SIGINT', async () => {
   logger.info('Shutting down bot...');
+  
+  // Stop cleanup job
+  cleanupJob.stop();
+  
+  // Close database connection
+  await db.close();
+  
+  // Destroy Discord client
   await client.destroy();
+  
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  logger.info('Received SIGTERM, shutting down...');
+  
+  cleanupJob.stop();
+  await db.close();
+  await client.destroy();
+  
   process.exit(0);
 });
 
