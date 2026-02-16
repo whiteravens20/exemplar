@@ -1,11 +1,5 @@
 const assert = require('assert');
 
-// Mock database connection for testing
-const mockDb = {
-  isAvailable: () => true,
-  query: async () => ({ rows: [] })
-};
-
 // Test conversation repository
 async function testConversationRepository() {
   console.log('Testing ConversationRepository...');
