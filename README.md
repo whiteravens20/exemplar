@@ -253,7 +253,6 @@ They will be used by the bot automatically in the future for:
 - Other automated moderation tasks
 
 **Note:** Slash commands are reserved for automated bot actions, not manual use.
-```
 
 ## 🔐 Environment Variables
 
@@ -268,6 +267,8 @@ They will be used by the bot automatically in the future for:
 | `ALLOWED_ROLES_FOR_AI` | Roles with AI access (comma-separated) | `role_id_1,role_id_2` |
 | `RESTRICTED_RESPONSE` | Response for denied access | `You don't have permission...` |
 
+
+```
 ## 📁 Project Structure
 
 discord-ai-bot/
@@ -414,7 +415,6 @@ For complete CI/CD documentation, see [CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md).
 | [DATABASE.md](docs/DATABASE.md) | PostgreSQL setup, schema, and best practices |
 | [USAGE_GUIDE.md](docs/USAGE_GUIDE.md) | User guide and commands reference |
 | [N8N_INTEGRATION.md](docs/N8N_INTEGRATION.md) | n8n workflow integration details |
-| [ERROR_HANDLING.md](docs/ERROR_HANDLING.md) | Error handling, debugging, and troubleshooting |
 | [DOCKER_SETUP.md](docs/DOCKER_SETUP.md) | Docker deployment guide |
 | [DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md) | Production deployment checklist |
 | [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) | Project architecture and structure |
