@@ -411,10 +411,13 @@ For complete CI/CD documentation, see [CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md).
 |----------|-------------|
 | [SETUP.md](docs/SETUP.md) | Complete setup guide (Discord, n8n, environment variables) |
 | [QUICKSTART.md](docs/QUICKSTART.md) | Quick start guide for getting bot running |
+| [DATABASE.md](docs/DATABASE.md) | PostgreSQL setup, schema, and best practices |
 | [USAGE_GUIDE.md](docs/USAGE_GUIDE.md) | User guide and commands reference |
 | [N8N_INTEGRATION.md](docs/N8N_INTEGRATION.md) | n8n workflow integration details |
 | [ERROR_HANDLING.md](docs/ERROR_HANDLING.md) | Error handling, debugging, and troubleshooting |
 | [DOCKER_SETUP.md](docs/DOCKER_SETUP.md) | Docker deployment guide |
+| [DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md) | Production deployment checklist |
+| [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) | Project architecture and structure |
 | [CI_CD_GUIDE.md](docs/CI_CD_GUIDE.md) | CI/CD pipeline documentation |
 | [FAQ.md](docs/FAQ.md) | Frequently asked questions |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to this project |
