@@ -167,23 +167,31 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.30.0
-        continue-on-error: true
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name || 'latest' }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          ignore-unfixed: true
-          timeout: '120s'
+      - name: Install Trivy
+        run: |
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin v0.69.1
+          trivy --version
 
-      - name: Check if Trivy results file exists
+      - name: Run Trivy vulnerability scanner
+        continue-on-error: true
+        run: |
+          trivy image \
+            --format sarif \
+            --output trivy-results.sarif \
+            --severity CRITICAL,HIGH \
+            --ignore-unfixed \
+            --timeout 120s \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name || 'latest' }}
+
+      - name: Ensure valid SARIF fallback
         if: always()
         run: |
-          if [ ! -f trivy-results.sarif ]; then
-            echo "Trivy results file not found - creating minimal valid SARIF"
-            echo '{"version":"2.1.0","runs":[]}' > trivy-results.sarif
+          if [ ! -f trivy-results.sarif ] || [ ! -s trivy-results.sarif ]; then
+            echo "Creating minimal valid SARIF fallback"
+            cat > trivy-results.sarif << 'EOF'
+          {"version":"2.1.0","$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","runs":[{"tool":{"driver":{"name":"Trivy","version":"0.0.0","informationUri":"https://github.com/aquasecurity/trivy","rules":[]}},"results":[]}]}
+          EOF
           fi
           ls -la trivy-results.sarif
 
