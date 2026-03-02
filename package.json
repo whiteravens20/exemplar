@@ -7,7 +7,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "tsc --watch",
+    "dev": "nodemon --watch src --ext ts --exec \"npx tsc && node dist/index.js\"",
+    "watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:all": "vitest run",
