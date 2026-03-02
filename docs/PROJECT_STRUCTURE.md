@@ -94,7 +94,6 @@ discord-ai-bot/
 │   ├── 📁 utils/                 # Utilities
 │   │   ├── logger.ts             # Winston logger
 │   │   ├── n8n-client.ts         # n8n integration
-│   │   ├── openai-client.ts      # OpenAI integration (optional)
 │   │   ├── permissions.ts        # Role checking
 │   │   ├── error-handler.ts      # Error utilities
 │   │   ├── rate-limiter.ts       # Rate limiting logic
@@ -106,13 +105,6 @@ discord-ai-bot/
 │   │   ├── config.ts             # Config manager
 │   │   ├── bot-statuses.ts       # Bot activity statuses
 │   │   └── response-templates.ts # Response templates
-│   │
-│   └── 📁 commands/              # Legacy (moderation prefix commands)
-│       └── moderation/
-│           ├── kick.ts
-│           ├── ban.ts
-│           ├── mute.ts
-│           └── warn.ts
 
 ```
 
