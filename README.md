@@ -279,6 +279,9 @@ discord-ai-bot/
 ├── 📄 SECURITY.md                # Security policy
 ├── 📄 LICENSE                    # MIT License
 ├── 📄 package.json               # Dependencies and scripts
+├── 📄 tsconfig.json              # TypeScript compiler config
+├── 📄 vitest.config.ts           # Vitest test runner config
+├── 📄 eslint.config.mjs          # ESLint + typescript-eslint config
 ├── 📄 .env.example               # Environment variables template
 ├── 📁 docs/                      # Documentation
 │   ├── 📄 SETUP.md               # Configuration instructions
@@ -288,69 +291,104 @@ discord-ai-bot/
 │   ├── 📄 CI_CD_GUIDE.md         # CI/CD pipeline documentation
 │   ├── 📄 FAQ.md                 # Frequently asked questions
 │   ├── 📄 PROJECT_STRUCTURE.md   # Detailed code structure
+│   ├── 📄 DATABASE.md            # Database schema & practices
 │   └── 📄 DEPLOYMENT_CHECKLIST.md # Production deployment guide
 │
 ├── 🚀 src/
-│   ├── 📄 index.js               # Main bot entry point
-│   ├── 📄 deploy-commands.js     # Slash commands deployment
+│   ├── 📄 index.ts               # Main bot entry point
+│   ├── 📄 deploy-commands.ts     # Slash commands deployment
+│   │
+│   ├── 📁 types/                 # Shared TypeScript types
+│   │   ├── config.ts             # BotConfig interfaces
+│   │   ├── database.ts           # Database model interfaces
+│   │   ├── discord.ts            # BotEvent, BotCommand, SlashCommand
+│   │   ├── n8n.ts                # N8N webhook payload/response types
+│   │   └── index.ts              # Barrel exports
 │   │
 │   ├── 📁 slashcommands/         # Slash commands
-│   │   ├── kick.js               # /kick command
-│   │   ├── ban.js                # /ban command
-│   │   ├── mute.js               # /mute command
-│   │   └── warn.js               # /warn command
+│   │   ├── kick.ts               # /kick command
+│   │   ├── ban.ts                # /ban command
+│   │   ├── mute.ts               # /mute command
+│   │   └── warn.ts               # /warn command
 │   │
 │   ├── 📁 commands/              # Legacy prefix commands
 │   │   └── moderation/
-│   │       ├── kick.js
-│   │       ├── ban.js
-│   │       ├── mute.js
-│   │       └── warn.js
+│   │       ├── kick.ts
+│   │       ├── ban.ts
+│   │       ├── mute.ts
+│   │       └── warn.ts
 │   │
 │   ├── 📁 events/                # Discord event handlers
-│   │   ├── ready.js              # Bot startup
-│   │   ├── messageCreate.js      # Message & DM handling
-│   │   ├── interactionCreate.js  # Slash command handling
-│   │   └── error.js              # Error handling
+│   │   ├── ready.ts              # Bot startup
+│   │   ├── messageCreate.ts      # Message & DM handling
+│   │   ├── interactionCreate.ts  # Slash command handling
+│   │   └── error.ts              # Error handling
 │   │
 │   ├── 📁 utils/                 # Utility modules
-│   │   ├── logger.js             # Winston logger
-│   │   ├── n8n-client.js         # n8n integration
-│   │   ├── openai-client.js      # OpenAI integration
-│   │   ├── permissions.js        # Role checking
-│   │   ├── error-handler.js      # Error utilities
-│   │   ├── rate-limiter.js       # Rate limiting
-│   │   └── message-splitter.js   # Message splitting for Discord
+│   │   ├── logger.ts             # Winston logger
+│   │   ├── n8n-client.ts         # n8n integration
+│   │   ├── openai-client.ts      # OpenAI integration
+│   │   ├── permissions.ts        # Role checking
+│   │   ├── error-handler.ts      # Error utilities
+│   │   ├── rate-limiter.ts       # Rate limiting
+│   │   ├── message-splitter.ts   # Message splitting for Discord
+│   │   ├── token-estimator.ts    # Token estimation
+│   │   └── admin-command-handler.ts # Admin command processing
 │   │
-│   └── 📁 config/                # Configuration files
-│       ├── config.js             # Config manager
-│       ├── bot-statuses.js       # Bot activity statuses
-│       └── response-templates.js # Response templates
+│   ├── 📁 config/                # Configuration files
+│   │   ├── config.ts             # Config manager
+│   │   ├── bot-statuses.ts       # Bot activity statuses
+│   │   └── response-templates.ts # Response templates
+│   │
+│   ├── 📁 db/                    # Database layer
+│   │   ├── connection.ts         # PostgreSQL connection manager
+│   │   └── repositories/
+│   │       ├── analytics-repository.ts
+│   │       ├── conversation-repository.ts
+│   │       ├── rate-limit-repository.ts
+│   │       └── warning-repository.ts
+│   │
+│   ├── 📁 api/                   # HTTP endpoints
+│   │   └── server.ts             # Health check server
+│   │
+│   └── 📁 jobs/                  # Background jobs
+│       └── database-cleanup.ts   # Data retention cleanup
 │
 ├── 📁 scripts/                   # Utility scripts
+│   ├── migrate.ts                # Database migration runner
 │   ├── test-bot.sh               # Bot testing script
 │   ├── verify-dm-config.sh       # DM configuration validation
+│   ├── docker-entrypoint.sh      # Docker entrypoint
+│   ├── seed-test-data.sh         # Test data seeding
 │   └── create-release-package.sh # Release packaging
 │
-├── 📁 tests/                     # Test files
-│   └── rate-limiter.test.js      # Rate limiter tests
+├── 📁 migrations/                # SQL migration files
+│   ├── 001_initial_schema.sql
+│   ├── 002_cleanup_functions.sql
+│   └── 003_analytics_schema.sql
 │
+├── 📁 tests/                     # Test files (Vitest)
+│   ├── database.test.ts          # Database integration tests
+│   ├── admin-stats-types.test.ts # Admin stats type tests
+│   ├── rate-limiter.test.ts      # Rate limiter tests
+│   └── final-result.test.ts      # Message splitter tests
+│
+├── 📁 dist/                      # Compiled JS output (generated)
 ├── 📁 logs/                      # Log files (auto-generated)
 │   ├── combined.log              # All logs
 │   └── error.log                 # Error logs only
 │
 ├── 📁 .github/                   # GitHub workflows
 │   └── workflows/
-│       ├── test.yml              # CI tests
+│       ├── test.yml              # CI tests + type checking
 │       ├── release.yml           # Release automation
 │       ├── docker.yml            # Docker builds
 │       ├── codeql.yml            # Security scanning
 │       └── security.yml          # Dependency audits
 │
-├── 📄 Dockerfile                 # Docker image definition
+├── 📄 Dockerfile                 # Multi-stage Docker build
 ├── 📄 docker-compose.yml         # Docker compose config
-├── 📄 start.sh                   # Quick start script
-└── 📄 test-config.js             # Configuration validator
+└── 📄 start.sh                   # Quick start script
 ```
 
 ## 🔧 Customization

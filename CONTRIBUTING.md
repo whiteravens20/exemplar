@@ -175,26 +175,27 @@ Let's keep the code clean and consistent! ✨
 
 ### 🏗️ File Structure
 
-```javascript
+```typescript
 // 1. Imports (grouped logically)
-const { Client, GatewayIntentBits } = require('discord.js');
-const axios = require('axios');
+import { Client, GatewayIntentBits } from 'discord.js';
+import axios from 'axios';
 
 // 2. Local imports
-const logger = require('../utils/logger');
-const config = require('../config/config');
+import logger from '../utils/logger.js';
+import configManager from '../config/config.js';
 
 // 3. Constants
 const MAX_RETRIES = 3;
 const TIMEOUT_MS = 5000;
 
 // 4. Main code
-async function doSomething() {
+async function doSomething(): Promise<void> {
   // Implementation here
 }
 
 // 5. Exports
-module.exports = { doSomething };
+export { doSomething };
+export default doSomething;
 ```
 
 ### 🏷️ Naming Conventions
@@ -221,8 +222,8 @@ class errorhandler { }
 
 We use Winston for logging - it's your best friend for debugging! 🔍
 
-```javascript
-const logger = require('../utils/logger');
+```typescript
+import logger from '../utils/logger.js';
 
 // 📘 Info - Normal operations
 logger.info('Message received from user', { 
@@ -238,8 +239,7 @@ logger.warn('Rate limit approaching', {
 
 // 🚨 Error - Something went wrong
 logger.error('Failed to send to n8n', { 
-  error: error.message,
-  stack: error.stack,
+  error: (error as Error).message,
   url: webhookUrl
 });
 ```
@@ -250,14 +250,13 @@ logger.error('Failed to send to n8n', {
 
 Always handle errors gracefully - users should never see raw error stacks! 🙈
 
-```javascript
+```typescript
 try {
   await riskyOperation();
 } catch (error) {
   // Log the full error for debugging
   logger.error('Operation failed', { 
-    error: error.message,
-    stack: error.stack,
+    error: (error as Error).message,
     context: { userId, action }
   });
   
@@ -273,7 +272,7 @@ try {
 
 Write comments that explain **WHY**, not **WHAT** - the code should be self-explanatory! 💡
 
-```javascript
+```typescript
 // ❌ Bad - Explains what (obvious from code)
 // Check if user is admin
 if (member.permissions.has('ADMINISTRATOR')) {
@@ -294,12 +293,13 @@ const delay = Math.pow(2, attempt) * 1000;
 
 Want to add a new slash command? Here's the template! 🚀
 
-```javascript
-// src/slashcommands/mycommand.js
-const { SlashCommandBuilder } = require('discord.js');
-const logger = require('../utils/logger');
+```typescript
+// src/slashcommands/mycommand.ts
+import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
+import logger from '../utils/logger.js';
+import type { SlashCommand } from '../types/discord.js';
 
-module.exports = {
+const command: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName('mycommand')
     .setDescription('🎉 Description of your awesome command')
@@ -314,11 +314,11 @@ module.exports = {
         .setRequired(false)
     ),
   
-  async execute(interaction) {
+  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     try {
       // Get options
       const text = interaction.options.getString('text');
-      const amount = interaction.options.getInteger('amount') || 1;
+      const amount = interaction.options.getInteger('amount') ?? 1;
       
       // Log the command usage
       logger.info('Command executed', {
@@ -339,8 +339,7 @@ module.exports = {
     } catch (error) {
       logger.error('Command execution failed', {
         command: 'mycommand',
-        error: error.message,
-        stack: error.stack
+        error: (error as Error).message,
       });
       
       await interaction.reply({
@@ -350,6 +349,8 @@ module.exports = {
     }
   }
 };
+
+export default command;
 ```
 
 **Don't forget:** Run `npm run deploy-commands` after adding new commands! 🔄
@@ -358,16 +359,17 @@ module.exports = {
 
 Events are what make the bot react to Discord actions! ⚡
 
-```javascript
-// src/events/myevent.js
-const { Events } = require('discord.js');
-const logger = require('../utils/logger');
+```typescript
+// src/events/myevent.ts
+import { Events, type Message } from 'discord.js';
+import logger from '../utils/logger.js';
+import type { BotEvent } from '../types/discord.js';
 
-module.exports = {
+const event: BotEvent = {
   name: Events.MessageCreate, // or Events.GuildMemberAdd, etc.
   once: false, // Set to true for events that should only fire once
   
-  async execute(message) {
+  async execute(message: Message): Promise<void> {
     try {
       // Your event handling logic here
       logger.info('Event triggered', {
@@ -381,39 +383,42 @@ module.exports = {
     } catch (error) {
       logger.error('Event handler error', {
         event: 'MessageCreate',
-        error: error.message
+        error: (error as Error).message
       });
     }
   }
 };
+
+export default event;
 ```
 
 ### 🔧 Adding a Utility Function
 
 Creating a reusable utility? Put it in `/src/utils/`! 🛠️
 
-```javascript
-// src/utils/my-helper.js
-const logger = require('./logger');
+```typescript
+// src/utils/my-helper.ts
+import logger from './logger.js';
 
 /**
  * 📝 Description of what this utility does
- * @param {string} input - What this parameter is for
- * @param {object} options - Optional configuration
- * @returns {Promise<string>} What this returns
+ * @param input - What this parameter is for
+ * @param options - Optional configuration
+ * @returns What this returns
  */
-async function myHelper(input, options = {}) {
+async function myHelper(input: string, options: Record<string, unknown> = {}): Promise<string> {
   try {
     // Your helper logic
     const result = processInput(input, options);
     return result;
   } catch (error) {
-    logger.error('Helper function error', { error: error.message });
+    logger.error('Helper function error', { error: (error as Error).message });
     throw error; // Re-throw for caller to handle
   }
 }
 
-module.exports = { myHelper };
+export { myHelper };
+export default myHelper;
 ```
 
 ## ✅ Testing Your Changes
@@ -423,16 +428,19 @@ Testing is super important! 🧪 Here's how to make sure your code works:
 ### 🏃 Manual Testing
 
 ```bash
-# 1. Test your configuration
-npm run test-config
+# 1. Type check your code
+npm run typecheck
 
 # 2. Deploy commands (if you added/modified slash commands)
 npm run deploy-commands
 
-# 3. Start the bot in dev mode
+# 3. Build the project
+npm run build
+
+# 4. Start the bot in dev mode
 npm run dev
 
-# 4. Test in Discord!
+# 5. Test in Discord!
 # - Create a test server
 # - Add your bot
 # - Try all the features you changed
@@ -453,32 +461,33 @@ Before submitting your PR, make sure you've tested:
 
 ### 🧪 Automated Tests
 
-We have Jest tests for critical utilities:
+We use Vitest for testing critical utilities:
 
 ```bash
 # Run all tests
 npm test
 
 # Run tests in watch mode (useful during development)
-npm test -- --watch
+npx vitest --watch
 
 # Run tests with coverage
-npm test -- --coverage
+npx vitest --coverage
 ```
 
 If you're adding new utility functions (especially in `/src/utils/`), please add tests! 🎯
 
-```javascript
-// tests/my-helper.test.js
-const { myHelper } = require('../src/utils/my-helper');
+```typescript
+// tests/my-helper.test.ts
+import { describe, it, expect } from 'vitest';
+import { myHelper } from '../src/utils/my-helper.js';
 
 describe('myHelper', () => {
-  test('should handle valid input', async () => {
+  it('should handle valid input', async () => {
     const result = await myHelper('test input');
     expect(result).toBe('expected output');
   });
   
-  test('should throw error on invalid input', async () => {
+  it('should throw error on invalid input', async () => {
     await expect(myHelper('')).rejects.toThrow();
   });
 });
