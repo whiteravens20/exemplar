@@ -211,7 +211,7 @@ docker-compose stop discord-bot
 docker-compose start discord-bot
 
 # Execute command in running container
-docker-compose exec discord-bot node test-config.js
+docker-compose exec discord-bot node -e "import('http').then(h => h.get('http://localhost:3000/health', r => { if(r.statusCode!==200) process.exit(1) }))"
 
 # Remove containers, networks (keeps volumes)
 docker-compose down
@@ -335,7 +335,7 @@ spec:
             command:
             - node
             - -e
-            - "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+            - "import('http').then(h => h.get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) process.exit(1)}))"
           initialDelaySeconds: 5
           periodSeconds: 30
 ```

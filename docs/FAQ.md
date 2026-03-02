@@ -67,7 +67,7 @@
 **A:** Use PM2:
 ```bash
 npm install -g pm2
-pm2 start src/index.js --name "discord-bot"
+pm2 start dist/index.js --name "discord-bot"
 pm2 startup
 pm2 save
 ```
@@ -115,7 +115,7 @@ docker run -d --env-file .env discord-bot
 - Execute kick/ban/mute automatically
 
 ### Q: Can I add more moderation commands?
-**A:** Yes! Create new file in `src/slashcommands/` and follow pattern from `kick.js`.
+**A:** Yes! Create new file in `src/slashcommands/` and follow pattern from `kick.ts`.
 
 ### Q: What's the timeout limit?
 **A:** Discord timeout: up to 28 days. Bot sets in minutes, so max 40320 minutes (28 days).
