@@ -173,7 +173,7 @@ class RateLimiter {
         (arr) => arr.length > 0
       ).length,
       database: dbStats,
-      usingDatabase: this._isDbAvailable,
+      usingDatabase: this._isDbAvailable && dbStats !== null,
     };
   }
 
