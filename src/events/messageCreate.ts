@@ -255,13 +255,13 @@ const event: BotEvent = {
 
         // Check for !code command to enable coding mode
         let mode = 'chat';
-        if (sanitizedContent.startsWith('!code ')) {
+        if (sanitizedContent.startsWith('!code')) {
           mode = 'code';
-          sanitizedContent = sanitizedContent.substring(6).trim(); // Remove '!code ' prefix
+          sanitizedContent = sanitizedContent.substring(5).trim(); // Remove '!code' prefix
 
           if (!sanitizedContent) {
             await message.reply({
-              content: '❌ Podaj treść po komendzie !code',
+              content: '❌ Podaj treść po komendzie `!code`. Przykład: `!code napisz funkcję sortującą tablicę`',
             });
             return;
           }
