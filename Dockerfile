@@ -4,14 +4,14 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Update npm to 11+ for security fixes (tar, glob, diff vulnerabilities)
-# Patch tar bundled inside npm to fix CVE-2026-26960 (tar < 7.5.8)
-# Install tar in a temp dir (avoids reading npm's own package.json) then overwrite
+# Patch npm bundled deps: tar (CVE-2026-26960) and minimatch (CVE-2026-27903, CVE-2026-27904)
+# Install in a temp dir (avoids reading npm's own package.json) then overwrite
 RUN npm install -g npm@latest && \
-    mkdir -p /tmp/tar-patch && \
-    cd /tmp/tar-patch && \
-    npm install tar@7.5.8 && \
-    cp -r node_modules/tar /usr/local/lib/node_modules/npm/node_modules/ && \
-    cd / && rm -rf /tmp/tar-patch
+    mkdir -p /tmp/npm-patches && \
+    cd /tmp/npm-patches && \
+    npm install tar@7.5.8 minimatch@10.2.4 && \
+    cp -r node_modules/tar node_modules/minimatch /usr/local/lib/node_modules/npm/node_modules/ && \
+    cd / && rm -rf /tmp/npm-patches
 
 # Copy package files
 COPY package*.json ./
@@ -25,13 +25,13 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Update npm to 11+ for security fixes
-# Patch tar bundled inside npm to fix CVE-2026-26960 (tar < 7.5.8)
+# Patch npm bundled deps: tar (CVE-2026-26960) and minimatch (CVE-2026-27903, CVE-2026-27904)
 RUN npm install -g npm@latest && \
-    mkdir -p /tmp/tar-patch && \
-    cd /tmp/tar-patch && \
-    npm install tar@7.5.8 && \
-    cp -r node_modules/tar /usr/local/lib/node_modules/npm/node_modules/ && \
-    cd / && rm -rf /tmp/tar-patch
+    mkdir -p /tmp/npm-patches && \
+    cd /tmp/npm-patches && \
+    npm install tar@7.5.8 minimatch@10.2.4 && \
+    cp -r node_modules/tar node_modules/minimatch /usr/local/lib/node_modules/npm/node_modules/ && \
+    cd / && rm -rf /tmp/npm-patches
 
 # Install dumb-init and wget for health checks
 RUN apk add --no-cache dumb-init wget
