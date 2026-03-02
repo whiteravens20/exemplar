@@ -4,7 +4,10 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Update npm to 11+ for security fixes (tar, glob, diff vulnerabilities)
-RUN npm install -g npm@latest
+# Also patch tar bundled inside npm to fix CVE-2026-26960 (tar < 7.5.8)
+RUN npm install -g npm@latest && \
+    cd /usr/local/lib/node_modules/npm && \
+    npm install tar@7.5.8 --no-save
 
 # Copy package files
 COPY package*.json ./
@@ -18,7 +21,10 @@ FROM node:22-alpine
 WORKDIR /app
 
 # Update npm to 11+ for security fixes
-RUN npm install -g npm@latest
+# Also patch tar bundled inside npm to fix CVE-2026-26960 (tar < 7.5.8)
+RUN npm install -g npm@latest && \
+    cd /usr/local/lib/node_modules/npm && \
+    npm install tar@7.5.8 --no-save
 
 # Install dumb-init and wget for health checks
 RUN apk add --no-cache dumb-init wget
