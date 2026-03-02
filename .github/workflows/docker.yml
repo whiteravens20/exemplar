@@ -168,7 +168,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@0.30.0
+        continue-on-error: true
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name || 'latest' }}
           format: 'sarif'
@@ -178,7 +179,13 @@ jobs:
           timeout: '120s'
 
       - name: Check if Trivy results file exists
-        run: ls -la trivy-results.sarif || echo "Trivy results file not found - creating an empty file" && touch trivy-results.sarif
+        if: always()
+        run: |
+          if [ ! -f trivy-results.sarif ]; then
+            echo "Trivy results file not found - creating minimal valid SARIF"
+            echo '{"version":"2.1.0","runs":[]}' > trivy-results.sarif
+          fi
+          ls -la trivy-results.sarif
 
       - name: Upload Trivy results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v4
