@@ -13,6 +13,16 @@ on:
       - 'src/**'
       - '.dockerignore'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag (leave empty to use "latest")'
+        required: false
+        default: 'latest'
+      skip_tests:
+        description: 'Skip tests before build'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -28,7 +38,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.skip_tests != true)
     strategy:
       matrix:
         node-version: [22.x]
@@ -70,8 +81,13 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      always() &&
+      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
+      (
+        (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
+        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        github.event_name == 'workflow_dispatch'
+      )
     permissions:
       contents: read
       packages: write
@@ -102,6 +118,7 @@ jobs:
             type=semver,pattern={{major}}
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -150,7 +167,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main')
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       security-events: write
