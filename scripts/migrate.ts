@@ -129,7 +129,7 @@ async function runMigration(direction = 'up'): Promise<void> {
 const direction = process.argv[2] || 'up';
 
 if (!['up', 'down'].includes(direction)) {
-  console.error('Usage: node migrate.js [up|down]');
+  console.error('Usage: npx tsx scripts/migrate.ts [up|down]');
   process.exit(1);
 }
 

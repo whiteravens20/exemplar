@@ -13,17 +13,21 @@ NC='\033[0m'
 echo -e "${BLUE}📦 Creating Release Package...${NC}\n"
 
 # Get version from package.json
-VERSION=$(node -p "require('./package.json').version")
-RELEASE_DIR="dist/discord-ai-bot-v${VERSION}"
+VERSION=$(node --input-type=module -e "import{readFileSync}from'fs';const p=JSON.parse(readFileSync('./package.json','utf8'));process.stdout.write(p.version);")
+RELEASE_DIR="release/discord-ai-bot-v${VERSION}"
 
 # Clean previous builds
-rm -rf dist/
+rm -rf release/
 mkdir -p "$RELEASE_DIR"
 
 # Files and directories to include
+echo -e "${BLUE}📋 Building TypeScript...${NC}"
+npm run build
+
 echo -e "${BLUE}📋 Copying essential files...${NC}"
-cp -r src "$RELEASE_DIR/"
-cp -r node_modules "$RELEASE_DIR/" 2>/dev/null || npm ci --production && cp -r node_modules "$RELEASE_DIR/"
+cp -r dist "$RELEASE_DIR/dist"
+cp -r migrations "$RELEASE_DIR/"
+cp -r node_modules "$RELEASE_DIR/" 2>/dev/null || npm ci --omit=dev && cp -r node_modules "$RELEASE_DIR/"
 cp package.json "$RELEASE_DIR/"
 cp package-lock.json "$RELEASE_DIR/" 2>/dev/null || true
 cp .env.example "$RELEASE_DIR/"
@@ -31,14 +35,13 @@ cp Dockerfile "$RELEASE_DIR/"
 cp docker-compose.yml "$RELEASE_DIR/"
 cp start.sh "$RELEASE_DIR/"
 cp README.md "$RELEASE_DIR/"
-cp DOCKER_SETUP.md "$RELEASE_DIR/"
 cp LICENSE "$RELEASE_DIR/"
 
 # Create artifacts
 echo -e "${BLUE}📦 Creating archives...${NC}"
 
 # ZIP archive
-cd dist
+cd release
 zip -r "discord-ai-bot-v${VERSION}.zip" "discord-ai-bot-v${VERSION}" -q
 echo -e "${GREEN}✅ Created: discord-ai-bot-v${VERSION}.zip${NC}"
 
@@ -54,15 +57,16 @@ cd ..
 
 # Summary
 echo -e "\n${GREEN}✅ Release package created successfully!${NC}\n"
-echo -e "${BLUE}📍 Location:${NC} dist/"
+echo -e "${BLUE}📍 Location:${NC} release/"
 echo -e "${BLUE}📦 Artifacts:${NC}"
-echo "  - dist/discord-ai-bot-v${VERSION}.zip"
-echo "  - dist/discord-ai-bot-v${VERSION}.tar.gz"
-echo "  - dist/checksums.txt"
+echo "  - release/discord-ai-bot-v${VERSION}.zip"
+echo "  - release/discord-ai-bot-v${VERSION}.tar.gz"
+echo "  - release/checksums.txt"
 echo ""
 echo -e "${BLUE}📊 Package Contents:${NC}"
 du -sh "$RELEASE_DIR"
-echo "  src/"
+echo "  dist/"
+echo "  migrations/"
 echo "  node_modules/"
 echo "  package.json"
 echo "  .env.example"
