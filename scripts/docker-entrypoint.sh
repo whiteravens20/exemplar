@@ -11,7 +11,7 @@ wait_for_postgres() {
   attempt=0
   
   while [ $attempt -lt $max_attempts ]; do
-    if node -e "
+    if node --input-type=module -e "
       import pg from 'pg';
       const { Pool } = pg;
       const pool = new Pool({
