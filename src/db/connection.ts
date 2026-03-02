@@ -44,7 +44,10 @@ class DatabaseConnection {
 
   async testConnection(): Promise<boolean> {
     try {
-      const client = await this.pool!.connect();
+      if (!this.pool) {
+        throw new Error('Pool not initialized');
+      }
+      const client = await this.pool.connect();
       await client.query('SELECT 1');
       client.release();
 
@@ -91,7 +94,10 @@ class DatabaseConnection {
   }
 
   getPool(): pg.Pool {
-    return this.pool!;
+    if (!this.pool) {
+      throw new Error('Database pool not initialized. Call initialize() first.');
+    }
+    return this.pool;
   }
 
   isAvailable(): boolean {
@@ -107,7 +113,10 @@ class DatabaseConnection {
     }
 
     try {
-      const result = await this.pool!.query<T>(text, params);
+      if (!this.pool) {
+        throw new Error('Database pool not initialized');
+      }
+      const result = await this.pool.query<T>(text, params);
       return result;
     } catch (error) {
       logger.error('Database query failed', {

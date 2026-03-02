@@ -7,10 +7,14 @@ const event: BotEvent = {
   name: Events.ClientReady,
   once: true,
   execute(client: Client) {
-    logger.info(`✅ Bot logged in as ${client.user!.tag}`);
+    if (!client.user) {
+      logger.error('Client user not available on ready event');
+      return;
+    }
+    logger.info(`✅ Bot logged in as ${client.user.tag}`);
 
     const status = getRandomStatus();
-    client.user!.setPresence({
+    client.user.setPresence({
       activities: [
         {
           name: status.name,
@@ -24,7 +28,7 @@ const event: BotEvent = {
 
     setInterval(() => {
       const newStatus = getRandomStatus();
-      client.user!.setActivity(newStatus.name, { type: newStatus.type });
+      client.user?.setActivity(newStatus.name, { type: newStatus.type });
       logger.info(`🎭 Rotated status: ${newStatus.name}`);
     }, 30000);
 

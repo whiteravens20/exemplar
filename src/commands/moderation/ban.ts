@@ -15,7 +15,11 @@ const ban: BotCommand = {
     }
 
     try {
-      const member = await interaction.guild!.members.fetch(target.id);
+      if (!interaction.guild) {
+        await interaction.reply({ content: 'This command can only be used in a server', ephemeral: true });
+        return;
+      }
+      const member = await interaction.guild.members.fetch(target.id);
       await member.ban({ reason });
 
       await interaction.reply({

@@ -17,8 +17,9 @@ const warn: BotCommand = {
     try {
       // Try to send DM to the user
       const dm = await target.createDM();
+      const guildName = interaction.guild?.name ?? 'the server';
       await dm.send({
-        content: `⚠️ You have been warned on **${interaction.guild!.name}**\n\n**Reason:** ${reason}\n\nPlease follow the server rules.`,
+        content: `⚠️ You have been warned on **${guildName}**\n\n**Reason:** ${reason}\n\nPlease follow the server rules.`,
       });
 
       await interaction.reply({

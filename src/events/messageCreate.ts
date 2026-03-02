@@ -72,8 +72,10 @@ const event: BotEvent = {
       contentLength: message.content.length,
     });
 
-    const botMention = `<@${message.client.user!.id}>`;
-    const botNicknameMention = `<@!${message.client.user!.id}>`;
+    const botUser = message.client.user;
+    if (!botUser) return;
+    const botMention = `<@${botUser.id}>`;
+    const botNicknameMention = `<@!${botUser.id}>`;
 
     // Ignore messages starting with ! in channels (not DMs)
     if (
