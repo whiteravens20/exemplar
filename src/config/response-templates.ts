@@ -1,3 +1,5 @@
+import logger from '../utils/logger.js';
+
 /**
  * Custom Response Templates
  *
@@ -68,12 +70,12 @@ const templates: Templates = {
  */
 function getTemplate(category: string, type: string = 'default'): string {
   if (!templates[category]) {
-    console.warn(`Unknown template category: ${category}`);
+    logger.warn(`Unknown template category: ${category}`);
     return templates.error.generic;
   }
 
   if (!templates[category][type]) {
-    console.warn(`Unknown template type ${type} for category ${category}`);
+    logger.warn(`Unknown template type ${type} for category ${category}`);
     return templates[category].default;
   }
 

@@ -26,13 +26,19 @@ setInterval(() => rateLimiter.cleanup(), 5 * 60 * 1000);
 // Constants
 const MAX_MESSAGE_LENGTH = 4000;
 
-// Track processed messages to prevent duplicates
-const processedMessages = new Set<string>();
+// Track processed messages to prevent duplicates (bounded Map with TTL)
+const processedMessages = new Map<string, number>();
 const PROCESSED_MESSAGE_TTL = 60000; // 60 seconds
+const PROCESSED_MESSAGES_MAX = 10000;
 
-// Cleanup processed messages every minute
+// Cleanup expired processed messages every minute
 setInterval(() => {
-  processedMessages.clear();
+  const now = Date.now();
+  for (const [id, timestamp] of processedMessages) {
+    if (now - timestamp > PROCESSED_MESSAGE_TTL) {
+      processedMessages.delete(id);
+    }
+  }
 }, PROCESSED_MESSAGE_TTL);
 
 const event: BotEvent = {
@@ -45,7 +51,13 @@ const event: BotEvent = {
       });
       return;
     }
-    processedMessages.add(message.id);
+    processedMessages.set(message.id, Date.now());
+
+    // Evict oldest entries if map exceeds max size
+    if (processedMessages.size > PROCESSED_MESSAGES_MAX) {
+      const firstKey = processedMessages.keys().next().value;
+      if (firstKey) processedMessages.delete(firstKey);
+    }
 
     // Fetch partial messages (required for DMs in Discord.js v14)
     if (message.partial) {
@@ -318,7 +330,7 @@ const event: BotEvent = {
             });
 
             await message.reply({
-              content: `❌ Błąd konfiguracji n8n workflow.\n\n**Problem:** Brak pola "response" w odpowiedzi.\n**Tryb:** ${mode}\n**Otrzymane dane:** ${JSON.stringify(Object.keys(result.data || {}))}\n\nSprawdź workflow n8n - node dla trybu "${mode}" powinien zwracać:\n\`\`\`json\n{ "response": "treść odpowiedzi" }\n\`\`\``,
+              content: '❌ Błąd konfiguracji n8n workflow. Brak pola "response" w odpowiedzi. Sprawdź konfigurację workflow.',
             });
             return;
           }

@@ -1,10 +1,5 @@
 import type { GuildMember } from 'discord.js';
 
-const parseRoleIds = (roleString: string | undefined): string[] => {
-  if (!roleString) return [];
-  return roleString.split(',').map((id) => id.trim());
-};
-
 const hasPermission = (member: GuildMember, allowedRoles: string[]): boolean => {
   if (!member) return false;
 
@@ -24,4 +19,4 @@ const isModeratorOrAdmin = (member: GuildMember): boolean => {
   );
 };
 
-export { parseRoleIds, hasPermission, isModeratorOrAdmin };
+export { hasPermission, isModeratorOrAdmin };

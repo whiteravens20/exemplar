@@ -545,12 +545,11 @@ async function handleAdminCommand(message: Message): Promise<void> {
         }
 
         // Confirmation required
-        await message.reply({
-          content:
-            '⚠️ **UWAGA:** Ta operacja usunie wszystkie konwersacje (bot + n8n AI Agent), rate limity i statystyki z bazy danych!\n\nCzy na pewno chcesz kontynuować? Wpisz `!flushdb confirm` aby potwierdzić.',
-        });
-
         if (cmdArgs[0] !== 'confirm') {
+          await message.reply({
+            content:
+              '⚠️ **UWAGA:** Ta operacja usunie wszystkie konwersacje (bot + n8n AI Agent), rate limity i statystyki z bazy danych!\n\nCzy na pewno chcesz kontynuować? Wpisz `!flushdb confirm` aby potwierdzić.',
+          });
           return;
         }
 

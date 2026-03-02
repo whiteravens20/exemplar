@@ -100,6 +100,9 @@ async function registerCommands(): Promise<void> {
   }
 }
 
+// Health check server reference for graceful shutdown
+let healthServer: HealthCheckServer | null = null;
+
 // Login to Discord
 async function start(): Promise<void> {
   try {
@@ -111,7 +114,7 @@ async function start(): Promise<void> {
 
     // Start health check server
     const healthPort = configManager.config.health.port;
-    const healthServer = new HealthCheckServer(healthPort);
+    healthServer = new HealthCheckServer(healthPort);
     await healthServer.start();
 
     // Start database cleanup job
@@ -134,6 +137,9 @@ process.on('SIGINT', async () => {
   // Stop cleanup job
   cleanupJob.stop();
 
+  // Stop health check server
+  if (healthServer) await healthServer.stop();
+
   // Close database connection
   await db.close();
 
@@ -147,6 +153,7 @@ process.on('SIGTERM', async () => {
   logger.info('Received SIGTERM, shutting down...');
 
   cleanupJob.stop();
+  if (healthServer) await healthServer.stop();
   await db.close();
   await client.destroy();
 
@@ -154,17 +161,19 @@ process.on('SIGTERM', async () => {
 });
 
 // Error handlers
-process.on('unhandledRejection', (error: Error) => {
+process.on('unhandledRejection', (reason: unknown) => {
+  const error = reason instanceof Error ? reason : new Error(String(reason));
   logger.error('Unhandled promise rejection', {
     error: error.message,
     stack: error.stack,
   });
 });
 
-process.on('uncaughtException', (error: Error) => {
+process.on('uncaughtException', (error: unknown) => {
+  const err = error instanceof Error ? error : new Error(String(error));
   logger.error('Uncaught exception', {
-    error: error.message,
-    stack: error.stack,
+    error: err.message,
+    stack: err.stack,
   });
   process.exit(1);
 });

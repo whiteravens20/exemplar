@@ -5,7 +5,7 @@ import type { BotEvent } from '../types/discord.js';
 const event: BotEvent = {
   name: Events.Error,
   execute(error: unknown) {
-    const err = error as Error;
+    const err = error instanceof Error ? error : new Error(String(error));
     logger.error('Discord client error', {
       error: err.message,
       stack: err.stack,

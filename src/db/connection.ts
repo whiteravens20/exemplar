@@ -23,10 +23,13 @@ class DatabaseConnection {
       max: dbConfig.maxConnections,
       idleTimeoutMillis: dbConfig.idleTimeoutMs,
       connectionTimeoutMillis: dbConfig.connectionTimeoutMs,
+      statement_timeout: 30000, // 30s max query execution time
     };
 
     if (dbConfig.ssl) {
-      poolConfig.ssl = { rejectUnauthorized: false };
+      poolConfig.ssl = {
+        rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+      };
     }
 
     this.pool = new Pool(poolConfig);

@@ -30,7 +30,7 @@ const event: BotEvent = {
       const newStatus = getRandomStatus();
       client.user?.setActivity(newStatus.name, { type: newStatus.type });
       logger.info(`🎭 Rotated status: ${newStatus.name}`);
-    }, 30000);
+    }, 5 * 60 * 1000); // 5 minutes
 
     logger.info(
       `✅ Bot is ready! Serving ${client.guilds.cache.size} guild(s)`

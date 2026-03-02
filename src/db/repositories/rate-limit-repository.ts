@@ -146,10 +146,12 @@ class RateLimitRepository {
     }
 
     try {
+      const windowSeconds = Math.floor(windowMs / 1000);
       const result = await db.query(
         `DELETE FROM rate_limits
-         WHERE updated_at < NOW() - INTERVAL '${windowMs / 1000} seconds'
-         OR jsonb_array_length(request_timestamps) = 0`
+         WHERE updated_at < NOW() - make_interval(secs => $1)
+         OR jsonb_array_length(request_timestamps) = 0`,
+        [windowSeconds]
       );
 
       logger.debug('Rate limit cleanup completed', {

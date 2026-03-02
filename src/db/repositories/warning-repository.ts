@@ -134,14 +134,16 @@ class WarningRepository {
            FROM warnings w
            JOIN users u ON u.id = w.user_id
            LEFT JOIN users issuer ON issuer.discord_id = w.issued_by
-           ORDER BY w.issued_at DESC`
+           ORDER BY w.issued_at DESC
+           LIMIT 100`
         : `SELECT w.*, u.username, u.discord_id as user_discord_id,
                   issuer.username as issued_by_username
            FROM warnings w
            JOIN users u ON u.id = w.user_id
            LEFT JOIN users issuer ON issuer.discord_id = w.issued_by
            WHERE w.expires_at > NOW()
-           ORDER BY w.issued_at DESC`;
+           ORDER BY w.issued_at DESC
+           LIMIT 100`;
 
       const result = await db.query<Warning>(query);
       return result.rows;
