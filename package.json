@@ -10,6 +10,7 @@
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:all": "vitest run",
     "test:watch": "vitest",
     "test-config": "npx tsx test-config.ts",
     "deploy-commands": "node dist/deploy-commands.js",
