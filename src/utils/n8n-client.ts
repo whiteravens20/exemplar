@@ -150,7 +150,7 @@ class N8NClient {
       payload.conversationContext = conversationContext.map((msg) => ({
         userMessage: msg.user_message,
         aiResponse: msg.ai_response,
-        timestamp: msg.timestamp,
+        timestamp: msg.timestamp.toISOString(),
       }));
 
       logger.debug('Added conversation context to payload', {

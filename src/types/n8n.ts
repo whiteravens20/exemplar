@@ -11,7 +11,7 @@ export interface N8NWebhookPayload {
   conversationContext?: Array<{
     userMessage: string;
     aiResponse: string;
-    timestamp: Date;
+    timestamp: string;
   }>;
 }
 
