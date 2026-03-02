@@ -65,8 +65,33 @@ and project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Removed
 - `test-config.js` — replaced by `tsc --noEmit` type checking
 - `scripts/test-code-mode.js` — obsolete test script
+- `src/commands/moderation/` — dead code (unused prefix command handlers)
+- `src/utils/openai-client.ts` — unused OpenAI client (bot uses n8n)
 - All `.js` source files in `src/` (replaced by `.ts`)
 - All `.js` test files in `tests/` (replaced by `.ts`)
+
+### Security
+- **S1**: Fixed SQL injection in `rate-limit-repository.cleanup()` — string interpolation → parameterized query
+- **S2**: SSL `rejectUnauthorized` now configurable via `DB_SSL_REJECT_UNAUTHORIZED` env var (previously hardcoded `false`)
+- **S3**: Removed internal n8n data structure leak from user-facing error messages
+- **S8**: Fixed `unhandledRejection`/`uncaughtException` handlers — properly handle non-Error types
+- Error event handler now safely handles non-Error types via `instanceof` guard
+
+### Performance
+- **P1**: `processedMessages` changed from unbounded `Set` to bounded `Map` with TTL and 10K size limit
+- **P2**: Status rotation interval increased from 30s to 5min (reduces Discord API rate limit pressure)
+- **P3**: Health check server now properly stopped during graceful shutdown
+- **P4**: `getAllWarnings()` query adds `LIMIT 100` to prevent unbounded result sets
+- **P5**: Database pool now includes `statement_timeout: 30s` to prevent runaway queries
+- **P6**: Winston log files now rotate at 10MB with max 5 files
+
+### Quality
+- **Q3**: Fixed `!flushdb confirm` logic bug — confirmation check now happens before warning message
+- **Q4**: Replaced `console.warn` with `logger.warn` in response templates
+- **Q5**: Standardized error messages to Polish in `interactionCreate.ts`
+- **Q11**: Removed unused `parseRoleIds` from `permissions.ts`
+- CodeQL workflow updated to use `javascript-typescript` language with Node.js 22 setup
+- Added 41 new tests (68 total, up from 27): token-estimator, message-splitter, response-templates, permissions, rate-limiter v2
 
 ### Migrating from v2.x to v3.0.0
 

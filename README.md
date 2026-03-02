@@ -311,13 +311,6 @@ discord-ai-bot/
 │   │   ├── mute.ts               # /mute command
 │   │   └── warn.ts               # /warn command
 │   │
-│   ├── 📁 commands/              # Legacy prefix commands
-│   │   └── moderation/
-│   │       ├── kick.ts
-│   │       ├── ban.ts
-│   │       ├── mute.ts
-│   │       └── warn.ts
-│   │
 │   ├── 📁 events/                # Discord event handlers
 │   │   ├── ready.ts              # Bot startup
 │   │   ├── messageCreate.ts      # Message & DM handling
@@ -327,7 +320,6 @@ discord-ai-bot/
 │   ├── 📁 utils/                 # Utility modules
 │   │   ├── logger.ts             # Winston logger
 │   │   ├── n8n-client.ts         # n8n integration
-│   │   ├── openai-client.ts      # OpenAI integration
 │   │   ├── permissions.ts        # Role checking
 │   │   ├── error-handler.ts      # Error utilities
 │   │   ├── rate-limiter.ts       # Rate limiting
