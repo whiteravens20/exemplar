@@ -8,18 +8,18 @@ echo ""
 
 # Check if bot is running
 echo "1. Checking if bot process is running..."
-if pgrep -f "node src/index.js" > /dev/null; then
-    echo "   ✅ Bot is running (PID: $(pgrep -f 'node src/index.js'))"
+if pgrep -f "node dist/index.js" > /dev/null; then
+    echo "   ✅ Bot is running (PID: $(pgrep -f 'node dist/index.js'))"
 else
     echo "   ❌ Bot is NOT running"
-    echo "   Run: npm start"
+    echo "   Run: npm run build && npm start"
     exit 1
 fi
 echo ""
 
 # Check for Partials in code
 echo "2. Checking for Partials configuration..."
-if grep -q "Partials.Channel" src/index.js && grep -q "Partials.Message" src/index.js; then
+if grep -q "Partials.Channel" src/index.ts && grep -q "Partials.Message" src/index.ts; then
     echo "   ✅ Partials configured correctly"
 else
     echo "   ❌ Partials missing - DMs won't work!"
@@ -29,14 +29,14 @@ echo ""
 
 # Check intents
 echo "3. Checking Gateway Intents..."
-if grep -q "GatewayIntentBits.DirectMessages" src/index.js; then
+if grep -q "GatewayIntentBits.DirectMessages" src/index.ts; then
     echo "   ✅ DirectMessages intent enabled"
 else
     echo "   ❌ DirectMessages intent missing"
     exit 1
 fi
 
-if grep -q "GatewayIntentBits.MessageContent" src/index.js; then
+if grep -q "GatewayIntentBits.MessageContent" src/index.ts; then
     echo "   ✅ MessageContent intent enabled"
 else
     echo "   ❌ MessageContent intent missing"
@@ -113,6 +113,6 @@ echo ""
 echo "If DMs still don't work:"
 echo "- Check Privileged Gateway Intents in Discord Developer Portal"
 echo "- Ensure MESSAGE CONTENT INTENT is enabled"
-echo "- Restart bot: pkill -f 'node src/index.js' && npm start"
+echo "- Restart bot: pkill -f 'node dist/index.js' && npm run build && npm start"
 echo ""
 echo "For detailed troubleshooting, see DM_TEST.md"

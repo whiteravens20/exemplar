@@ -121,7 +121,10 @@ If `ALLOWED_ROLES_FOR_AI` is empty, everyone can send messages to the AI Assista
 npm install
 
 # Test configuration (optional)
-node test-config.js
+npm run typecheck
+
+# Build the project
+npm run build
 
 # Run the bot
 npm start

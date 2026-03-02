@@ -15,9 +15,19 @@ RUN npm install -g npm@latest && \
 
 # Copy package files
 COPY package*.json ./
+COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including devDependencies for build)
+RUN npm ci
+
+# Copy source files
+COPY src/ ./src/
+
+# Build TypeScript
+RUN npx tsc
+
+# Remove dev dependencies
+RUN npm prune --production
 
 # Runtime stage
 FROM node:22-alpine
@@ -36,12 +46,14 @@ RUN npm install -g npm@latest && \
 # Install dumb-init and wget for health checks
 RUN apk add --no-cache dumb-init wget
 
-# Copy built node_modules from builder
+# Copy production node_modules from builder
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copy application files
+# Copy built JS output
+COPY --from=builder /app/dist ./dist
+
+# Copy other necessary files
 COPY package*.json ./
-COPY src/ ./src/
 COPY migrations/ ./migrations/
 COPY scripts/ ./scripts/
 COPY .env.example ./
@@ -61,10 +73,10 @@ USER nodejs
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" || exit 1
+    CMD node -e "import('http').then(h => h.get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(String(r.statusCode))}))" || exit 1
 
 # Set entrypoint to handle database initialization
 ENTRYPOINT ["./scripts/docker-entrypoint.sh"]
 
 # Run the application
-CMD ["dumb-init", "node", "src/index.js"]
+CMD ["dumb-init", "node", "dist/index.js"]

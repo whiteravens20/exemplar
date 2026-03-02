@@ -8,12 +8,99 @@ and project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ---
 
 ## Quick Links
-- [Current Version (v2.1.0)](#210---2026-02-16)
+- [Current Version (v3.0.0)](#300---unreleased)
+- [Previous Version (v2.1.0)](#210---2026-02-16)
+- [Migration Guide (v2.x → v3.0.0)](#migrating-from-v2x-to-v300)
 - [Migration Guide (v2.0.x → v2.1.0)](#migrating-from-v20x-to-v210)
 - [Migration Guide (v1.x → v2.0.0)](#migrating-from-v1x-to-v200)
 - [Future Roadmap](#future-roadmap)
 - [Known Issues](#known-issues)
 - [Security](#security)
+
+---
+
+## [3.0.0] - Unreleased
+
+> **Major Release** - Full TypeScript rewrite with strict typing, ESM modules, and Vitest testing.
+
+### 🎉 Highlights
+
+- **🔷 TypeScript Migration**: Complete rewrite of all source files from JavaScript to TypeScript with `strict: true`
+- **📦 ESM Modules**: Migrated from CommonJS (`require`/`module.exports`) to ES Modules (`import`/`export`)
+- **🧪 Vitest**: Replaced raw Node.js assert tests with Vitest test framework
+- **🏗️ Build Step**: Added `tsc` compilation step — source in `src/`, output in `dist/`
+- **📐 Shared Types**: Centralized type definitions in `src/types/` for database models, Discord events, n8n contracts, and config
+- **🔧 typescript-eslint**: Updated ESLint to use typescript-eslint for static analysis
+
+### Breaking Changes
+- **Node.js 22+** required (unchanged)
+- **Build required**: Run `npm run build` before `npm start` (or use `npm run dev` for development)
+- **Entry point changed**: `dist/index.js` instead of `src/index.js`
+- **ESM**: Package uses `"type": "module"` — `require()` no longer works
+- **Docker**: Updated Dockerfile with TypeScript build stage, CMD now runs `dist/index.js`
+- **CI/CD**: Workflows updated to include `tsc --noEmit` type checking and build step
+
+### Added
+- `tsconfig.json` — TypeScript compiler configuration (strict, ES2023, NodeNext)
+- `vitest.config.ts` — Vitest test runner configuration
+- `src/types/` — Shared type definitions:
+  - `database.ts` — All database model interfaces
+  - `discord.ts` — BotEvent, BotCommand, SlashCommand interfaces + Client augmentation
+  - `n8n.ts` — N8N webhook payload/response types
+  - `config.ts` — BotConfig interface hierarchy
+  - `index.ts` — Barrel exports
+- TypeScript declarations and source maps generated on build
+
+### Changed
+- All 22 source files in `src/` migrated from `.js` to `.ts`
+- All 4 test files migrated to Vitest with TypeScript
+- `scripts/migrate.js` → `scripts/migrate.ts`
+- `eslint.config.mjs` updated to use `typescript-eslint`
+- `package.json`: version 3.0.0, added `"type": "module"`, new scripts (build, typecheck)
+- `Dockerfile`: multi-stage build with TypeScript compilation
+- GitHub Actions workflows: syntax checks replaced with `tsc --noEmit`
+- Static imports replace dynamic `fs.readdirSync` + `require()` in index.ts
+- `pg` imported as default ESM import with destructuring for Pool
+
+### Removed
+- `test-config.js` — replaced by `tsc --noEmit` type checking
+- `scripts/test-code-mode.js` — obsolete test script
+- `src/commands/moderation/` — dead code (unused prefix command handlers)
+- `src/utils/openai-client.ts` — unused OpenAI client (bot uses n8n)
+- All `.js` source files in `src/` (replaced by `.ts`)
+- All `.js` test files in `tests/` (replaced by `.ts`)
+
+### Security
+- **S1**: Fixed SQL injection in `rate-limit-repository.cleanup()` — string interpolation → parameterized query
+- **S2**: SSL `rejectUnauthorized` now configurable via `DB_SSL_REJECT_UNAUTHORIZED` env var (previously hardcoded `false`)
+- **S3**: Removed internal n8n data structure leak from user-facing error messages
+- **S8**: Fixed `unhandledRejection`/`uncaughtException` handlers — properly handle non-Error types
+- Error event handler now safely handles non-Error types via `instanceof` guard
+
+### Performance
+- **P1**: `processedMessages` changed from unbounded `Set` to bounded `Map` with TTL and 10K size limit
+- **P2**: Status rotation interval increased from 30s to 5min (reduces Discord API rate limit pressure)
+- **P3**: Health check server now properly stopped during graceful shutdown
+- **P4**: `getAllWarnings()` query adds `LIMIT 100` to prevent unbounded result sets
+- **P5**: Database pool now includes `statement_timeout: 30s` to prevent runaway queries
+- **P6**: Winston log files now rotate at 10MB with max 5 files
+
+### Quality
+- **Q3**: Fixed `!flushdb confirm` logic bug — confirmation check now happens before warning message
+- **Q4**: Replaced `console.warn` with `logger.warn` in response templates
+- **Q5**: Standardized error messages to Polish in `interactionCreate.ts`
+- **Q11**: Removed unused `parseRoleIds` from `permissions.ts`
+- CodeQL workflow updated to use `javascript-typescript` language with Node.js 22 setup
+- Added 41 new tests (68 total, up from 27): token-estimator, message-splitter, response-templates, permissions, rate-limiter v2
+
+### Migrating from v2.x to v3.0.0
+
+1. **Install dependencies**: `npm install` (new devDependencies: typescript, vitest, typescript-eslint)
+2. **Build**: `npm run build` (compiles TypeScript to `dist/`)
+3. **Update start command**: Use `node dist/index.js` instead of `node src/index.js`
+4. **Docker**: Rebuild image — Dockerfile now includes build stage
+5. **CI/CD**: Workflows auto-updated — no manual changes needed
+6. **Custom code**: If you added custom `.js` files to `src/`, convert them to TypeScript
 
 ---
 
@@ -708,8 +795,8 @@ ps aux | grep node
 
 ---
 
-**Last Updated:** 2026-02-16  
-**Current Version:** 2.1.0  
+**Last Updated:** 2026-03-02  
+**Current Version:** 3.0.0  
 **Status:** Stable ✅  
 **Repository:** [whiteravens20/exemplar](https://github.com/whiteravens20/exemplar)  
 **License:** MIT - See [LICENSE](LICENSE) file

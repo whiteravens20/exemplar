@@ -1,20 +1,23 @@
 {
   "name": "discord-ai-bot",
-  "version": "2.1.3",
+  "version": "3.0.0",
   "description": "Discord Bot with n8n AI Assistant integration",
-  "main": "src/index.js",
+  "type": "module",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "nodemon src/index.js",
-    "test": "bash scripts/test-bot.sh",
-    "test:unit": "node tests/database.test.js && node tests/admin-stats-types.test.js && node tests/final-result.test.js",
-    "test:all": "npm run test && npm run test:unit",
-    "test-config": "node test-config.js",
-    "deploy-commands": "node src/deploy-commands.js",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch src --ext ts --exec \"npx tsc && node dist/index.js\"",
+    "watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:all": "vitest run",
+    "test:watch": "vitest",
+    "deploy-commands": "node dist/deploy-commands.js",
     "release-package": "bash scripts/create-release-package.sh",
     "lint": "eslint src --fix",
-    "migrate:up": "node scripts/migrate.js up",
-    "migrate:down": "node scripts/migrate.js down",
+    "migrate:up": "npx tsx scripts/migrate.ts up",
+    "migrate:down": "npx tsx scripts/migrate.ts down",
     "db:seed": "bash scripts/seed-test-data.sh"
   },
   "keywords": [
@@ -37,9 +40,15 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.3.3",
+    "@types/pg": "^8.18.0",
     "eslint": "^10.0.1",
     "globals": "^17.3.0",
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
+    "vitest": "^4.0.18"
   },
   "overrides": {
     "undici": "^7.21.0",

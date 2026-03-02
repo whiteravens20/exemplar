@@ -32,11 +32,13 @@ fi
 
 # Test configuration
 echo "🧪 Testing configuration..."
-node test-config.js
 
-if [ $? -ne 0 ]; then
-    echo "❌ Configuration test failed!"
-    exit 1
+# Build TypeScript if dist/ doesn't exist
+if [ ! -d "dist" ]; then
+    echo "🔨 Building TypeScript..."
+    npm run build
+    echo "✅ Build completed"
+    echo ""
 fi
 
 echo ""
