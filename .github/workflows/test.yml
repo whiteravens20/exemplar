@@ -52,18 +52,17 @@ jobs:
           echo "⚠️ Security audit completed (warnings only)"
         continue-on-error: true
 
-      - name: Check for syntax errors
-        run: |
-          node -c src/index.js
-          node -c src/deploy-commands.js
-          for file in src/events/*.js; do node -c "$file"; done
-          for file in src/slashcommands/*.js; do node -c "$file"; done
-          for file in src/utils/*.js; do node -c "$file"; done
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
 
       - name: Verify required files
         run: |
-          test -f src/index.js || (echo "src/index.js missing" && exit 1)
-          test -f src/deploy-commands.js || (echo "src/deploy-commands.js missing" && exit 1)
+          test -f src/index.ts || (echo "src/index.ts missing" && exit 1)
+          test -f src/deploy-commands.ts || (echo "src/deploy-commands.ts missing" && exit 1)
+          test -f tsconfig.json || (echo "tsconfig.json missing" && exit 1)
           test -f package.json || (echo "package.json missing" && exit 1)
           test -f Dockerfile || (echo "Dockerfile missing" && exit 1)
           echo "✅ All required files present"

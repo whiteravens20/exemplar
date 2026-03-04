@@ -46,10 +46,17 @@ jobs:
           echo "⚠️ Security audit completed (warnings only)"
         continue-on-error: true
       
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
       - name: Verify required files
         run: |
-          node -c src/index.js
-          node -c src/deploy-commands.js
+          test -f src/index.ts || exit 1
+          test -f src/deploy-commands.ts || exit 1
+          test -f tsconfig.json || exit 1
           test -f package.json || exit 1
           test -f Dockerfile || exit 1
 

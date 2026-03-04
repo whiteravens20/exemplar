@@ -73,7 +73,7 @@ npm run dev
 npm install -g pm2
 
 # Start application
-pm2 start src/index.js --name "discord-bot"
+pm2 start dist/index.js --name "discord-bot"
 
 # Auto-start on reboot
 pm2 startup
@@ -99,7 +99,7 @@ After=network.target
 Type=simple
 User=your-user
 WorkingDirectory=/path/to/discord-ai-bot
-ExecStart=/usr/bin/node src/index.js
+ExecStart=/usr/bin/node dist/index.js
 Restart=on-failure
 RestartSec=10
 
@@ -120,17 +120,25 @@ sudo journalctl -u discord-bot -f
 #### Option 3: Docker
 
 ```dockerfile
-FROM node:20-alpine
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install --only=production
+RUN npm ci
 
+COPY tsconfig.json ./
 COPY src ./src
+RUN npx tsc
+
+FROM node:22-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/dist ./dist
 COPY .env .
 
-CMD ["node", "src/index.js"]
+CMD ["node", "dist/index.js"]
 ```
 
 ```bash
@@ -142,7 +150,7 @@ docker run -d --name discord-bot discord-bot
 
 1. Add `Procfile`:
 ```
-worker: node src/index.js
+worker: node dist/index.js
 ```
 
 2. Configure environment variables in panel
@@ -223,8 +231,8 @@ echo $DISCORD_TOKEN | head -c 20
 # 2. Check logs
 tail -20 error.log
 
-# 3. Test .env loading
-node test-config.js
+# 3. Type check the project
+npm run typecheck
 
 # 4. Ensure bot has Intent permissions
 ```
@@ -247,7 +255,7 @@ curl -X POST $N8N_WORKFLOW_URL \
 npm run deploy-commands
 
 # 2. Restart bot
-pkill -f "node src/index.js"
+pkill -f "node dist/index.js"
 npm start
 
 # 3. Check permissions
@@ -305,6 +313,6 @@ pm2 restart discord-bot
 
 ---
 
-**Checklist Version:** 1.0
-**Last Updated:** 2024-02-02
+**Checklist Version:** 1.2
+**Last Updated:** 2026-03-02
 **Status:** Ready for deployment ✅

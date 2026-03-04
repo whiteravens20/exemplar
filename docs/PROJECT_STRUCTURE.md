@@ -10,12 +10,13 @@ discord-ai-bot/
 ├── 📄 SECURITY.md                # Security policy
 ├── 📄 LICENSE                    # MIT License
 ├── 📄 package.json               # Dependencies and scripts
+├── 📄 tsconfig.json              # TypeScript configuration
+├── 📄 vitest.config.ts           # Vitest test configuration
 ├── 📄 .env.example               # Variable template
 ├── 📄 .gitignore                 # Git ignore rules
 ├── 📄 docker-compose.yml         # Docker services (bot + PostgreSQL)
-├── 📄 Dockerfile                 # Bot container image
-├── 📄 eslint.config.mjs          # ESLint configuration
-├── 📄 test-config.js             # Configuration validator
+├── 📄 Dockerfile                 # Bot container image (multi-stage w/ tsc)
+├── 📄 eslint.config.mjs          # ESLint + typescript-eslint configuration
 ├── 📄 n8n-workflow-example.json  # Example n8n workflow
 │
 ├── 📁 docs/                      # Documentation
@@ -35,19 +36,18 @@ discord-ai-bot/
 │   └── 003_analytics_schema.sql  # Analytics tables
 │
 ├── 📁 scripts/                   # Utility scripts
-│   ├── migrate.js                # Migration runner
+│   ├── migrate.ts                # Migration runner (TypeScript)
 │   ├── test-bot.sh               # Bot testing script
 │   ├── seed-test-data.sh         # Test data seeder
 │   ├── verify-dm-config.sh       # Config validator
 │   ├── docker-entrypoint.sh      # Docker startup script
-│   ├── create-release-package.sh # Release packager
-│   └── test-code-mode.js         # Code mode tester
+│   └── create-release-package.sh # Release packager
 │
-├── 📁 tests/                     # Test suites
-│   ├── database.test.js          # Database integration tests
-│   ├── rate-limiter.test.js      # Rate limiter tests
-│   ├── admin-stats-types.test.js # Stats type tests
-│   └── final-result.test.js      # Message splitter tests
+├── 📁 tests/                     # Test suites (Vitest)
+│   ├── database.test.ts          # Database integration tests
+│   ├── rate-limiter.test.ts      # Rate limiter tests (deprecated)
+│   ├── admin-stats-types.test.ts # Stats type tests
+│   └── final-result.test.ts      # Message splitter tests
 │
 ├── 📁 logs/                      # Log files (gitignored)
 │   ├── combined.log              # All logs
@@ -55,81 +55,81 @@ discord-ai-bot/
 │
 ├── 🚀 src/
 │   │
-│   ├── 📄 index.js               # Main entry point
-│   ├── 📄 deploy-commands.js     # Slash commands deployment
+│   ├── 📄 index.ts               # Main entry point
+│   ├── 📄 deploy-commands.ts     # Slash commands deployment
+│   │
+│   ├── 📁 types/                 # Shared TypeScript type definitions
+│   │   ├── index.ts              # Barrel exports
+│   │   ├── config.ts             # BotConfig interfaces
+│   │   ├── database.ts           # DB model interfaces
+│   │   ├── discord.ts            # BotEvent, SlashCommand, Client augmentation
+│   │   └── n8n.ts                # N8N webhook contracts
 │   │
 │   ├── 📁 api/                   # HTTP API
-│   │   └── server.js             # Health check endpoints
+│   │   └── server.ts             # Health check endpoints
 │   │
 │   ├── 📁 db/                    # Database layer
-│   │   ├── connection.js         # PostgreSQL connection pool
+│   │   ├── connection.ts         # PostgreSQL connection pool
 │   │   └── repositories/         # Data access layer
-│   │       ├── analytics-repository.js    # Usage analytics
-│   │       ├── conversation-repository.js # Conversation history
-│   │       ├── rate-limit-repository.js   # Rate limiting
-│   │       └── warning-repository.js      # User warnings
+│   │       ├── analytics-repository.ts    # Usage analytics
+│   │       ├── conversation-repository.ts # Conversation history
+│   │       ├── rate-limit-repository.ts   # Rate limiting
+│   │       └── warning-repository.ts      # User warnings
 │   │
 │   ├── 📁 jobs/                  # Background jobs
-│   │   └── database-cleanup.js   # Hourly cleanup task
+│   │   └── database-cleanup.ts   # Hourly cleanup task
 │   │
 │   ├── 📁 slashcommands/         # Slash commands (reserved)
-│   │   ├── kick.js               # /kick (reserved for automation)
-│   │   ├── ban.js                # /ban (reserved for automation)
-│   │   ├── mute.js               # /mute (reserved for automation)
-│   │   └── warn.js               # /warn (reserved for automation)
+│   │   ├── kick.ts               # /kick (reserved for automation)
+│   │   ├── ban.ts                # /ban (reserved for automation)
+│   │   ├── mute.ts               # /mute (reserved for automation)
+│   │   └── warn.ts               # /warn (reserved for automation)
 │   │
 │   ├── 📁 events/                # Event handlers
-│   │   ├── ready.js              # Bot startup
-│   │   ├── messageCreate.js      # Message & DM handling
-│   │   ├── interactionCreate.js  # Slash command handling
-│   │   └── error.js              # Error handling
+│   │   ├── ready.ts              # Bot startup
+│   │   ├── messageCreate.ts      # Message & DM handling
+│   │   ├── interactionCreate.ts  # Slash command handling
+│   │   └── error.ts              # Error handling
 │   │
 │   ├── 📁 utils/                 # Utilities
-│   │   ├── logger.js             # Winston logger
-│   │   ├── n8n-client.js         # n8n integration
-│   │   ├── openai-client.js      # OpenAI integration (optional)
-│   │   ├── permissions.js        # Role checking
-│   │   ├── error-handler.js      # Error utilities
-│   │   ├── rate-limiter.js       # Rate limiting logic
-│   │   ├── message-splitter.js   # Discord 2000 char splitting
-│   │   ├── token-estimator.js    # Token counting
-│   │   └── admin-command-handler.js # Admin prefix commands
+│   │   ├── logger.ts             # Winston logger
+│   │   ├── n8n-client.ts         # n8n integration
+│   │   ├── permissions.ts        # Role checking
+│   │   ├── error-handler.ts      # Error utilities
+│   │   ├── rate-limiter.ts       # Rate limiting logic
+│   │   ├── message-splitter.ts   # Discord 2000 char splitting
+│   │   ├── token-estimator.ts    # Token counting
+│   │   └── admin-command-handler.ts # Admin prefix commands
 │   │
 │   ├── 📁 config/                # Configuration
-│   │   ├── config.js             # Config manager
-│   │   ├── bot-statuses.js       # Bot activity statuses
-│   │   └── response-templates.js # Response templates
-│   │
-│   └── 📁 commands/              # Legacy (moderation prefix commands)
-│       └── moderation/
-│           ├── kick.js
-│           ├── ban.js
-│           ├── mute.js
-│           └── warn.js
+│   │   ├── config.ts             # Config manager
+│   │   ├── bot-statuses.ts       # Bot activity statuses
+│   │   └── response-templates.ts # Response templates
 
 ```
 
 ## 📊 Feature Map
 
 ### 🤖 AI Assistant (Main Feature)
-- **File:** `src/events/messageCreate.js`
-- **Integration:** `src/utils/n8n-client.js`
-- **Config:** `src/config/config.js`
+- **File:** `src/events/messageCreate.ts`
+- **Integration:** `src/utils/n8n-client.ts`
+- **Config:** `src/config/config.ts`
 - **Response:** Customizable via `.env` HARDCODED_MENTION_RESPONSE
 - **Conversation Memory:** Last 20 messages stored in database, passed to n8n
 
 ### 💾 Database Integration
-- **Connection:** `src/db/connection.js` - PostgreSQL pool management
+- **Connection:** `src/db/connection.ts` - PostgreSQL pool management
+- **Types:** `src/types/database.ts` - All DB model interfaces
 - **Repositories:**
-  - `src/db/repositories/conversation-repository.js` - Conversation history
-  - `src/db/repositories/rate-limit-repository.js` - Rate limiting data
-  - `src/db/repositories/warning-repository.js` - User warnings
-  - `src/db/repositories/analytics-repository.js` - Usage statistics
+  - `src/db/repositories/conversation-repository.ts` - Conversation history
+  - `src/db/repositories/rate-limit-repository.ts` - Rate limiting data
+  - `src/db/repositories/warning-repository.ts` - User warnings
+  - `src/db/repositories/analytics-repository.ts` - Usage statistics
 - **Migrations:** `migrations/` - Schema versioning
-- **Cleanup:** `src/jobs/database-cleanup.js` - Hourly maintenance
+- **Cleanup:** `src/jobs/database-cleanup.ts` - Hourly maintenance
 
 ### 🏥 Health Monitoring
-- **File:** `src/api/server.js`
+- **File:** `src/api/server.ts`
 - **Endpoints:**
   - `GET /health` - Overall health + DB status
   - `GET /alive` - Liveness probe
@@ -137,7 +137,7 @@ discord-ai-bot/
 - **Port:** 3000 (configurable via `PORT` env var)
 
 ### 🔐 Admin Commands (DM only)
-- **Handler:** `src/utils/admin-command-handler.js`
+- **Handler:** `src/utils/admin-command-handler.ts`
 - **Commands:**
   - `!stats [days]` - Usage statistics dashboard
   - `!warn <@user> [reason]` - Issue warning to user
@@ -148,24 +148,24 @@ discord-ai-bot/
 
 ### 🛡️ Moderation Commands
 - **Location:** `src/slashcommands/`
-- **Handlers:** `src/events/interactionCreate.js`
-- **Authorization:** `src/utils/permissions.js`
+- **Handlers:** `src/events/interactionCreate.ts`
+- **Authorization:** `src/utils/permissions.ts`
 - Commands: kick, ban, mute, warn (reserved for automation)
 - Prefix `!warn` for manual warnings (admins only)
 
 ### 🚦 Rate Limiting
-- **File:** `src/utils/rate-limiter.js`
+- **File:** `src/utils/rate-limiter.ts`
 - **Storage:** Database with in-memory fallback
 - **Limit:** 5 messages per minute per user
 - **Persistence:** Survives bot restarts
 
 ### 🔐 Permission System
-- **File:** `src/utils/permissions.js`
+- **File:** `src/utils/permissions.ts`
 - **Role-based:** ALLOWED_ROLES_FOR_AI in .env
 - **Admin-only:** Moderation commands require ModerateMembers permission
 
 ### 📝 Logging System
-- **File:** `src/utils/logger.js`
+- **File:** `src/utils/logger.ts`
 - **Output:** console, logs/combined.log, logs/error.log
 - **Level:** Configurable via LOG_LEVEL in .env
 - **Rotation:** Manual (logs stored to disk)
@@ -200,23 +200,27 @@ discord-ai-bot/
 | axios | 1.13.5 | HTTP requests (n8n) |
 | winston | 3.19.0 | Logging |
 | undici | 7.21.0 | HTTP client || pg | 8.13.1 | PostgreSQL driver |
-| express | 5.0.1 | Health check API || eslint | 10.0.0 | Code linting |
+| express | 5.0.1 | Health check API || typescript | 5.x | TypeScript compiler |
+| vitest | latest | Test runner |
+| typescript-eslint | latest | TS linting |
+| eslint | 10.0.0 | Code linting |
 | nodemon | 3.1.11 | Dev auto-reload |
 
 ## 🚀 Scripts
 
 ```bash
-npm start             # Production run
+npm start             # Production run (node dist/index.js)
+npm run build         # Compile TypeScript to dist/
+npm run typecheck     # Type-check without emitting
 npm run dev           # Development with auto-reload
-npm run test          # Validate setup
+npm run test          # Run tests (Vitest)
 npm run test:unit     # Run unit tests
 npm run test:all      # Run all tests
-npm run test-config   # Validate configuration
 npm run deploy-commands # Deploy slash commands
 npm run migrate:up    # Run database migrations
 npm run migrate:down  # Rollback last migration
 npm run db:seed       # Seed test data
-npm run lint          # Run ESLint
+npm run lint          # Run ESLint + typescript-eslint
 npm run release-package # Create release package
 ```
 
@@ -251,20 +255,19 @@ npm run release-package # Create release package
 ## 🎯 Extension Points
 
 ### Adding a Command
-1. Create file in `src/slashcommands/`
-2. Add to slash command builder
-3. Define execute function
-4. Auto-loaded in `src/index.js`
+1. Create file in `src/slashcommands/` (TypeScript)
+2. Implement SlashCommand interface from `src/types/discord.ts`
+3. Import and register in `src/index.ts`
 
 ### Adding an Event
-1. Create file in `src/events/`
-2. Export with name and execute
-3. Auto-loaded in `src/index.js`
+1. Create file in `src/events/` (TypeScript)
+2. Implement BotEvent interface from `src/types/discord.ts`
+3. Import and register in `src/index.ts`
 
 ### Custom Responses
-1. Edit `src/config/response-templates.js`
+1. Edit `src/config/response-templates.ts`
 2. Update `.env` for basic responses
-3. Create helper functions in `src/utils/`
+1. Create typed helper functions in `src/utils/`
 
 ### n8n Integration
 1. See `N8N_INTEGRATION.md`
@@ -280,8 +283,8 @@ tail -f logs/combined.log
 # Watch errors only
 tail -f logs/error.log
 
-# Test configuration
-node test-config.js
+# Type check
+npx tsc --noEmit
 
 # Check n8n connection
 grep "n8n" logs/combined.log
@@ -345,5 +348,5 @@ For issues:
 
 **Created:** 2024-02-02  
 **Last Updated:** 2026-02-16  
-**Version:** 2.1.0  
+**Version:** 3.0.0  
 **License:** MIT

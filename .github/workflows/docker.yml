@@ -70,10 +70,10 @@ jobs:
           echo "⚠️ Security audit completed (warnings only)"
         continue-on-error: true
       
-      - name: Verify required files
+      - name: Type check and build
         run: |
-          node -c src/index.js
-          node -c src/deploy-commands.js
+          npx tsc --noEmit
+          npm run build
           test -f Dockerfile || exit 1
 
   build-and-push:

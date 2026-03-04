@@ -166,8 +166,8 @@ Cleanup job runs **every hour** and removes:
 ### Available Repositories
 
 #### ConversationRepository
-```javascript
-const conversationRepo = require('./db/repositories/conversation-repository');
+```typescript
+import conversationRepo from './db/repositories/conversation-repository.js';
 
 // Save message
 await conversationRepo.saveMessage(discordId, username, userMsg, aiResponse);
@@ -183,8 +183,8 @@ await conversationRepo.flushAllConversations();
 ```
 
 #### RateLimitRepository
-```javascript
-const rateLimitRepo = require('./db/repositories/rate-limit-repository');
+```typescript
+import rateLimitRepo from './db/repositories/rate-limit-repository.js';
 
 // Check and update limit
 const result = await rateLimitRepo.checkAndUpdateLimit(discordId, 5, 60000);
@@ -195,8 +195,8 @@ await rateLimitRepo.resetUserLimit(discordId);
 ```
 
 #### WarningRepository
-```javascript
-const warningRepo = require('./db/repositories/warning-repository');
+```typescript
+import warningRepo from './db/repositories/warning-repository.js';
 
 // Add warning (30D expiry)
 const count = await warningRepo.addWarning(discordId, username, reason, issuedBy);
@@ -209,8 +209,8 @@ const history = await warningRepo.getWarningHistory(discordId, includeExpired);
 ```
 
 #### AnalyticsRepository
-```javascript
-const analyticsRepo = require('./db/repositories/analytics-repository');
+```typescript
+import analyticsRepo from './db/repositories/analytics-repository.js';
 
 // Log message
 await analyticsRepo.logMessage(discordId, username, 'dm', 'chat', responseTime, tokens);

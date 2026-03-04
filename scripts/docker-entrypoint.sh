@@ -11,8 +11,9 @@ wait_for_postgres() {
   attempt=0
   
   while [ $attempt -lt $max_attempts ]; do
-    if node -e "
-      const { Pool } = require('pg');
+    if node --input-type=module -e "
+      import pg from 'pg';
+      const { Pool } = pg;
       const pool = new Pool({
         host: process.env.DB_HOST || 'postgres',
         port: parseInt(process.env.DB_PORT || '5432', 10),

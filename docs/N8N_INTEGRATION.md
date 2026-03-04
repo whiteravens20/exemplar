@@ -213,7 +213,7 @@ If workflow takes >30 seconds, bot will display timeout.
 
 **Solution:**
 - Optimize n8n workflow
-- Zmień timeout w `src/utils/n8n-client.js` (parametr `timeout`)
+- Change timeout in `src/utils/n8n-client.ts` (parametr `timeout`)
 
 ### Rate Limiting
 
@@ -352,8 +352,8 @@ const language = $input.first().json.language || 'en';
 
 You can extend the payload:
 
-1. **In bot** - edit `src/events/messageCreate.js`:
-```javascript
+1. **In bot** - edit `src/events/messageCreate.ts`:
+```typescript
 const result = await n8nClient.sendMessage({
   ...data,
   customField: 'value',
