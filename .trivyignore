@@ -1,0 +1,5 @@
+# Trivy ignore file — add CVE IDs here (one per line) to suppress known
+# false positives or accepted risks. Always include a justification comment.
+#
+# Example:
+# CVE-2099-99999  # accepted risk — mitigated by network policy
