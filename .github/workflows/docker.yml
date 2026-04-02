@@ -1,14 +1,12 @@
-name: Build Docker Image
+name: Build Docker Image (Manual)
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Image tag (leave empty to use "latest")'
+        description: 'Image tag (leave empty to use "snapshot")'
         required: false
-        default: 'latest'
+        default: 'snapshot'
       skip_tests:
         description: 'Skip tests before build'
         required: false
@@ -27,9 +25,7 @@ jobs:
   test:
     name: Run Tests Before Build
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'release') ||
-      (github.event_name == 'workflow_dispatch' && inputs.skip_tests != true)
+    if: inputs.skip_tests != true
     strategy:
       matrix:
         node-version: [22.22.2]
@@ -58,7 +54,6 @@ jobs:
         run: |
           npx tsc --noEmit
           npm run build
-          test -f Dockerfile || exit 1
 
   build-and-push:
     name: Build Docker Image
@@ -70,6 +65,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
 
     steps:
       - name: Checkout repository
@@ -85,60 +82,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ inputs.tag }},enable=${{ github.event_name == 'workflow_dispatch' }}
-
       - name: Build and push Docker image
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}-${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
 
       - name: Log image details
         run: |
           echo "✅ Docker image built and pushed successfully!"
-          echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
-          echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
-          echo ""
-          echo "Pull with:"
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
-
-      - name: Create deployment instructions
-        if: github.event_name == 'release'
-        run: |
-          echo "## 🚀 Deployment Instructions" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Docker image is ready:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Or use docker-compose:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`yaml" >> $GITHUB_STEP_SUMMARY
-          echo "services:" >> $GITHUB_STEP_SUMMARY
-          echo "  discord-bot:" >> $GITHUB_STEP_SUMMARY
-          echo "    image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "    restart: unless-stopped" >> $GITHUB_STEP_SUMMARY
-          echo "    env_file:" >> $GITHUB_STEP_SUMMARY
-          echo "      - .env" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ inputs.tag }}"
 
   scan-image:
     name: Security Scan
@@ -150,7 +109,7 @@ jobs:
       packages: read
     
     steps:
-      - name: Checkout repository
+      - name: Checkout (for .trivyignore)
         uses: actions/checkout@v6
 
       - name: Log in to Container Registry
@@ -164,7 +123,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: image
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name || 'latest' }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-and-push.outputs.image-digest }}
           severity: HIGH,CRITICAL
           trivyignores: .trivyignore
           exit-code: '1'
@@ -176,4 +135,4 @@ jobs:
         if: always()
         with:
           sarif_file: trivy-results.sarif
-          category: trivy-docker
+          category: trivy-docker-manual
