@@ -1,24 +1,18 @@
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:22.22.2-alpine AS builder
 
 WORKDIR /app
 
-# Update npm to 11+ for security fixes (tar, glob, diff vulnerabilities)
-# Patch npm bundled deps: tar (CVE-2026-26960) and minimatch (CVE-2026-27903, CVE-2026-27904)
-# Install in a temp dir (avoids reading npm's own package.json) then overwrite
-RUN npm install -g npm@latest && \
-    mkdir -p /tmp/npm-patches && \
-    cd /tmp/npm-patches && \
-    npm install tar@7.5.8 minimatch@10.2.4 && \
-    cp -r node_modules/tar node_modules/minimatch /usr/local/lib/node_modules/npm/node_modules/ && \
-    cd / && rm -rf /tmp/npm-patches
+# Copy .npmrc for supply-chain hardening (min-release-age, ignore-scripts)
+COPY .npmrc ./
 
 # Copy package files
 COPY package*.json ./
 COPY tsconfig.json ./
 
 # Install all dependencies (including devDependencies for build)
-RUN npm ci
+# --ignore-scripts blocks postinstall malware vectors
+RUN npm ci --ignore-scripts
 
 # Copy source files
 COPY src/ ./src/
@@ -27,21 +21,12 @@ COPY src/ ./src/
 RUN npx tsc
 
 # Remove dev dependencies
-RUN npm prune --production
+RUN npm prune --production --ignore-scripts
 
 # Runtime stage
-FROM node:22-alpine
+FROM node:22.22.2-alpine
 
 WORKDIR /app
-
-# Update npm to 11+ for security fixes
-# Patch npm bundled deps: tar (CVE-2026-26960) and minimatch (CVE-2026-27903, CVE-2026-27904)
-RUN npm install -g npm@latest && \
-    mkdir -p /tmp/npm-patches && \
-    cd /tmp/npm-patches && \
-    npm install tar@7.5.8 minimatch@10.2.4 && \
-    cp -r node_modules/tar node_modules/minimatch /usr/local/lib/node_modules/npm/node_modules/ && \
-    cd / && rm -rf /tmp/npm-patches
 
 # Install dumb-init and wget for health checks
 RUN apk add --no-cache dumb-init wget
