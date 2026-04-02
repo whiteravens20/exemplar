@@ -2,16 +2,7 @@ name: Build Docker Image
 
 on:
   release:
-    types: [published, created]
-  push:
-    branches:
-      - main
-    paths:
-      - 'Dockerfile'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'src/**'
-      - '.dockerignore'
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -37,8 +28,7 @@ jobs:
     name: Run Tests Before Build
     runs-on: ubuntu-latest
     if: |
-      (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'release') ||
       (github.event_name == 'workflow_dispatch' && inputs.skip_tests != true)
     strategy:
       matrix:
@@ -76,12 +66,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       always() &&
-      (needs.test.result == 'success' || needs.test.result == 'skipped') &&
-      (
-        (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-        (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-        github.event_name == 'workflow_dispatch'
-      )
+      (needs.test.result == 'success' || needs.test.result == 'skipped')
     permissions:
       contents: read
       packages: write
@@ -159,10 +144,6 @@ jobs:
     name: Security Scan
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')) ||
-      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      github.event_name == 'workflow_dispatch'
     permissions:
       contents: read
       security-events: write
