@@ -3,6 +3,9 @@ FROM node:22.22.2-alpine AS builder
 
 WORKDIR /app
 
+# Patch Alpine base packages
+RUN apk upgrade --no-cache
+
 # Copy .npmrc for supply-chain hardening (min-release-age, ignore-scripts)
 COPY .npmrc ./
 
@@ -27,6 +30,9 @@ RUN npm prune --production --ignore-scripts
 FROM node:22.22.2-alpine
 
 WORKDIR /app
+
+# Patch Alpine base packages
+RUN apk upgrade --no-cache
 
 # Install dumb-init and wget for health checks
 RUN apk add --no-cache dumb-init wget
