@@ -6,18 +6,19 @@ on:
     - cron: '0 6 * * 1'
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ main, dev ]
     paths:
       - 'package.json'
       - 'package-lock.json'
+  pull_request:
+    branches: [ main, dev ]
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   security-audit:
-    name: Security Audit
+    name: npm audit
     runs-on: ubuntu-latest
     
     steps:
@@ -27,68 +28,57 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '22.22.2'
           cache: 'npm'
 
-      - name: Update npm to 11+
-        run: npm install -g npm@latest
-
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Run npm audit
-        id: audit
-        run: |
-          npm audit --audit-level=moderate --json > audit-results.json || true
-          cat audit-results.json
-        continue-on-error: true
-
-      - name: Check for vulnerabilities
-        run: |
-          VULNERABILITIES=$(jq '.metadata.vulnerabilities | to_entries | map(select(.value > 0)) | length' audit-results.json)
-          echo "vulnerabilities=$VULNERABILITIES" >> $GITHUB_OUTPUT
-          if [ "$VULNERABILITIES" -gt 0 ]; then
-            echo "⚠️ Found vulnerabilities in dependencies"
-            jq '.vulnerabilities' audit-results.json
-          else
-            echo "✅ No vulnerabilities found"
-          fi
-        id: check
-
-      - name: Check for outdated packages
-        id: outdated
-        run: |
-          npm outdated --json > outdated.json || true
-          OUTDATED_COUNT=$(jq 'length' outdated.json)
-          echo "count=$OUTDATED_COUNT" >> $GITHUB_OUTPUT
-          if [ "$OUTDATED_COUNT" -gt 0 ]; then
-            echo "📦 Found $OUTDATED_COUNT outdated packages:"
-            jq '.' outdated.json
-          fi
-        continue-on-error: true
-
-      - name: Upload audit artifacts
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: security-reports
-          path: |
-            audit-results.json
-            outdated.json
-          retention-days: 30
+        run: npm audit --audit-level=high
 
   dependency-review:
-    name: Dependency Review
+    name: Dependency review
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v4.9.0
         with:
-          fail-on-severity: moderate
-          deny-licenses: GPL-2.0, GPL-3.0
+          fail-on-severity: high
           comment-summary-in-pr: always
+
+  trivy-fs:
+    name: Trivy filesystem scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run Trivy on repository
+        uses: aquasecurity/trivy-action@0.35.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-fs.sarif
+          trivyignores: .trivyignore
+          exit-code: '1'
+
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs

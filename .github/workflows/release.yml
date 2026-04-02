@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [22.x]
+        node-version: [22.22.2]
     steps:
       - uses: actions/checkout@v6
       
@@ -28,11 +28,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
       
-      - name: Update npm to 11+
-        run: npm install -g npm@latest
-      
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
       
       - name: Run linting
         run: npm run lint --if-present
@@ -41,10 +38,7 @@ jobs:
         run: npm run test:all
       
       - name: Security audit
-        run: |
-          npm audit --production --audit-level=high || true
-          echo "⚠️ Security audit completed (warnings only)"
-        continue-on-error: true
+        run: npm audit --audit-level=high
       
       - name: Type check
         run: npx tsc --noEmit

@@ -20,10 +20,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
 
     strategy:
       matrix:
-        node-version: [22.x]
+        node-version: [22.22.2]
 
     steps:
       - uses: actions/checkout@v6
@@ -34,11 +37,25 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
-      - name: Update npm to 11+
-        run: npm install -g npm@latest
-
       - name: Install dependencies
-        run: npm ci
+        id: install
+        run: npm ci --ignore-scripts
+
+      - name: Label quarantined PR
+        if: failure() && steps.install.outcome == 'failure' && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if npm ci --ignore-scripts --dry-run 2>&1 | grep -qiE "min-release-age|ERESOLVE|could not resolve"; then
+            gh pr edit ${{ github.event.pull_request.number }} --add-label "min-release-age"
+          fi
+
+      - name: Remove quarantine label
+        if: success() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --remove-label "min-release-age" 2>/dev/null || true
 
       - name: Run linting
         run: npm run lint --if-present
@@ -47,10 +64,7 @@ jobs:
         run: npm run test:all
 
       - name: Security audit
-        run: |
-          npm audit --production --audit-level=high || true
-          echo "⚠️ Security audit completed (warnings only)"
-        continue-on-error: true
+        run: npm audit --audit-level=high
 
       - name: Type check
         run: npx tsc --noEmit
