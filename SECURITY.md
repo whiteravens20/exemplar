@@ -169,17 +169,37 @@ const RATE_LIMIT_WINDOW = 60000; // 1 minute
 
 ### 🔒 Dependency Security
 
+**Supply-Chain Attack Mitigation:**
+
+All package managers are configured with minimum release age to block compromised packages:
+
+| Package Manager | Config File | Quarantine Period |
+|----------------|-------------|-------------------|
+| npm | `.npmrc` | 7 days (`min-release-age=7`) |
+| pnpm | `~/.config/pnpm/rc` | 7 days (`minimum-release-age=10080` min) |
+| bun | `~/.bunfig.toml` | 7 days (`minimumReleaseAge=604800` sec) |
+| uv (Python) | `~/.config/uv/uv.toml` | 7 days (`exclude-newer = "7 days"`) |
+
+**Dependency Management Policy:**
+- **Pin exact versions** in `package.json` (no `^` or `~` ranges)
+- **Verify lockfile** (`package-lock.json`) is always committed
+- **Audit new dependencies** before adding: check for known CVEs, evaluate maintainer track record, review source
+- **Remove unused dependencies** — do not leave unused packages in the tree
+- **Disable lifecycle scripts** (`ignore-scripts=true` in `.npmrc`) to block postinstall malware
+- **Run `npm audit`** before every release and in CI/CD
+
 **Keeping Dependencies Secure:**
 - Node.js 22+ (latest LTS with security fixes)
 - Discord.js 14.x (actively maintained)
-- All dependencies regularly updated
-- No known vulnerable dependencies
+- All dependencies regularly updated via Dependabot
+- No known vulnerable dependencies (0 vulnerabilities as of 2026-04-02)
 
-**Key Dependencies:**
-- `discord.js`: ^14.25.1
-- `axios`: ^1.13.5
-- `winston`: ^3.19.0
-- `dotenv`: ^17.2.4
+**Key Dependencies (pinned):**
+- `discord.js`: 14.25.1
+- `axios`: 1.14.0
+- `undici`: 7.24.7
+- `winston`: 3.19.0
+- `dotenv`: 17.3.1
 
 ### 🛡️ Code Security
 
