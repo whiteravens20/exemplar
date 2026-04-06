@@ -35,7 +35,7 @@
     "dotenv": "17.3.1",
     "express": "5.2.1",
     "pg": "8.20.0",
-    "undici": "7.24.7",
+    "undici": "8.0.2",
     "winston": "3.19.0"
   },
   "devDependencies": {
@@ -51,7 +51,7 @@
     "vitest": "4.1.2"
   },
   "overrides": {
-    "undici": "7.24.7",
+    "undici": "8.0.2",
     "minimatch": "10.2.4"
   },
   "engines": {
