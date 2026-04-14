@@ -1,5 +1,5 @@
 # Build stage
-FROM node:22.22.2-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ RUN npx tsc
 RUN npm prune --production --ignore-scripts
 
 # Runtime stage
-FROM node:22.22.2-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
