@@ -43,17 +43,17 @@ COPY --from=builder /app/node_modules ./node_modules
 # Copy built JS output
 COPY --from=builder /app/dist ./dist
 
-# Copy other necessary files
-COPY package*.json ./
+# Copy only necessary files
+COPY package.json ./
 COPY migrations/ ./migrations/
-COPY scripts/ ./scripts/
-COPY .env.example ./
+COPY scripts/docker-entrypoint.sh ./scripts/
+COPY scripts/migrate.ts ./scripts/
 
 # Make entrypoint script executable
 RUN chmod +x ./scripts/docker-entrypoint.sh
 
-# Check if .env exists, if not create it from .env.example
-RUN if [ ! -f .env ]; then cp .env.example .env; fi
+# Remove npm (not needed in runtime; eliminates npm's own CVEs)
+RUN npm uninstall -g npm && rm -rf /usr/local/lib/node_modules/npm
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -62,9 +62,9 @@ RUN addgroup -g 1001 -S nodejs && \
 
 USER nodejs
 
-# Health check
+# Health check (using wget, lighter than node -e)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD node -e "import('http').then(h => h.get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(String(r.statusCode))}))" || exit 1
+    CMD wget -qO /dev/null http://localhost:3000/health || exit 1
 
 # Set entrypoint to handle database initialization
 ENTRYPOINT ["./scripts/docker-entrypoint.sh"]
