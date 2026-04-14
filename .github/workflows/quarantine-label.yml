@@ -33,6 +33,7 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           QUARANTINE_DAYS: 7
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -84,8 +85,6 @@ jobs:
           else
             echo "blocked=false" >> "$GITHUB_OUTPUT"
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Add quarantine label
         if: steps.quarantine.outputs.blocked == 'true'
