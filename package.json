@@ -35,7 +35,7 @@
     "dotenv": "17.4.2",
     "express": "5.2.1",
     "pg": "8.20.0",
-    "undici": "7.24.7",
+    "undici": "8.1.0",
     "winston": "3.19.0"
   },
   "devDependencies": {
@@ -46,12 +46,11 @@
     "eslint": "10.2.1",
     "globals": "17.5.0",
     "nodemon": "3.1.14",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "typescript-eslint": "8.58.2",
     "vitest": "4.1.4"
   },
   "overrides": {
-    "undici": "7.24.7",
     "minimatch": "10.2.4",
     "follow-redirects": "1.16.0",
     "postcss": "8.5.10"
