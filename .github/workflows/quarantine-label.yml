@@ -21,10 +21,10 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2efb9b6b3b8e81fe03f46a4e14159e8a3a # v6
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b8880eb43e6e15e580a7fcabfb87e37b0f3c7b # v6
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
@@ -129,10 +129,10 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2efb9b6b3b8e81fe03f46a4e14159e8a3a # v6
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@53b8880eb43e6e15e580a7fcabfb87e37b0f3c7b # v6
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
