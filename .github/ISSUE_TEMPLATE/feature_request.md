@@ -1,26 +1,32 @@
 ---
 name: Feature Request
-about: Suggest a new feature for the project
+about: Suggest a new feature or improvement
 title: '[FEATURE] '
 labels: enhancement
 assignees: ''
 ---
 
-## Is your feature request related to a problem? Please describe.
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+> Before submitting, please check [CONTRIBUTING.md](../../CONTRIBUTING.md)
+> for the project's scope.
 
-## Describe the solution you'd like
+## Problem / Motivation
+What problem does this solve, or what use case does it enable?
+
+## Proposed Solution
 A clear and concise description of what you want to happen.
 
-## Describe alternatives you've considered
-A clear and concise description of any alternative solutions or features you've considered.
+## Alternatives Considered
+Other approaches you have thought about and why you ruled them out.
 
-## Additional Context
-Add any other context or screenshots about the feature request here.
+## Security Implications
+Describe any security considerations, new attack surface, or potential abuse vectors this feature introduces.
 
 ## Potential Use Cases
-- Use case 1: ...
-- Use case 2: ...
+-
+-
 
 ## Impact on Existing Functionality
-Describe whether this feature might impact existing features or commands.
+Describe whether this change might affect existing features, commands, or storage format.
+
+## Additional Context
+Screenshots, mockups, or links to prior art are welcome.
