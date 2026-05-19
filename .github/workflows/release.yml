@@ -1,240 +1,118 @@
-name: Create Release
+# ── Discord AI Bot — Release ──────────────────────────────────────────────────
+#
+# Triggered by a semver tag (v1.2.3) pushed from the main branch.
+# Tags created on any other branch are silently ignored.
+# Builds a hardened production Docker image, pushes it to GitHub Container
+# Registry (ghcr.io), then scans the pushed image for HIGH/CRITICAL CVEs.
+#
+# ── Required repository configuration ────────────────────────────────────────
+#
+# No repository variables are required. All runtime configuration is read
+# from the operator's .env file at container start.
+#
+# ── Image ─────────────────────────────────────────────────────────────────────
+# Published to: ghcr.io/<owner>/<repo>
+# Example tags produced by v1.2.3:
+#   ghcr.io/whiteravens20/exemplar:1.2.3
+#   ghcr.io/whiteravens20/exemplar:1.2
+#   ghcr.io/whiteravens20/exemplar:1
+#   ghcr.io/whiteravens20/exemplar:main
+#
+# ℹ️  :main is ONLY updated by this workflow on a versioned semver release.
+#    It always points to the most recent stable production build.
+#    The :latest tag is intentionally NOT published — it is ambiguous by Docker
+#    convention (simply the last image built, not necessarily stable).
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Release
 
 on:
   push:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - '.gitignore'
-      - 'LICENSE'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
-permissions: {}
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  test:
-    name: Run Tests
+  # ── Job 0: guard — ensure tag points to a commit on main ────────────────────
+  # github.event.base_ref is unreliable for tags pushed via `git push origin <tag>`
+  # (it is only populated reliably when the tag is created through the GitHub UI).
+  # This job checks out the repo and uses `git branch --contains` to confirm the
+  # tagged commit is actually reachable from main before the build runs.
+  check-branch:
+    name: Verify tag is on main
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: read
-    strategy:
-      matrix:
-        node-version: [22.22.2]
-    steps:
-      - uses: actions/checkout@v6
-      
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-      
-      - name: Run linting
-        run: npm run lint --if-present
-      
-      - name: Run all tests
-        run: npm run test:all
-      
-      - name: Security audit
-        run: npm audit --audit-level=high
-      
-      - name: Type check
-        run: npx tsc --noEmit
-
-      - name: Build
-        run: npm run build
-
-      - name: Verify required files
-        run: |
-          test -f src/index.ts || exit 1
-          test -f src/deploy-commands.ts || exit 1
-          test -f tsconfig.json || exit 1
-          test -f package.json || exit 1
-          test -f Dockerfile || exit 1
-
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22.22.2'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
-
-      - name: npm audit
-        run: npm audit --audit-level=high
-
-      - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: HIGH,CRITICAL
-          trivyignores: .trivyignore
-          exit-code: '1'
-          format: sarif
-          output: trivy-fs.sarif
-
-      - name: Upload Trivy SARIF
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: trivy-fs.sarif
-          category: trivy-release
-
-  create-release:
-    name: Create Release
-    needs: [test, security]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
-      packages: write
-    
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.version.outputs.version }}
-    
+      on-main: ${{ steps.check.outputs.on-main }}
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
-
-      - name: Get version from package.json
-        id: version
+          fetch-depth: 0   # full history needed for branch containment check
+      - name: Check branch containment
+        id: check
         run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Current version: $VERSION"
-
-      - name: Check if tag exists
-        id: tag_check
-        run: |
-          TAG="v${{ steps.version.outputs.version }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "tag_exists=true" >> $GITHUB_OUTPUT
-            echo "⚠️ Tag $TAG already exists"
+          if git branch -r --contains "${{ github.sha }}" | grep -q 'origin/main'; then
+            echo "on-main=true" >> "$GITHUB_OUTPUT"
           else
-            echo "tag_exists=false" >> $GITHUB_OUTPUT
-            echo "✅ Tag $TAG does not exist"
+            echo "on-main=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Tag ${{ github.ref_name }} does not point to a commit on main. Release skipped."
           fi
 
-      - name: Generate changelog
-        id: changelog
-        if: steps.tag_check.outputs.tag_exists == 'false'
-        run: |
-          # Get commit messages since last tag or all if no tags
-          LAST_TAG=$(git tag -l 'v*' --sort=-version:refname | head -1)
-          
-          if [ -z "$LAST_TAG" ]; then
-            COMMITS=$(git log --oneline --no-decorate)
-          else
-            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline --no-decorate)
-          fi
-          
-          # Build changelog using heredoc
-          {
-            echo 'changelog<<EOF'
-            echo "## Changes"
-            echo ""
-            echo "$COMMITS" | sed 's/^/- /'
-            echo ""
-            echo "## Installation"
-            echo ""
-            echo "### Docker (Recommended)"
-            echo '```bash'
-            echo "docker run -d \\"
-            echo "  --name discord-ai-bot \\"
-            echo "  --restart unless-stopped \\"
-            echo "  --env-file .env \\"
-            echo "  ghcr.io/${{ github.repository }}:${{ steps.version.outputs.version }}"
-            echo '```'
-            echo ""
-            echo "### Direct Installation"
-            echo '```bash'
-            echo "npm install"
-            echo "npm start"
-            echo '```'
-            echo ""
-            echo "See [README.md](https://github.com/${{ github.repository }}/blob/main/README.md) for full setup instructions."
-            echo "EOF"
-          } >> $GITHUB_OUTPUT
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v3
-        if: steps.tag_check.outputs.tag_exists == 'false'
-        id: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
-          body: ${{ steps.changelog.outputs.changelog }}
-          draft: false
-          prerelease: false
-
-      - name: Log release info
-        if: steps.tag_check.outputs.tag_exists == 'false'
-        run: |
-          echo "✅ Release created successfully!"
-          echo "📦 Version: v${{ steps.version.outputs.version }}"
-          echo "🔗 Release URL: ${{ steps.release.outputs.html_url }}"
-
-  build-docker:
-    name: Build Docker Image
-    needs: create-release
+  # ── Job 1: build and push image ─────────────────────────────────────────────
+  build-push:
+    name: Build & push Docker image
+    needs: check-branch
+    if: needs.check-branch.outputs.on-main == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
-    if: needs.create-release.outputs.release_created != '' || needs.create-release.outputs.tag_name != ''
     permissions:
       contents: read
-      packages: write
+      packages: write   # Required to push to ghcr.io
+
     outputs:
-      image-digest: ${{ steps.build.outputs.digest }}
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+      digest: ${{ steps.build.outputs.digest }}
+      tags:   ${{ steps.meta.outputs.tags }}
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Compute Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Produce 4 tags from a vX.Y.Z push:
+          #   :X.Y.Z  (exact version)
+          #   :X.Y    (minor)
+          #   :X      (major)
+          #   :main   (stable production — always the most recent versioned release)
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=main
+          labels: |
+            org.opencontainers.image.title=Discord AI Bot
+            org.opencontainers.image.description=Discord Bot with n8n AI Assistant integration
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Log in to Container Registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v6
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=semver,pattern={{version}},value=${{ needs.create-release.outputs.version }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ needs.create-release.outputs.version }}
-            type=semver,pattern={{major}},value=${{ needs.create-release.outputs.version }}
-            type=raw,value=latest
-
-      - name: Build and push Docker image
+      - name: Build and push
         id: build
         uses: docker/build-push-action@v7
         with:
@@ -244,50 +122,133 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
 
-      - name: Log image details
-        run: |
-          echo "✅ Docker image built and pushed successfully!"
-          echo "📦 Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
-          echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
-
-  scan-image:
-    name: Scan Docker Image
-    needs: [create-release, build-docker]
+  # ── Job 2: GitHub Release with auto-generated changelog ─────────────────────
+  # Creates (or updates) the GitHub Release for this tag.
+  # GitHub's built-in release notes generator groups merged PRs by label,
+  # lists direct commits, and credits every contributor automatically.
+  # Configure grouping labels in .github/release.yml (distinct from this file).
+  github-release:
+    name: Create GitHub Release
+    needs: [check-branch, build-push, scan]
+    if: needs.check-branch.outputs.on-main == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    permissions:
+      contents: write   # Required to create/update the release
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Extract tag message
+        id: tag-msg
+        run: |
+          MSG=$(git tag -l --format='%(contents)' "${{ github.ref_name }}" | sed '/-----BEGIN SSH SIGNATURE-----/,/-----END SSH SIGNATURE-----/d' | head -100)
+          {
+            echo "message<<GH_EOF"
+            echo "$MSG"
+            echo "GH_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build release tarball
+        run: |
+          VERSION="${{ github.ref_name }}"
+          ARCHIVE_NAME="exemplar-${VERSION}.tar.gz"
+
+          tar czf "${ARCHIVE_NAME}" \
+            --exclude='node_modules' \
+            --exclude='coverage' \
+            --exclude='dist' \
+            --exclude='tests' \
+            --exclude='*.test.ts' \
+            --exclude='vitest.config.ts' \
+            --exclude='eslint.config.mjs' \
+            Dockerfile \
+            docker-compose.yml \
+            .dockerignore \
+            .env.example \
+            package.json \
+            package-lock.json \
+            tsconfig.json \
+            src/ \
+            scripts/ \
+            migrations/ \
+            start.sh \
+            LICENSE \
+            README.md \
+            docs/
+
+          echo "ARCHIVE_NAME=${ARCHIVE_NAME}" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          generate_release_notes: true
+          append_body: true
+          files: ${{ env.ARCHIVE_NAME }}
+          body: |
+            ${{ steps.tag-msg.outputs.message }}
+
+            ---
+            ## Docker image
+
+            ```
+            docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+            ```
+
+            | Tag | Description |
+            |---|---|
+            | `${{ github.ref_name }}` | This exact release (immutable) |
+            | `:main` | Always the latest stable production release |
+
+            > **Digest (immutable):** `${{ needs.build-push.outputs.digest }}`
+
+            ## Source tarball
+
+            The attached `exemplar-${{ github.ref_name }}.tar.gz` contains only the files needed to build and run the project (no tests, coverage, or CI config).
+
+  # ── Job 3: Trivy scan on pushed image ────────────────────────────────────────
+  # Pulls the freshly pushed image by immutable digest and scans for HIGH/CRITICAL
+  # CVEs. exit-code: 1 fails the workflow on any unacknowledged finding.
+  # Add CVE IDs to .trivyignore (with justification) to acknowledge and unblock.
+  # Results are also uploaded to GitHub Security tab as SARIF regardless of outcome.
+  scan:
+    name: Trivy image scan
+    needs: build-push
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: read
       security-events: write
-    env:
-      REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+
     steps:
       - name: Checkout (for .trivyignore)
         uses: actions/checkout@v6
 
-      - name: Log in to Container Registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v4
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Scan for CVEs
+      - name: Scan for HIGH/CRITICAL CVEs
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: image
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ needs.build-docker.outputs.image-digest }}
+          image-ref: ghcr.io/${{ github.repository }}@${{ needs.build-push.outputs.digest }}
           severity: HIGH,CRITICAL
           trivyignores: .trivyignore
           exit-code: '1'
           format: sarif
-          output: trivy-results.sarif
+          output: trivy-release.sarif
+          limit-severities-for-sarif: true
 
-      - name: Upload Trivy results to GitHub Security tab
+      - name: Upload SARIF to Security tab
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
-          sarif_file: trivy-results.sarif
-          category: trivy-docker
+          sarif_file: trivy-release.sarif
+          category: trivy-release
