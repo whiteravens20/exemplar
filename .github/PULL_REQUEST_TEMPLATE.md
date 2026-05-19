@@ -9,15 +9,17 @@ Please check the relevant options:
 - [ ] Documentation update
 - [ ] Performance improvement
 - [ ] Code refactoring
+- [ ] Security fix
 
 ## Related Issue
 Closes #(issue number)
+Relates to #(issue number)
 
 ## How Has This Been Tested?
 Describe the tests you ran to verify your changes:
-- [ ] Unit tests
+- [ ] Unit tests (`npm test`)
 - [ ] Manual testing
-- [ ] Testing with bot on test server
+- [ ] Testing with the bot on a test server
 
 ## Checklist
 Please review the [Contributing Guidelines](../CONTRIBUTING.md) before submitting.
@@ -29,7 +31,14 @@ Please review the [Contributing Guidelines](../CONTRIBUTING.md) before submittin
 - [ ] My changes generate no new warnings
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes
-- [ ] I have updated the CHANGELOG.md (if applicable)
+
+## Security Checklist
+
+- [ ] No secrets, tokens, or webhook URLs are committed (`.env.example` is sanitised)
+- [ ] No new unvalidated environment variable is introduced
+- [ ] `npm audit` shows no new high/critical findings
+- [ ] ESLint passes with zero warnings
+- [ ] TypeScript compiles with zero errors
 
 ## Screenshots (if applicable)
 Add screenshots showing the changes in action.

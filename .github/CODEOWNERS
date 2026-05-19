@@ -1,0 +1,29 @@
+# ── Code Owners ───────────────────────────────────────────────────────────────
+# GitHub enforces that at least one owner approves any PR touching these paths.
+# Configure branch protection (Settings → Branches → main → Require review from
+# Code Owners) to make this mandatory.
+#
+# Paths are checked most-specific to least-specific; last matching rule wins.
+
+# Default: all files require owner review
+* @pavlojs
+
+# ── CI/CD & supply chain ──────────────────────────────────────────────────────
+# Any change to workflow files or Dependabot config is high-risk supply-chain.
+/.github/ @pavlojs
+
+# ── Docker & container config ─────────────────────────────────────────────────
+/Dockerfile @pavlojs
+/docker-compose.yml @pavlojs
+/.dockerignore @pavlojs
+
+# ── Security & legal docs ─────────────────────────────────────────────────────
+/SECURITY.md @pavlojs
+/.npmrc @pavlojs
+/.trivyignore @pavlojs
+
+# ── Supply-chain-sensitive code paths ─────────────────────────────────────────
+# Database migrations and command deployment touch persistent state and Discord
+# API permissions — both have higher blast-radius than ordinary feature code.
+/src/deploy-commands.ts @pavlojs
+/migrations/ @pavlojs
