@@ -28,6 +28,7 @@ class ConfigManager {
       },
       moderation: {
         allowedRoles: this.parseRoles(process.env.ALLOWED_ROLES_FOR_AI),
+        modLogChannelId: process.env.MOD_LOG_CHANNEL_ID || undefined,
       },
       logging: {
         level: process.env.LOG_LEVEL || 'info',

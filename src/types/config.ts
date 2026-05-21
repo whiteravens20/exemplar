@@ -17,6 +17,7 @@ export interface BotSettings {
 
 export interface ModerationConfig {
   allowedRoles: string[];
+  modLogChannelId?: string;
 }
 
 export interface LoggingConfig {

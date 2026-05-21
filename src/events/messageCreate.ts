@@ -10,6 +10,7 @@ import conversationRepo from '../db/repositories/conversation-repository.js';
 import analyticsRepo from '../db/repositories/analytics-repository.js';
 import { estimateTokens } from '../utils/token-estimator.js';
 import { handleAdminCommand } from '../utils/admin-command-handler.js';
+import { handleGuildPrefixCommand } from '../utils/guild-prefix-command-handler.js';
 import type { BotEvent } from '../types/discord.js';
 
 const n8nClient = new N8NClient(
@@ -89,14 +90,12 @@ const event: BotEvent = {
     const botMention = `<@${botUser.id}>`;
     const botNicknameMention = `<@!${botUser.id}>`;
 
-    // Ignore messages starting with ! in channels (not DMs)
+    // Handle guild prefix moderation commands
     if (
       message.channel.type !== ChannelType.DM &&
       message.content.startsWith(configManager.config.bot.prefix)
     ) {
-      logger.info('Ignoring ! command in channel', {
-        userId: message.author.id,
-      });
+      await handleGuildPrefixCommand(message);
       return;
     }
 
