@@ -1,5 +1,6 @@
 import {
   EmbedBuilder,
+  PermissionFlagsBits,
   type Message,
   type GuildMember,
   type User,
@@ -197,7 +198,7 @@ async function handleKick(message: Message, args: string[]): Promise<CommandResu
   const { user, member: targetMember } = parsed;
   const reason = args.slice(1).join(' ') || 'Nie podano powodu';
 
-  const permCheck = checkBasePermissions(message.member, targetMember, 'KickMembers');
+  const permCheck = checkBasePermissions(message.member, targetMember, PermissionFlagsBits.KickMembers);
   if (permCheck) return permCheck;
 
   if (!targetMember.kickable) {
@@ -230,7 +231,7 @@ async function handleBan(message: Message, args: string[]): Promise<CommandResul
   const { user, member: targetMember } = parsed;
   const reason = args.slice(1).join(' ') || 'Nie podano powodu';
 
-  const permCheck = checkBasePermissions(message.member, targetMember, 'BanMembers');
+  const permCheck = checkBasePermissions(message.member, targetMember, PermissionFlagsBits.BanMembers);
   if (permCheck) return permCheck;
 
   if (!targetMember.bannable) {
@@ -251,7 +252,7 @@ async function handleUnban(message: Message, args: string[]): Promise<CommandRes
     return { success: false, content: '❌ Ta komenda działa tylko na serwerze.' };
   }
 
-  if (!message.member.permissions.has('BanMembers')) {
+  if (!message.member.permissions.has(PermissionFlagsBits.BanMembers)) {
     return {
       success: false,
       content: '❌ Nie masz wymaganych uprawnień do użycia tej komendy.',
@@ -281,7 +282,7 @@ async function handleUnban(message: Message, args: string[]): Promise<CommandRes
       success: true,
       embed: buildModEmbed('Odbanowano', user, 'Odbanowano', 0x2ecc71),
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       success: false,
       content: '❌ Nie udało się odbanować użytkownika. Upewnij się, że ID jest prawidłowe.',
@@ -313,7 +314,7 @@ async function handleWarn(message: Message, args: string[]): Promise<CommandResu
   const { user, member: targetMember } = parsed;
   const reason = args.slice(1).join(' ') || 'Nie podano powodu';
 
-  const permCheck = checkBasePermissions(message.member, targetMember, 'ModerateMembers');
+  const permCheck = checkBasePermissions(message.member, targetMember, PermissionFlagsBits.ModerateMembers);
   if (permCheck) return permCheck;
 
   if (user.bot) {
@@ -378,7 +379,7 @@ async function handleMute(message: Message, args: string[]): Promise<CommandResu
 
   const { user, member: targetMember } = parsed;
 
-  const permCheck = checkBasePermissions(message.member, targetMember, 'ModerateMembers');
+  const permCheck = checkBasePermissions(message.member, targetMember, PermissionFlagsBits.ModerateMembers);
   if (permCheck) return permCheck;
 
   if (!targetMember.moderatable) {
@@ -441,7 +442,7 @@ async function handleUnmute(message: Message, args: string[]): Promise<CommandRe
 
   const { user, member: targetMember } = parsed;
 
-  const permCheck = checkBasePermissions(message.member, targetMember, 'ModerateMembers');
+  const permCheck = checkBasePermissions(message.member, targetMember, PermissionFlagsBits.ModerateMembers);
   if (permCheck) return permCheck;
 
   if (!targetMember.moderatable) {
