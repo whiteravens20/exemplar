@@ -79,11 +79,12 @@ discord-ai-bot/
 │   ├── 📁 jobs/                  # Background jobs
 │   │   └── database-cleanup.ts   # Hourly cleanup task
 │   │
-│   ├── 📁 slashcommands/         # Slash commands (reserved)
-│   │   ├── kick.ts               # /kick (reserved for automation)
-│   │   ├── ban.ts                # /ban (reserved for automation)
-│   │   ├── mute.ts               # /mute (reserved for automation)
-│   │   └── warn.ts               # /warn (reserved for automation)
+│   ├── 📁 slashcommands/         # Slash commands (run in DMs)
+│   │   ├── shared.ts             # Command resolution helpers
+│   │   ├── kick.ts ban.ts unban.ts          # Moderation
+│   │   ├── mute.ts unmute.ts warn.ts        # Moderation
+│   │   ├── help.ts code.ts flushmemory.ts   # User
+│   │   └── warnings.ts stats.ts flushdb.ts  # User/admin
 │   │
 │   ├── 📁 events/                # Event handlers
 │   │   ├── ready.ts              # Bot startup
@@ -99,7 +100,8 @@ discord-ai-bot/
 │   │   ├── rate-limiter.ts       # Rate limiting logic
 │   │   ├── message-splitter.ts   # Discord 2000 char splitting
 │   │   ├── token-estimator.ts    # Token counting
-│   │   └── admin-command-handler.ts # Admin prefix commands
+│   │   ├── moderation-actions.ts # Shared moderation action layer
+│   │   └── stats-embed.ts        # Statistics embed formatting
 │   │
 │   ├── 📁 config/                # Configuration
 │   │   ├── config.ts             # Config manager
@@ -136,22 +138,24 @@ discord-ai-bot/
   - `GET /ready` - Readiness probe
 - **Port:** 3000 (configurable via `PORT` env var)
 
-### 🔐 Admin Commands (DM only)
-- **Handler:** `src/utils/admin-command-handler.ts`
+### 🔐 User & Admin Commands (slash, run in DMs)
+- **Location:** `src/slashcommands/`
+- **Dispatch:** `src/events/interactionCreate.ts`
 - **Commands:**
-  - `!stats [days]` - Usage statistics dashboard
-  - `!warn <@user> [reason]` - Issue warning to user
-  - `!warnings [@user]` - View warnings
-  - `!flushdb confirm` - Clear all database data
-  - `!flushmemory` - Clear conversation histories
-  - `!help` - Show help message
+  - `/stats [days]` - Usage statistics dashboard (admin)
+  - `/warnings [user]` - View warnings (own, or any user for admins)
+  - `/flushdb confirm:true` - Clear all database data (admin)
+  - `/flushmemory` - Clear conversation histories
+  - `/help` - Show help message
+  - `/code <message>` - Coding-mode AI request
 
 ### 🛡️ Moderation Commands
-- **Location:** `src/slashcommands/`
-- **Handlers:** `src/events/interactionCreate.ts`
-- **Authorization:** `src/utils/permissions.ts`
-- Commands: kick, ban, mute, warn (reserved for automation)
-- Prefix `!warn` for manual warnings (admins only)
+- **Location:** `src/slashcommands/` (kick, ban, unban, mute, unmute, warn)
+- **Dispatch:** `src/events/interactionCreate.ts`
+- **Action layer:** `src/utils/moderation-actions.ts` (shared, caller-agnostic)
+- **Authorization:** `src/utils/permissions.ts` + per-command permission checks
+- Run by moderators in DMs; act on the configured server. The shared action
+  layer is reused by the planned AI automated moderation (issue #16).
 
 ### 🚦 Rate Limiting
 - **File:** `src/utils/rate-limiter.ts`
@@ -248,7 +252,7 @@ npm run release-package # Create release package
 - `HARDCODED_MENTION_RESPONSE` - Mention response
 - `RESTRICTED_RESPONSE` - Access denied message
 - `ALLOWED_ROLES_FOR_AI` - Authorized roles
-- `BOT_PREFIX` - Command prefix (default: !)
+- `MOD_LOG_CHANNEL_ID` - Channel for moderation action logs
 - `LOG_LEVEL` - Logging level (default: info)
 - `NODE_ENV` - production/development
 

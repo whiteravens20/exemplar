@@ -7,7 +7,7 @@ interface BotStatus {
 
 const statuses: BotStatus[] = [
   {
-    name: 'DM !help dla komend',
+    name: 'DM /help dla komend',
     type: ActivityType.Listening,
   },
   {

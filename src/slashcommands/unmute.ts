@@ -5,7 +5,7 @@ import {
   type ChatInputCommandInteraction,
 } from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
-import { applyBan } from '../utils/moderation-actions.js';
+import { applyUntimeout } from '../utils/moderation-actions.js';
 import {
   withAppAvailability,
   resolveModerationContext,
@@ -15,33 +15,28 @@ import {
 const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
-      .setName('ban')
-      .setDescription('Banuje użytkownika na skonfigurowanym serwerze')
+      .setName('unmute')
+      .setDescription('Zdejmuje wyciszenie z użytkownika na skonfigurowanym serwerze')
       .addUserOption((option) =>
         option
           .setName('user')
-          .setDescription('Użytkownik do zbanowania')
+          .setDescription('Użytkownik, z którego zdjąć wyciszenie')
           .setRequired(true)
-      )
-      .addStringOption((option) =>
-        option.setName('reason').setDescription('Powód bana')
       )
   ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
     const ctx = await resolveModerationContext(
       interaction,
-      PermissionFlagsBits.BanMembers
+      PermissionFlagsBits.ModerateMembers
     );
     if (!ctx.ok) {
       await interaction.reply({ content: ctx.error, flags: MessageFlags.Ephemeral });
       return;
     }
 
-    const reason = interaction.options.getString('reason') ?? 'Nie podano powodu';
-    const result = await applyBan(
+    const result = await applyUntimeout(
       ctx.targetMember,
-      reason,
       actorFromInteraction(interaction)
     );
 

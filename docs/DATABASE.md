@@ -142,24 +142,24 @@ Cleanup job runs **every hour** and removes:
 
 ### Manual Cleanup
 
-**Admin commands (DM only):**
+**Admin commands (slash, run in DMs):**
 ```bash
-!warn <@user> [reason]     # Issue warning to user (admin/moderator)
-!warnings [@user]          # View all warnings or specific user
-!flushdb confirm           # Clear all data (bot + n8n AI Agent memory)
-!stats [days]              # View bot statistics (default: 7 days)
+/warn user:<user> reason:<text>   # Issue warning to user (admin/moderator)
+/warnings [user]                  # View all warnings or specific user
+/flushdb confirm:true             # Clear all data (bot + n8n AI Agent memory)
+/stats [days]                     # View bot statistics (default: 7 days)
 ```
 
-**User commands (DM only):**
+**User commands (slash, run in DMs):**
 ```bash
-!warnings                  # View your active warnings
-!flushmemory               # Clear your conversation history (bot + n8n AI Agent)
+/warnings                  # View your active warnings
+/flushmemory               # Clear your conversation history (bot + n8n AI Agent)
 ```
 
-**Note:** 
-- Slash commands (`/warn`, etc.) are reserved for bot automation. Users and admins should use prefix commands (`!warn`, `!warnings`, etc.).
-- `!flushmemory` clears both bot conversations table AND n8n AI Agent memory (`n8n_chat_histories`)
-- `!flushdb` preserves users and warnings but clears all conversations, rate limits, stats, and n8n memory
+**Note:**
+- All commands are slash commands and run in DMs with the bot.
+- `/flushmemory` clears both bot conversations table AND n8n AI Agent memory (`n8n_chat_histories`)
+- `/flushdb` preserves users and warnings but clears all conversations, rate limits, stats, and n8n memory
 
 ## Repository Pattern
 
@@ -278,8 +278,8 @@ Password: [from .env]
 n8n will automatically create the `n8n_chat_histories` table to store AI Agent memory.
 
 **Clearing n8n AI Agent Memory:**
-- **User command:** `!flushmemory` - clears both bot conversations AND n8n AI Agent memory for that user
-- **Admin command:** `!flushdb confirm` - clears ALL conversations (bot + n8n) for all users
+- **User command:** `/flushmemory` - clears both bot conversations AND n8n AI Agent memory for that user
+- **Admin command:** `/flushdb confirm:true` - clears ALL conversations (bot + n8n) for all users
 - **Manual SQL:** `DELETE FROM n8n_chat_histories WHERE session_id = 'user_discord_id'`
 
 See `docs/N8N_INTEGRATION.md` for detailed setup instructions.
@@ -341,9 +341,9 @@ if (messageCount < 5) {
 ### Admin Stats Command
 
 ```bash
-!stats         # Last 7 days (default)
-!stats 30      # Last 30 days
-!stats 1       # Last 24 hours
+/stats              # Last 7 days (default)
+/stats days:30      # Last 30 days
+/stats days:1       # Last 24 hours
 ```
 
 Shows:
@@ -584,7 +584,7 @@ A: Bot continues with in-memory fallbacks. Data written during downtime is lost 
 A: Currently PostgreSQL only. Adapting to MySQL/MongoDB would require repository layer changes.
 
 **Q: How do I clear all data?**
-A: Admin command `!flushdb confirm` or manually `TRUNCATE` tables.
+A: Admin command `/flushdb confirm:true` or manually `TRUNCATE` tables.
 
 **Q: Can multiple bot instances share one database?**
 A: Yes! The database is designed for this. Rate limiting uses transactions for consistency.

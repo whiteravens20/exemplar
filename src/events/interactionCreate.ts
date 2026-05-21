@@ -1,5 +1,6 @@
-import { Events, ChannelType, type ChatInputCommandInteraction } from 'discord.js';
+import { Events, MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
 import logger from '../utils/logger.js';
+import configManager from '../config/config.js';
 import type { BotEvent, SlashCommand } from '../types/discord.js';
 
 const event: BotEvent = {
@@ -16,9 +17,14 @@ const event: BotEvent = {
       return;
     }
 
-    // Only allow slash commands in DMs - silently ignore on channels
-    if (interaction.channel?.type !== ChannelType.DM) {
-      logger.info('Slash command ignored in channel', {
+    // Commands execute only in DMs with the bot. Used in a guild channel, the
+    // bot answers with the mention response instead of running the command.
+    if (interaction.inGuild()) {
+      await interaction.reply({
+        content: configManager.config.bot.mentionResponse,
+        flags: MessageFlags.Ephemeral,
+      });
+      logger.info('Slash command used in channel - returned mention response', {
         command: interaction.commandName,
         userId: interaction.user.id,
         guildId: interaction.guildId,
@@ -31,7 +37,6 @@ const event: BotEvent = {
       logger.info('Command executed', {
         command: interaction.commandName,
         userId: interaction.user.id,
-        guildId: interaction.guildId,
       });
     } catch (error) {
       logger.error('Command execution error', {
@@ -39,15 +44,17 @@ const event: BotEvent = {
         error: (error as Error).message,
       });
 
+      const errorContent = '❌ Wystąpił błąd podczas wykonywania tej komendy!';
+
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({
-          content: '❌ Wystąpił błąd podczas wykonywania tej komendy!',
-          ephemeral: true,
+          content: errorContent,
+          flags: MessageFlags.Ephemeral,
         });
       } else {
         await interaction.reply({
-          content: '❌ Wystąpił błąd podczas wykonywania tej komendy!',
-          ephemeral: true,
+          content: errorContent,
+          flags: MessageFlags.Ephemeral,
         });
       }
     }

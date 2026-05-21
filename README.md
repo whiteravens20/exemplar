@@ -11,12 +11,12 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 ## 📋 Features
 
 ### 🤖 AI Assistant
-- **Bot works only in DM (Direct Messages)** - all commands on channels are ignored
+- **Bot works only in DM (Direct Messages)** - a slash command used in a server channel returns the mention response instead of running
 - Bot responds to mentions (@mention) on channel with a hardcoded message
 - Private messages (DM) trigger n8n workflow
 - AI Assistant available only for specific roles
 - Other users receive hardcoded response
-- **Coding Mode:** Command `!code` switches to coding-specialized LLM
+- **Coding Mode:** Command `/code` sends a request to the coding-specialized LLM
 - **Conversation Memory:** Last 20 messages per user with 24H retention
 
 ### 💾 Persistent Storage (PostgreSQL)
@@ -28,25 +28,30 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 - **Health Monitoring:** `/health` endpoint for orchestration
 - **Automatic Migrations:** Database schema updates automatically on startup
 
-### 👮 Moderation Commands
-**Slash Commands (reserved for bot automation):**
-- `/warn <user> [reason]` - Reserved for automated moderation
-- `/kick`, `/ban`, `/mute` - Reserved for future automatic moderation
+### 👮 Commands
 
-**Prefix Commands (for admins/moderators):**
-- `!warn <@user> [reason]` - Issue warning to user (DM only, admin/moderator)
-- `!warnings [@user]` - View all warnings or specific user (admin only)
+All commands are **slash commands** and run in **DMs with the bot**. Used in a
+server channel they return the mention response instead. Moderation commands act
+on the single configured server (`DISCORD_SERVER_ID`).
 
-**User Commands (DM only):**
-- `!help` - Show help message with available commands
-- `!warnings` - View your active warnings
-- `!flushmemory` - Clear your conversation history (bot + n8n AI Agent memory)
+**Moderation Commands (require server permissions):**
+- `/kick <user> [reason]` - Kick a member (requires Kick Members)
+- `/ban <user> [reason]` - Ban a member (requires Ban Members)
+- `/unban <user_id>` - Remove a ban (requires Ban Members)
+- `/mute <user> <duration> [reason]` - Timeout a member, e.g. `10m`, `1h`, `1d` (requires Timeout Members)
+- `/unmute <user>` - Remove a timeout (requires Timeout Members)
+- `/warn <user> <reason>` - Issue a warning, saved to the database (requires Timeout Members)
+
+**User Commands:**
+- `/help` - Show available commands
+- `/code <message>` - Send a request to the coding-specialized LLM
+- `/flushmemory` - Clear your conversation history (bot + n8n AI Agent memory)
+- `/warnings` - View your active warnings
 
 ### 🔐 Admin Commands (DM only)
-- `!warn <@user> [reason]` - Issue warning to user (moderator/admin)
-- `!warnings [@user]` - View all warnings or specific user
-- `!stats [days]` - View bot usage statistics (default: 7 days)
-- `!flushdb confirm` - Clear all database data (bot + n8n AI Agent, preserves users/warnings)
+- `/warnings [user]` - View all warnings or a specific user's warnings
+- `/stats [days]` - View bot usage statistics (default: 7 days)
+- `/flushdb confirm:true` - Clear database data (bot + n8n AI Agent, preserves users/warnings)
 
 ### 🔧 Error Handling
 - Automatic detection of n8n availability issues
@@ -56,6 +61,16 @@ A Discord bot with n8n workflow integration for AI Assistant and moderation opti
 - Customizable error message templates
 
 ## 🚀 Installation
+
+### Deployment model
+
+This is an open-source, **self-hosted, single-server** bot. There is no public
+hosted instance: each operator creates their own Discord application and runs one
+bot instance for one server. That is why the app is **guild-installed** (OAuth2
+`bot` + `applications.commands` scopes) and why `DISCORD_SERVER_ID` is required —
+all moderation commands act on that one configured server. All commands are slash
+commands that run in DMs with the bot; a command used in a server channel just
+returns the mention response.
 
 ### 1. Requirements
 - Node.js 22+
@@ -99,7 +114,6 @@ DB_PASSWORD=your_secure_password
 HEALTH_CHECK_PORT=3000
 
 # Bot Configuration
-BOT_PREFIX=!
 HARDCODED_MENTION_RESPONSE=Hi! I'm an AI Assistant. Send me a DM to chat with me.
 
 # Moderation
@@ -207,7 +221,7 @@ User: @AIBot help
 Bot: Hi! I'm an AI Assistant. Send me a DM to chat with me.
 ```
 
-**Note:** Bot ignores all slash commands and `!` commands on channels.
+**Note:** A slash command used in a server channel does not run — the bot replies with the mention response and points the user to DMs.
 
 ### Direct Messages (PM)
 
@@ -221,8 +235,8 @@ Bot: Hi! I'm an AI Assistant. Send me a DM to chat with me.
 5. Bot sends response back to user
 
 #### Code Mode:
-1. User sends PM with `!code` prefix: `"!code write a function to sort array"`
-2. Bot removes `!code` prefix and sends to n8n with `mode: "code"`
+1. User runs `/code message:"write a function to sort array"` in a DM
+2. Bot sends the message to n8n with `mode: "code"`
 3. n8n routes to coding-specialized LLM
 4. Bot sends code-focused response back to user
 
@@ -244,15 +258,21 @@ Bot: Hi! I'm an AI Assistant. Send me a DM to chat with me.
 
 ### Moderation Commands
 
-Moderation slash commands (`/kick`, `/ban`, `/mute`, `/warn`) are **blocked for manual use**.
+Moderation slash commands (`/kick`, `/ban`, `/unban`, `/mute`, `/unmute`,
+`/warn`) are run by moderators in a DM with the bot and act on the configured
+server. Each command checks the invoker's server permissions and role hierarchy
+before acting.
 
-They will be used by the bot automatically in the future for:
-- Detecting spam
-- Inappropriate content
-- Rule violations
-- Other automated moderation tasks
+The affected user is **DMed** on `/kick`, `/ban`, `/mute` and `/warn` with the
+reason and — where applicable — the duration (mute timeout, "permanent" for bans,
+30-day expiry for warnings). The DM is sent before a kick/ban so it still
+reaches the user; the moderator's confirmation embed reports whether it was
+delivered.
 
-**Note:** Slash commands are reserved for automated bot actions, not manual use.
+The action logic lives in a shared, caller-agnostic module
+(`src/utils/moderation-actions.ts`). The planned AI-driven automated moderation
+([issue #16](https://github.com/whiteravens20/exemplar/issues/16)) will call the
+same module directly, so manual and automated moderation share one implementation.
 
 ## 🔐 Environment Variables
 
@@ -305,11 +325,12 @@ discord-ai-bot/
 │   │   ├── n8n.ts                # N8N webhook payload/response types
 │   │   └── index.ts              # Barrel exports
 │   │
-│   ├── 📁 slashcommands/         # Slash commands
-│   │   ├── kick.ts               # /kick command
-│   │   ├── ban.ts                # /ban command
-│   │   ├── mute.ts               # /mute command
-│   │   └── warn.ts               # /warn command
+│   ├── 📁 slashcommands/         # Slash commands (run in DMs)
+│   │   ├── shared.ts             # Shared command resolution helpers
+│   │   ├── kick.ts, ban.ts, unban.ts        # Moderation commands
+│   │   ├── mute.ts, unmute.ts, warn.ts      # Moderation commands
+│   │   ├── help.ts, code.ts, flushmemory.ts # User commands
+│   │   └── warnings.ts, stats.ts, flushdb.ts # User/admin commands
 │   │
 │   ├── 📁 events/                # Discord event handlers
 │   │   ├── ready.ts              # Bot startup
@@ -325,7 +346,8 @@ discord-ai-bot/
 │   │   ├── rate-limiter.ts       # Rate limiting
 │   │   ├── message-splitter.ts   # Message splitting for Discord
 │   │   ├── token-estimator.ts    # Token estimation
-│   │   └── admin-command-handler.ts # Admin command processing
+│   │   ├── moderation-actions.ts # Shared moderation action layer
+│   │   └── stats-embed.ts        # Statistics embed formatting
 │   │
 │   ├── 📁 config/                # Configuration files
 │   │   ├── config.ts             # Config manager

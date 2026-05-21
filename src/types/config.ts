@@ -10,7 +10,6 @@ export interface N8NConfig {
 }
 
 export interface BotSettings {
-  prefix: string;
   mentionResponse: string;
   restrictedResponse: string;
 }

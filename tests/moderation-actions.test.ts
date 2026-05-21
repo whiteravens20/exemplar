@@ -4,8 +4,7 @@ import {
   formatDuration,
   canModerate,
   checkBasePermissions,
-  parseTargetUser,
-} from '../src/utils/guild-prefix-command-handler.js';
+} from '../src/utils/moderation-actions.js';
 
 describe('parseDuration', () => {
   it('parses seconds', () => {
@@ -118,7 +117,9 @@ describe('checkBasePermissions', () => {
       id: 'user-1',
       roles: { highest: { position: 2 } },
     };
-    expect(checkBasePermissions(moderator as any, target as any, KICK_MEMBERS)).toBeNull();
+    expect(
+      checkBasePermissions(moderator as any, target as any, KICK_MEMBERS)
+    ).toBeNull();
   });
 
   it('returns error when missing permission', () => {
@@ -145,60 +146,12 @@ describe('checkBasePermissions', () => {
       permissions: { has: () => true },
       roles: { highest: { position: 5 } },
     };
-    const result = checkBasePermissions(moderator as any, moderator as any, KICK_MEMBERS);
+    const result = checkBasePermissions(
+      moderator as any,
+      moderator as any,
+      KICK_MEMBERS
+    );
     expect(result).not.toBeNull();
     expect(result?.content).toContain('sobie');
-  });
-});
-
-describe('parseTargetUser', () => {
-  it('returns null when no guild', () => {
-    const message = { guild: null };
-    expect(parseTargetUser(message as any, ['@user'])).toBeNull();
-  });
-
-  it('parses mention', () => {
-    const member = { user: { id: '123', tag: 'test#0001' } };
-    const message = {
-      guild: {
-        members: {
-          cache: {
-            get: (id: string) => (id === '123' ? member : undefined),
-          },
-        },
-      },
-    };
-    const result = parseTargetUser(message as any, ['<@!123>']);
-    expect(result).not.toBeNull();
-    expect(result?.user.id).toBe('123');
-  });
-
-  it('parses raw user ID', () => {
-    const member = { user: { id: '456', tag: 'test2#0002' } };
-    const message = {
-      guild: {
-        members: {
-          cache: {
-            get: (id: string) => (id === '456' ? member : undefined),
-          },
-        },
-      },
-    };
-    const result = parseTargetUser(message as any, ['456']);
-    expect(result).not.toBeNull();
-    expect(result?.user.id).toBe('456');
-  });
-
-  it('returns null for invalid input', () => {
-    const message = {
-      guild: {
-        members: {
-          cache: {
-            get: () => undefined,
-          },
-        },
-      },
-    };
-    expect(parseTargetUser(message as any, ['notanid'])).toBeNull();
   });
 });

@@ -27,7 +27,6 @@ DISCORD_CLIENT_ID=your_client_id_here
 DISCORD_SERVER_ID=your_server_id_for_ai_assistant
 N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/workflow
 N8N_API_KEY=your_n8n_api_key_here
-BOT_PREFIX=!
 HARDCODED_MENTION_RESPONSE=Hi! I'm an AI Assistant. Send me a DM to chat with me.
 ALLOWED_ROLES_FOR_AI=role_id_1,role_id_2,role_id_3
 RESTRICTED_RESPONSE=You don't have permission to use this feature. Please contact the admins.
@@ -100,7 +99,6 @@ docker run -d \
   -e DISCORD_SERVER_ID=your_server_id_for_ai_assistant \
   -e N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/workflow \
   -e N8N_API_KEY=your_n8n_api_key_here \
-  -e BOT_PREFIX=! \
   -e HARDCODED_MENTION_RESPONSE="Hi! I'm an AI Assistant. Send me a DM to chat with me." \
   -e ALLOWED_ROLES_FOR_AI=role_id_1,role_id_2,role_id_3 \
   -e RESTRICTED_RESPONSE="You don't have permission to use this feature. Please contact the admins." \
