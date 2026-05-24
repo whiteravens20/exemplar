@@ -11,11 +11,11 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password required}
       POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - bot_postgres_data:/var/lib/postgresql/data
     networks:
       - bot-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bot_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bot_user} -d ${DB_NAME:-discord_bot}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -98,4 +98,4 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  bot_postgres_data:

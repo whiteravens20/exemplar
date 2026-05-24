@@ -41,8 +41,8 @@ wait_for_postgres() {
 # Function to run database migrations
 run_migrations() {
   echo "🔄 Running database migrations..."
-  
-  if npm run migrate:up; then
+
+  if node dist/scripts/migrate.js up; then
     echo "✅ Database migrations completed successfully"
     return 0
   else

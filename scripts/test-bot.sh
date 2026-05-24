@@ -87,7 +87,7 @@ run_test "src/db/repositories/ exists" "test -d src/db/repositories"
 run_test "src/api/ exists" "test -d src/api"
 run_test "src/jobs/ exists" "test -d src/jobs"
 run_test "migrations/ exists" "test -d migrations"
-run_test "scripts/migrate.ts exists" "test -f scripts/migrate.ts"
+run_test "src/scripts/migrate.ts exists" "test -f src/scripts/migrate.ts"
 
 # 4. Check configuration
 echo -e "\n${BLUE}4️⃣ Checking Configuration...${NC}"
