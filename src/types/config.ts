@@ -10,13 +10,13 @@ export interface N8NConfig {
 }
 
 export interface BotSettings {
-  prefix: string;
   mentionResponse: string;
   restrictedResponse: string;
 }
 
 export interface ModerationConfig {
   allowedRoles: string[];
+  modLogChannelId?: string;
 }
 
 export interface LoggingConfig {

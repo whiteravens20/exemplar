@@ -2,6 +2,11 @@
 
 ## Configuration Steps
 
+> **Deployment model:** This is a self-hosted, single-server bot. You create your
+> own Discord application and run one instance for one server — there is no public
+> bot. The app is guild-installed and `DISCORD_SERVER_ID` is required; all
+> moderation commands act on that configured server.
+
 ### 1. Preparing Discord Application
 
 #### A. Creating Application
@@ -92,7 +97,6 @@ N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/discord
 N8N_API_KEY=your_api_key_here
 
 # Bot Configuration - OPTIONAL
-BOT_PREFIX=!
 HARDCODED_MENTION_RESPONSE=Hi! I'm an AI Assistant. Send me a DM to chat with me.
 RESTRICTED_RESPONSE=You don't have permission to use this feature. Please contact the admins.
 

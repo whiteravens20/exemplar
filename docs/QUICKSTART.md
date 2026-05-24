@@ -133,12 +133,12 @@ Send DM to bot: hello
 → Bot returns response
 ```
 
-### Admin Commands (DM only)
+### Slash Commands (run in DMs with the bot)
 ```
-!stats 7        → View 7-day usage statistics (admin)
-!warn @user     → Issue warning (admin/moderator)
-!warnings       → View your warnings (all users)
-!flushmemory    → Clear conversation history
+/stats days:7        → View 7-day usage statistics (admin)
+/warn user:@user     → Issue warning (admin/moderator)
+/warnings            → View your warnings (all users)
+/flushmemory         → Clear conversation history
 ```
 
 ---

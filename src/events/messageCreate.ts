@@ -9,7 +9,6 @@ import { splitMessage } from '../utils/message-splitter.js';
 import conversationRepo from '../db/repositories/conversation-repository.js';
 import analyticsRepo from '../db/repositories/analytics-repository.js';
 import { estimateTokens } from '../utils/token-estimator.js';
-import { handleAdminCommand } from '../utils/admin-command-handler.js';
 import type { BotEvent } from '../types/discord.js';
 
 const n8nClient = new N8NClient(
@@ -88,17 +87,6 @@ const event: BotEvent = {
     if (!botUser) return;
     const botMention = `<@${botUser.id}>`;
     const botNicknameMention = `<@!${botUser.id}>`;
-
-    // Ignore messages starting with ! in channels (not DMs)
-    if (
-      message.channel.type !== ChannelType.DM &&
-      message.content.startsWith(configManager.config.bot.prefix)
-    ) {
-      logger.info('Ignoring ! command in channel', {
-        userId: message.author.id,
-      });
-      return;
-    }
 
     // Handle bot mentions in public channels
     if (
@@ -182,7 +170,7 @@ const event: BotEvent = {
         }
 
         // Sanitize message content
-        let sanitizedContent = message.content.trim();
+        const sanitizedContent = message.content.trim();
 
         if (!sanitizedContent) {
           await message.reply({
@@ -191,81 +179,9 @@ const event: BotEvent = {
           return;
         }
 
-        // Check for !help command
-        if (
-          sanitizedContent === '!help' ||
-          sanitizedContent.startsWith('!help ')
-        ) {
-          const embed = {
-            color: 0x0099ff,
-            title: '🤖 AI Assistant Bot - Pomoc',
-            description:
-              'Witaj! Jestem botem AI dostępnym w wiadomościach prywatnych.',
-            fields: [
-              {
-                name: '💬 Jak ze mnie korzystać?',
-                value:
-                  'Wyślij mi wiadomość prywatną (DM), aby ze mną porozmawiać! Mogę pomóc z pytaniami i udzielić informacji.',
-              },
-              {
-                name: '⚡ Tryb kodowania',
-                value:
-                  'Użyj `!code` przed swoją wiadomością, aby przełączyć na tryb pomocy programistycznej.\n**Przykład:** `!code napisz funkcję do sortowania tablicy`',
-              },
-              {
-                name: '📋 Dostępne komendy użytkownika',
-                value:
-                  '• `!help` - Pokazuje tę wiadomość pomocy\n• `!code <pytanie>` - Tryb programistyczny\n• `!flushmemory` - Wyczyść pamięć konwersacji\n• `!warnings` - Pokaż swoje ostrzeżenia',
-              },
-              {
-                name: '🔐 Komendy administratora',
-                value:
-                  '• `!warn <@user> [powód]` - Wystaw ostrzeżenie\n• `!warnings [@user]` - Pokaż wszystkie ostrzeżenia\n• `!stats [days]` - Statystyki bota (domyślnie 7 dni)\n• `!flushdb confirm` - Wyczyść bazę danych',
-              },
-              {
-                name: '📌 Funkcje',
-                value:
-                  '• Oznacz mnie (@mention) na kanale, aby otrzymać informację o bocie\n• Wszystkie komendy działają tylko w DM\n• Bot automatycznie moderuje serwer',
-              },
-              {
-                name: '⚠️ Uwaga',
-                value:
-                  'Dostęp do bota może być ograniczony do określonych ról. Jeśli nie możesz wysyłać wiadomości, skontaktuj się z administratorami serwera.',
-              },
-            ],
-            timestamp: new Date().toISOString(),
-          };
-
-          await message.reply({ embeds: [embed] });
-          logger.info('✅ Sent help command response', {
-            userId: message.author.id,
-          });
-          return;
-        }
-
-        // Check for admin commands (!flushdb, !flushmemory, !stats, !warn, !warnings)
-        if (
-          sanitizedContent.startsWith('!flush') ||
-          sanitizedContent.startsWith('!stats') ||
-          sanitizedContent.startsWith('!warn')
-        ) {
-          await handleAdminCommand(message);
-          return;
-        }
-
-        // Check for !code command to enable coding mode
-        let mode = 'chat';
-        if (sanitizedContent.startsWith('!code')) {
-          mode = 'code';
-          sanitizedContent = sanitizedContent.substring(5).trim(); // Remove '!code' prefix
-
-          if (!sanitizedContent) {
-            await message.reply({
-              content: '❌ Podaj treść po komendzie `!code`. Przykład: `!code napisz funkcję sortującą tablicę`',
-            });
-            return;
-          }
-        }
+        // All bot commands are slash commands handled by interactionCreate.
+        // A plain DM is always a chat-mode message for the n8n workflow.
+        const mode = 'chat';
 
         // Send to n8n workflow
         logger.info('📤 Sending message to n8n', {

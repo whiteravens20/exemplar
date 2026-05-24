@@ -27,17 +27,13 @@ jobs:
       contents: read
       pull-requests: write
 
-    strategy:
-      matrix:
-        node-version: [22.22.2]
-
     steps:
       - uses: actions/checkout@v6
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 22
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -92,16 +88,6 @@ jobs:
           grep -q "DISCORD_TOKEN" .env.example || (echo "DISCORD_TOKEN not in .env.example" && exit 1)
           grep -q "N8N_WORKFLOW_URL" .env.example || (echo "N8N_WORKFLOW_URL not in .env.example" && exit 1)
           echo "✅ Environment variables configured"
-
-      - name: Node.js version check
-        run: |
-          REQUIRED_VERSION="22"
-          CURRENT_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-          if [ "$CURRENT_VERSION" -lt "$REQUIRED_VERSION" ]; then
-            echo "❌ Node.js $REQUIRED_VERSION+ required, got v$(node -v)"
-            exit 1
-          fi
-          echo "✅ Node.js version OK: v$(node -v)"
 
       - name: Package.json validation
         run: |

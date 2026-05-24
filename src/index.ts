@@ -25,7 +25,15 @@ import messageCreateEvent from './events/messageCreate.js';
 import banCommand from './slashcommands/ban.js';
 import kickCommand from './slashcommands/kick.js';
 import muteCommand from './slashcommands/mute.js';
+import unmuteCommand from './slashcommands/unmute.js';
+import unbanCommand from './slashcommands/unban.js';
 import warnCommand from './slashcommands/warn.js';
+import helpCommand from './slashcommands/help.js';
+import codeCommand from './slashcommands/code.js';
+import flushmemoryCommand from './slashcommands/flushmemory.js';
+import warningsCommand from './slashcommands/warnings.js';
+import statsCommand from './slashcommands/stats.js';
+import flushdbCommand from './slashcommands/flushdb.js';
 
 // Validate configuration
 if (!configManager.validateRequiredConfig()) {
@@ -56,7 +64,15 @@ const slashCommands: SlashCommand[] = [
   banCommand,
   kickCommand,
   muteCommand,
+  unmuteCommand,
+  unbanCommand,
   warnCommand,
+  helpCommand,
+  codeCommand,
+  flushmemoryCommand,
+  warningsCommand,
+  statsCommand,
+  flushdbCommand,
 ];
 
 const commandsJson: unknown[] = [];

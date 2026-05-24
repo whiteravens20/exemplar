@@ -5,7 +5,7 @@ import {
   type ChatInputCommandInteraction,
 } from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
-import { applyWarn, canModerate } from '../utils/moderation-actions.js';
+import { applyUnban } from '../utils/moderation-actions.js';
 import {
   withAppAvailability,
   resolveGuildInvoker,
@@ -15,18 +15,12 @@ import {
 const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
-      .setName('warn')
-      .setDescription('Wystawia ostrzeżenie użytkownikowi (zapisywane w bazie)')
-      .addUserOption((option) =>
-        option
-          .setName('user')
-          .setDescription('Użytkownik do ostrzeżenia')
-          .setRequired(true)
-      )
+      .setName('unban')
+      .setDescription('Zdejmuje bana z użytkownika na skonfigurowanym serwerze')
       .addStringOption((option) =>
         option
-          .setName('reason')
-          .setDescription('Powód ostrzeżenia')
+          .setName('user_id')
+          .setDescription('ID użytkownika do odbanowania')
           .setRequired(true)
       )
   ),
@@ -38,7 +32,7 @@ const command: SlashCommand = {
       return;
     }
 
-    if (!base.invoker.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+    if (!base.invoker.permissions.has(PermissionFlagsBits.BanMembers)) {
       await interaction.reply({
         content: '❌ Nie masz wymaganych uprawnień do użycia tej komendy.',
         flags: MessageFlags.Ephemeral,
@@ -46,28 +40,16 @@ const command: SlashCommand = {
       return;
     }
 
-    const targetUser = interaction.options.getUser('user', true);
-    const reason = interaction.options.getString('reason', true);
-
-    // If the target is on the server, enforce role hierarchy.
-    const targetMember = await base.guild.members
-      .fetch(targetUser.id)
-      .catch(() => null);
-    if (targetMember && !canModerate(base.invoker, targetMember)) {
+    const userId = interaction.options.getString('user_id', true).trim();
+    if (!/^\d{17,20}$/.test(userId)) {
       await interaction.reply({
-        content:
-          '❌ Nie możesz ostrzec tego użytkownika (hierarchia ról lub akcja na sobie/właścicielu).',
+        content: '❌ Nieprawidłowe ID użytkownika.',
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
-    const result = await applyWarn(
-      base.guild,
-      targetUser,
-      reason,
-      actorFromInteraction(interaction)
-    );
+    const result = await applyUnban(base.guild, userId, actorFromInteraction(interaction));
 
     if (result.success && result.embed) {
       await interaction.reply({ embeds: [result.embed] });

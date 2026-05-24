@@ -47,7 +47,6 @@ COPY --from=builder /app/dist ./dist
 COPY package.json ./
 COPY migrations/ ./migrations/
 COPY scripts/docker-entrypoint.sh ./scripts/
-COPY scripts/migrate.ts ./scripts/
 
 # Make entrypoint script executable
 RUN chmod +x ./scripts/docker-entrypoint.sh

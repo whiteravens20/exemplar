@@ -18,7 +18,6 @@ class ConfigManager {
         apiKey: process.env.N8N_API_KEY || '',
       },
       bot: {
-        prefix: process.env.BOT_PREFIX || '!',
         mentionResponse:
           process.env.HARDCODED_MENTION_RESPONSE ||
           "Hi! I'm an AI Assistant. Send me a DM to chat with me.",
@@ -28,6 +27,7 @@ class ConfigManager {
       },
       moderation: {
         allowedRoles: this.parseRoles(process.env.ALLOWED_ROLES_FOR_AI),
+        modLogChannelId: process.env.MOD_LOG_CHANNEL_ID || undefined,
       },
       logging: {
         level: process.env.LOG_LEVEL || 'info',

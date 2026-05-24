@@ -24,9 +24,9 @@ Discord Bot sends messages to an n8n workflow via Webhook. n8n processes the mes
 
 - `userId` - Discord user ID
 - `userName` - Discord username
-- `message` - User's message content (with `!code` prefix removed if applicable)
+- `message` - User's message content
 - `serverId` - Discord server ID (from bot configuration)
-- `mode` - **"chat"** (default) or **"code"** (when user uses `!code` command)
+- `mode` - **"chat"** (plain DM) or **"code"** (when user runs the `/code` command)
 - `timestamp` - ISO timestamp
 - `platform` - Always "discord"
 
@@ -39,7 +39,7 @@ The `mode` field allows you to route messages to different LLMs:
 
 **User activates code mode by:**
 ```
-!code write a function to sort an array
+/code message: write a function to sort an array
 ```
 
 Bot will send:

@@ -16,8 +16,8 @@
     "deploy-commands": "node dist/deploy-commands.js",
     "release-package": "bash scripts/create-release-package.sh",
     "lint": "eslint src --fix",
-    "migrate:up": "npx tsx scripts/migrate.ts up",
-    "migrate:down": "npx tsx scripts/migrate.ts down",
+    "migrate:up": "node dist/scripts/migrate.js up",
+    "migrate:down": "node dist/scripts/migrate.js down",
     "db:seed": "bash scripts/seed-test-data.sh"
   },
   "keywords": [

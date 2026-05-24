@@ -34,7 +34,9 @@ if (process.env.DB_SSL === 'true') {
 const pool = new Pool(config);
 
 async function runMigration(direction = 'up'): Promise<void> {
-  const migrationsDir = path.join(__dirname, '../migrations');
+  // Compiled file lives at dist/scripts/migrate.js; migrations are at
+  // <repo-root>/migrations (sibling of dist/), so go up two levels.
+  const migrationsDir = path.join(__dirname, '../../migrations');
 
   try {
     // Create migrations tracking table
@@ -129,7 +131,7 @@ async function runMigration(direction = 'up'): Promise<void> {
 const direction = process.argv[2] || 'up';
 
 if (!['up', 'down'].includes(direction)) {
-  console.error('Usage: npx tsx scripts/migrate.ts [up|down]');
+  console.error('Usage: node dist/scripts/migrate.js [up|down]');
   process.exit(1);
 }
 

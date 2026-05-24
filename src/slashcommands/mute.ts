@@ -1,97 +1,74 @@
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  MessageFlags,
+  type ChatInputCommandInteraction,
+} from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
+import { applyTimeout, parseDuration } from '../utils/moderation-actions.js';
+import {
+  withAppAvailability,
+  resolveModerationContext,
+  actorFromInteraction,
+} from './shared.js';
 
 const command: SlashCommand = {
-  data: new SlashCommandBuilder()
-    .setName('mute')
-    .setDescription('Mute a user in the server')
-    .addUserOption((option) =>
-      option.setName('user').setDescription('The user to mute').setRequired(true)
-    )
-    .addIntegerOption((option) =>
-      option
-        .setName('duration')
-        .setDescription('Mute duration in minutes')
-        .setMinValue(1)
-    )
-    .addStringOption((option) =>
-      option.setName('reason').setDescription('Reason for muting')
-    ),
+  data: withAppAvailability(
+    new SlashCommandBuilder()
+      .setName('mute')
+      .setDescription('Wycisza (timeout) użytkownika na skonfigurowanym serwerze')
+      .addUserOption((option) =>
+        option
+          .setName('user')
+          .setDescription('Użytkownik do wyciszenia')
+          .setRequired(true)
+      )
+      .addStringOption((option) =>
+        option
+          .setName('duration')
+          .setDescription('Czas wyciszenia, np. 30s, 10m, 1h, 1d (maks. 28 dni)')
+          .setRequired(true)
+      )
+      .addStringOption((option) =>
+        option.setName('reason').setDescription('Powód wyciszenia')
+      )
+  ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    // Block manual use - this command is reserved for automated moderation
-    await interaction.reply({
-      content:
-        '❌ Ta komenda jest niedostępna do ręcznego użycia. Bot używa jej automatycznie w ramach moderacji.',
-      ephemeral: true,
-    });
-    return;
-
-    /* RESERVED FOR AUTOMATED USE
-    if (!interaction.guild) {
-      return interaction.reply({
-        content: '❌ Ta komenda może być użyta tylko na serwerze, nie w prywatnych wiadomościach.',
-        ephemeral: true
-      });
+    const ctx = await resolveModerationContext(
+      interaction,
+      PermissionFlagsBits.ModerateMembers
+    );
+    if (!ctx.ok) {
+      await interaction.reply({ content: ctx.error, flags: MessageFlags.Ephemeral });
+      return;
     }
 
-    if (!isModeratorOrAdmin(interaction.member)) {
-      return interaction.reply({
-        content: '❌ Nie masz uprawnień do użycia tej komendy.',
-        ephemeral: true
-      });
-    }
-
-    const target = interaction.options.getUser('user');
-    const durationMinutes = interaction.options.getInteger('duration') || 60;
-    const reason = interaction.options.getString('reason') || 'Nie podano powodu';
-
-    try {
-      const member = await interaction.guild.members.fetch(target.id);
-      const duration = durationMinutes * 60 * 1000;
-
-      if (!member.moderatable) {
-        return interaction.reply({
-          content: '❌ Nie mogę wyciszyć tego użytkownika (niewystarczające uprawnienia).',
-          ephemeral: true
-        });
-      }
-
-      if (member.roles.highest.position >= interaction.member.roles.highest.position) {
-        return interaction.reply({
-          content: '❌ Nie możesz wyciszyć tego użytkownika (hierarchia ról).',
-          ephemeral: true
-        });
-      }
-
-      if (member.id === interaction.guild.ownerId) {
-        return interaction.reply({
-          content: '❌ Nie można wyciszyć właściciela serwera.',
-          ephemeral: true
-        });
-      }
-
-      const MAX_TIMEOUT_MINUTES = 40320; // 28 days
-      if (durationMinutes > MAX_TIMEOUT_MINUTES) {
-        return interaction.reply({
-          content: `❌ Czas trwania nie może przekroczyć ${MAX_TIMEOUT_MINUTES} minut (28 dni).`,
-          ephemeral: true
-        });
-      }
-
-      await member.timeout(duration, reason);
-      
+    const durationMs = parseDuration(interaction.options.getString('duration', true));
+    if (durationMs === null) {
       await interaction.reply({
-        content: `🔇 **${target.username}** został wyciszony na **${durationMinutes}** minut.\n**Powód:** ${reason}`,
-        ephemeral: false
+        content: '❌ Nieprawidłowy format czasu. Użyj: `30s`, `10m`, `1h`, `1d`.',
+        flags: MessageFlags.Ephemeral,
       });
-    } catch (error) {
+      return;
+    }
+
+    const reason = interaction.options.getString('reason') ?? 'Nie podano powodu';
+    const result = await applyTimeout(
+      ctx.targetMember,
+      durationMs,
+      reason,
+      actorFromInteraction(interaction)
+    );
+
+    if (result.success && result.embed) {
+      await interaction.reply({ embeds: [result.embed] });
+    } else {
       await interaction.reply({
-        content: `❌ Nie udało się wyciszyć użytkownika: ${(error as Error).message}`,
-        ephemeral: true
+        content: result.content ?? '❌ Operacja nie powiodła się.',
+        flags: MessageFlags.Ephemeral,
       });
     }
-    */
   },
 };
 
