@@ -184,11 +184,40 @@ Message: {{$json.message}}
 |-----------|-----------------------|---------------------|-----------------------------------|
 | OpenAI    | "OpenAI Chat Model"   | `gpt-4o-mini`       | Temperature `0.1`, JSON mode on   |
 | Anthropic | "Anthropic Chat Model"| `claude-haiku-4-5`  | Temperature `0.1`                 |
-| Ollama    | "Ollama Chat Model"   | `llama3.1:8b`       | Temperature `0.1`, format `json`  |
+| Ollama    | "Ollama Chat Model"   | `qwen3:8b`          | See **Ollama settings** below     |
 
 For OpenAI and Ollama, turn on **JSON mode** / `format: json` so the model is
 forced to return valid JSON. For Anthropic, the system prompt's strict
 instruction is enough in practice.
+
+#### Ollama settings (8 GB VRAM)
+
+Tested model picks for an 8 GB-class GPU with Polish-language moderation:
+
+- **`qwen3:8b`** *(recommended)* — strongest reasoning per parameter at this
+  size, native multilingual incl. Polish, reliable JSON output. Default
+  Q4_K_M quant ≈ 4.9 GB. Disable Qwen 3's "thinking mode" on the moderation
+  hot path — it adds latency you don't need. Either add `/no_think` to the
+  system prompt or, if your Ollama node exposes it, set
+  `enable_thinking=false`.
+- **`qwen2.5:7b-instruct-q6_K`** — safe alternative. Q6_K is a high-quality
+  quant (~6 GB), JSON mode works, multilingual is excellent. Slightly less
+  reasoning headroom than Qwen 3 but more battle-tested.
+
+Skip: any `*-coder:*` tag (wrong domain — code fine-tuning hurts on
+natural-language judgment), `gemma3:4b` / `gemma3:1b` (too small for
+nuanced moderation calls), and the older `llama3.1:8b` (Polish quality and
+JSON reliability are noticeably weaker than Qwen at the same size).
+
+Recommended Ollama node settings (all providers):
+
+- `format: json` (forces valid JSON; on Ollama node this is the **Format**
+  dropdown set to `json`)
+- `temperature: 0.1`
+- `num_ctx: 4096` — moderation payloads are small (message + 5 warnings +
+  rules ≈ 1–2 k tokens); larger contexts just waste VRAM.
+- `keep_alive: 30m` — keeps the model loaded between requests so cold-start
+  doesn't blow up the first-message latency.
 
 ### Node 3 — Code (verdict parser)
 
