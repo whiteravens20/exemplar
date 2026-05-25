@@ -106,6 +106,37 @@ class WarningRepository {
   }
 
   /**
+   * Most recent warnings for a user (any age, AI + human, active + expired) —
+   * surfaced to the AI moderation LLM so it can judge "repeated rule-breaking"
+   * with actual history rather than guessing. Returns at most `limit` rows,
+   * most recent first.
+   */
+  async getRecentWarningSummaries(
+    discordId: string,
+    limit: number
+  ): Promise<Array<{ reason: string; issued_at: Date }>> {
+    if (!db.isAvailable()) return [];
+    try {
+      const result = await db.query<{ reason: string; issued_at: Date }>(
+        `SELECT w.reason, w.issued_at
+         FROM warnings w
+         JOIN users u ON u.id = w.user_id
+         WHERE u.discord_id = $1
+         ORDER BY w.issued_at DESC
+         LIMIT $2`,
+        [discordId, limit]
+      );
+      return result.rows;
+    } catch (error) {
+      logger.error('Failed to fetch recent warning summaries', {
+        error: (error as Error).message,
+        discordId,
+      });
+      return [];
+    }
+  }
+
+  /**
    * Earliest expiry among the user's `limit` most-recent active warnings —
    * i.e. the moment at which removing one warning will drop the active count
    * by one. Used to compute the auto-mute duration so the mute lifts the

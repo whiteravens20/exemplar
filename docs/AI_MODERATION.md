@@ -53,9 +53,21 @@ workflow (`N8N_API_KEY`).
   "channelId": "123456789012345678",
   "channelName": "general",
   "serverId": "<DISCORD_SERVER_ID>",
-  "timestamp": "2026-05-25T14:32:11.000Z"
+  "timestamp": "2026-05-25T14:32:11.000Z",
+  // Bot-provided context so the LLM can ground its verdict:
+  "recentWarnings": [
+    { "reason": "spam links in #general", "issuedAt": "2026-05-20T14:01:00Z" },
+    { "reason": "insult", "issuedAt": "2026-05-22T09:33:00Z" }
+  ],
+  "serverRules": "1. No slurs. 2. No NSFW outside #adult. 3. ..."
 }
 ```
+
+`recentWarnings` is the user's last 5 warnings (any age, AI + human) so the
+LLM can judge "repeated rule-breaking" with evidence instead of guessing.
+`serverRules` is whatever the operator set in `MOD_RULES_TEXT`; empty string
+when unset — the LLM should then fall back to the generic baseline in its
+system prompt.
 
 ### Response (n8n → bot)
 
@@ -130,6 +142,24 @@ incoming message decide one of four actions:
 - "delete"  — the message itself must be removed but the user is otherwise
               fine (spam links, leaked secrets, accidental personal info).
 
+Context the bot will give you in each request:
+
+- "serverRules": the operator's server-specific rules. If present, treat
+  these as the primary authority. If empty, fall back to the generic
+  community baseline below.
+- "recentWarnings": the user's last 5 warnings (any age) with reason and
+  ISO timestamp. Use these to judge "repeated" rule-breaking objectively:
+  a clean user gets the benefit of the doubt; a user with 3 recent warns
+  for similar behaviour should escalate to "timeout".
+
+Generic community baseline (apply when serverRules is empty):
+
+- No slurs, harassment, or targeted hate.
+- No spam, mass-mentions, or link-flooding.
+- No NSFW content outside channels explicitly designated for it.
+- No doxxing or leaking of personal information.
+- No illegal content.
+
 Return ONLY valid JSON, no markdown fences, no commentary. Shape:
 
   {"action": "<action>", "reason": "<short Polish-language reason>", "duration": "<only if action is timeout>"}
@@ -143,6 +173,8 @@ open on malformed JSON, so partial outputs are worse than "allow".
 ```
 Channel: {{$json.channelName}}
 User:    {{$json.userName}}
+Server rules: {{$json.serverRules}}
+Recent warnings: {{JSON.stringify($json.recentWarnings)}}
 Message: {{$json.message}}
 ```
 
@@ -231,6 +263,7 @@ Activate the workflow.
 | `AI_MOD_EXEMPT_ROLES`         | no                 | _empty_ | CSV of role IDs whose holders are skipped (mods, trusted bots, etc.) |
 | `AI_MOD_MUTE_THRESHOLD`       | no                 | `3`     | Active warnings that trigger auto-mute |
 | `AI_MOD_BAN_THRESHOLD`        | no                 | `100`   | Historical warnings that trigger auto-ban |
+| `MOD_RULES_TEXT`              | no                 | _empty_ | Server-specific rules as a plain string (use `\n` for line breaks). Passed to the LLM as `serverRules` in the payload. Empty = LLM uses generic baseline. |
 | `DISCORD_SERVER_ID`           | yes (bot-wide)     | _empty_ | The single configured server |
 
 Other relevant Discord settings (already enabled if you have chat working):

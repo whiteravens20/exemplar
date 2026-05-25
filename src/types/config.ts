@@ -33,6 +33,12 @@ export interface ModerationConfig {
   exemptRoles: string[];
   warnMuteThreshold: number;
   warnBanThreshold: number;
+  /**
+   * Plain-text server rules surfaced to the AI moderation LLM. When empty
+   * the LLM falls back to the generic community baseline in its system
+   * prompt. Source: MOD_RULES_TEXT env var.
+   */
+  rulesText: string;
 }
 
 export interface LoggingConfig {

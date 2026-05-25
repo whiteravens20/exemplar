@@ -40,6 +40,7 @@ class ConfigManager {
           process.env.AI_MOD_BAN_THRESHOLD,
           100
         ),
+        rulesText: process.env.MOD_RULES_TEXT || '',
       },
       logging: {
         level: process.env.LOG_LEVEL || 'info',

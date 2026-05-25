@@ -7,6 +7,7 @@ import {
 import logger from './logger.js';
 import configManager from '../config/config.js';
 import N8NClient from './n8n-client.js';
+import warningRepo from '../db/repositories/warning-repository.js';
 import {
   applyDeleteMessage,
   applyTimeout,
@@ -33,6 +34,7 @@ import {
  */
 
 const ACTOR_LABEL = 'AI moderation';
+const RECENT_WARNINGS_LIMIT = 5;
 
 export type ModerationAction = 'allow' | 'warn' | 'timeout' | 'delete';
 
@@ -236,6 +238,18 @@ export async function analyzeAndAct(message: Message): Promise<void> {
   const client = getClient();
   if (!client) return;
 
+  // Fetch the user's recent warning history so the LLM can ground "repeated
+  // rule-breaking" verdicts in actual evidence rather than guessing. Cheap —
+  // small index-backed query against the warnings table.
+  const recentSummaries = await warningRepo.getRecentWarningSummaries(
+    message.author.id,
+    RECENT_WARNINGS_LIMIT
+  );
+  const recentWarnings = recentSummaries.map((row) => ({
+    reason: row.reason,
+    issuedAt: row.issued_at.toISOString(),
+  }));
+
   let result;
   try {
     result = await client.triggerWorkflow({
@@ -251,6 +265,8 @@ export async function analyzeAndAct(message: Message): Promise<void> {
           : '',
       serverId: configManager.config.discord.serverId,
       timestamp: new Date().toISOString(),
+      recentWarnings,
+      serverRules: configManager.config.moderation.rulesText,
     });
   } catch (error) {
     logger.error('AI moderation: n8n request threw', {
