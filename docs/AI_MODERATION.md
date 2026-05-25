@@ -184,7 +184,7 @@ Message: {{$json.message}}
 |-----------|-----------------------|---------------------|-----------------------------------|
 | OpenAI    | "OpenAI Chat Model"   | `gpt-4o-mini`       | Temperature `0.1`, JSON mode on   |
 | Anthropic | "Anthropic Chat Model"| `claude-haiku-4-5`  | Temperature `0.1`                 |
-| Ollama    | "Ollama Chat Model"   | `qwen3:8b`          | See **Ollama settings** below     |
+| Ollama    | "Ollama Chat Model"   | `qwen3.5:9b`        | See **Ollama settings** below     |
 
 For OpenAI and Ollama, turn on **JSON mode** / `format: json` so the model is
 forced to return valid JSON. For Anthropic, the system prompt's strict
@@ -194,15 +194,19 @@ instruction is enough in practice.
 
 Tested model picks for an 8 GB-class GPU with Polish-language moderation:
 
-- **`qwen3:8b`** *(recommended)* — strongest reasoning per parameter at this
-  size, native multilingual incl. Polish, reliable JSON output. Default
-  Q4_K_M quant ≈ 4.9 GB. Disable Qwen 3's "thinking mode" on the moderation
-  hot path — it adds latency you don't need. Either add `/no_think` to the
-  system prompt or, if your Ollama node exposes it, set
-  `enable_thinking=false`.
-- **`qwen2.5:7b-instruct-q6_K`** — safe alternative. Q6_K is a high-quality
-  quant (~6 GB), JSON mode works, multilingual is excellent. Slightly less
-  reasoning headroom than Qwen 3 but more battle-tested.
+- **`qwen3.5:9b`** *(recommended)* — released Feb 2026 with native tool
+  calling, thinking, and multimodal support; best-in-class multilingual
+  reasoning for the size. Default quant ≈ 6.6 GB so the VRAM math is tight
+  on 8 GB cards — keep `num_ctx` at 4096 (moderation payloads don't need
+  more) and use `keep_alive: 30m` so the model isn't unloaded between
+  bursts. Disable thinking on this hot path (`/no_think` in the system
+  prompt or `enable_thinking=false` if your Ollama node exposes it).
+- **`qwen3:8b`** — solid fallback if 6.6 GB feels too tight or the 3.5
+  series isn't available in your Ollama yet. ~4.9 GB at default Q4_K_M, so
+  more headroom for context. Same `/no_think` recommendation applies.
+- **`qwen2.5:7b-instruct-q6_K`** — most battle-tested option. Q6_K quant
+  (~6 GB), reliable JSON output, no thinking mode to disable. Slightly
+  less reasoning headroom than the Qwen 3.x line.
 
 Skip: any `*-coder:*` tag (wrong domain — code fine-tuning hurts on
 natural-language judgment), `gemma3:4b` / `gemma3:1b` (too small for
