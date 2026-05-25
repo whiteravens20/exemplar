@@ -270,9 +270,31 @@ reaches the user; the moderator's confirmation embed reports whether it was
 delivered.
 
 The action logic lives in a shared, caller-agnostic module
-(`src/utils/moderation-actions.ts`). The planned AI-driven automated moderation
-([issue #16](https://github.com/whiteravens20/exemplar/issues/16)) will call the
+(`src/utils/moderation-actions.ts`). The AI-driven automated moderation
+(issue [#16](https://github.com/whiteravens20/exemplar/issues/16)) calls the
 same module directly, so manual and automated moderation share one implementation.
+
+### AI moderation (optional)
+
+When enabled, the bot sends every eligible guild message to a dedicated n8n
+workflow that classifies it via an LLM and returns one of `allow`, `warn`,
+`timeout`, or `delete`. Verdicts are executed through the same action layer
+as the slash commands — same DM-to-target, same mod-log entry, same DB
+write. The only difference is the mod-log `Moderator` field reads
+`AI moderation`.
+
+On top of the per-message verdicts, the bot enforces an escalation ladder
+across **every** warning regardless of source (AI or human):
+
+- **3 active warnings** → user is auto-muted until their oldest active warning
+  expires (capped at Discord's 28-day timeout maximum). When active count
+  drops below the threshold, the bot auto-unmutes them.
+- **100 historical warnings** (lifetime, includes expired) → user is auto-banned.
+
+Both thresholds are env-configurable. AI moderation defaults to **off**;
+operators should roll out via `AI_MODERATION_MODE=shadow` first to validate
+verdict quality before flipping to `enforce`. Full setup guide:
+[docs/AI_MODERATION.md](docs/AI_MODERATION.md).
 
 ## 🔐 Environment Variables
 

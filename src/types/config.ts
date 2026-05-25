@@ -14,9 +14,17 @@ export interface BotSettings {
   restrictedResponse: string;
 }
 
+export type AiModerationMode = 'off' | 'shadow' | 'enforce';
+
 export interface ModerationConfig {
   allowedRoles: string[];
   modLogChannelId?: string;
+  aiMode: AiModerationMode;
+  aiModerationUrl: string;
+  exemptChannels: string[];
+  exemptRoles: string[];
+  warnMuteThreshold: number;
+  warnBanThreshold: number;
 }
 
 export interface LoggingConfig {

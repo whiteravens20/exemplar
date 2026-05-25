@@ -13,6 +13,7 @@ import configManager from './config/config.js';
 import db from './db/connection.js';
 import HealthCheckServer from './api/server.js';
 import cleanupJob from './jobs/database-cleanup.js';
+import muteReconciliationJob from './jobs/mute-reconciliation.js';
 import type { SlashCommand } from './types/discord.js';
 
 // Import events
@@ -136,6 +137,13 @@ async function start(): Promise<void> {
     // Start database cleanup job
     cleanupJob.start();
 
+    // Start mute reconciliation after the client is ready so guild + member
+    // lookups succeed on the first run (handles restart-resilience of mutes
+    // applied by the escalation ladder before the previous shutdown).
+    client.once('ready', () => {
+      muteReconciliationJob.start(client);
+    });
+
     await registerCommands();
     await client.login(configManager.config.discord.token);
   } catch (error) {
@@ -150,8 +158,9 @@ async function start(): Promise<void> {
 process.on('SIGINT', async () => {
   logger.info('Shutting down bot...');
 
-  // Stop cleanup job
+  // Stop background jobs
   cleanupJob.stop();
+  muteReconciliationJob.stop();
 
   // Stop health check server
   if (healthServer) await healthServer.stop();
@@ -169,6 +178,7 @@ process.on('SIGTERM', async () => {
   logger.info('Received SIGTERM, shutting down...');
 
   cleanupJob.stop();
+  muteReconciliationJob.stop();
   if (healthServer) await healthServer.stop();
   await db.close();
   await client.destroy();

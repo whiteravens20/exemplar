@@ -81,6 +81,70 @@ class WarningRepository {
   }
 
   /**
+   * Total lifetime warnings for a user (includes expired rows). Used by the
+   * escalation ladder to gate the auto-ban threshold.
+   */
+  async getTotalWarnings(discordId: string): Promise<number> {
+    if (!db.isAvailable()) return 0;
+
+    try {
+      const result = await db.query<{ count: number }>(
+        `SELECT COUNT(*)::INTEGER as count
+         FROM warnings w
+         JOIN users u ON u.id = w.user_id
+         WHERE u.discord_id = $1`,
+        [discordId]
+      );
+      return result.rows[0].count;
+    } catch (error) {
+      logger.error('Failed to get total warnings', {
+        error: (error as Error).message,
+        discordId,
+      });
+      return 0;
+    }
+  }
+
+  /**
+   * Earliest expiry among the user's `limit` most-recent active warnings —
+   * i.e. the moment at which removing one warning will drop the active count
+   * by one. Used to compute the auto-mute duration so the mute lifts the
+   * instant active count falls below the threshold. Returns null if the user
+   * has fewer than `limit` active warnings.
+   */
+  async getOldestActiveExpiry(
+    discordId: string,
+    limit: number
+  ): Promise<Date | null> {
+    if (!db.isAvailable()) return null;
+
+    try {
+      const result = await db.query<{ expires_at: Date }>(
+        `SELECT expires_at
+         FROM (
+           SELECT w.expires_at
+           FROM warnings w
+           JOIN users u ON u.id = w.user_id
+           WHERE u.discord_id = $1 AND w.expires_at > NOW()
+           ORDER BY w.issued_at DESC
+           LIMIT $2
+         ) AS recent
+         ORDER BY expires_at ASC
+         LIMIT 1`,
+        [discordId, limit]
+      );
+      if (result.rows.length === 0) return null;
+      return result.rows[0].expires_at;
+    } catch (error) {
+      logger.error('Failed to get oldest active warning expiry', {
+        error: (error as Error).message,
+        discordId,
+      });
+      return null;
+    }
+  }
+
+  /**
    * Get warning history for a user
    */
   async getWarningHistory(

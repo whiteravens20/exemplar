@@ -8,6 +8,10 @@ export interface N8NWebhookPayload {
   mode: string;
   timestamp: string;
   platform: string;
+  /** Set on moderation requests (mode === 'moderate'). */
+  channelId?: string;
+  /** Set on moderation requests (mode === 'moderate'). */
+  channelName?: string;
   conversationContext?: Array<{
     userMessage: string;
     aiResponse: string;
@@ -16,7 +20,8 @@ export interface N8NWebhookPayload {
 }
 
 export interface N8NWebhookResponse {
-  response: string;
+  /** Set on chat replies — n8n returns the assistant message here. */
+  response?: string;
   [key: string]: unknown;
 }
 

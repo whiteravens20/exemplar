@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import logger from '../utils/logger.js';
-import type { BotConfig } from '../types/config.js';
+import type { BotConfig, AiModerationMode } from '../types/config.js';
 
 class ConfigManager {
   public config: BotConfig;
@@ -28,6 +28,18 @@ class ConfigManager {
       moderation: {
         allowedRoles: this.parseRoles(process.env.ALLOWED_ROLES_FOR_AI),
         modLogChannelId: process.env.MOD_LOG_CHANNEL_ID || undefined,
+        aiMode: this.parseAiMode(process.env.AI_MODERATION_MODE),
+        aiModerationUrl: process.env.N8N_MODERATION_WORKFLOW_URL || '',
+        exemptChannels: this.parseRoles(process.env.AI_MOD_EXEMPT_CHANNELS),
+        exemptRoles: this.parseRoles(process.env.AI_MOD_EXEMPT_ROLES),
+        warnMuteThreshold: this.parsePositiveInt(
+          process.env.AI_MOD_MUTE_THRESHOLD,
+          3
+        ),
+        warnBanThreshold: this.parsePositiveInt(
+          process.env.AI_MOD_BAN_THRESHOLD,
+          100
+        ),
       },
       logging: {
         level: process.env.LOG_LEVEL || 'info',
@@ -53,6 +65,24 @@ class ConfigManager {
     };
 
     this.ensureLogsDir();
+  }
+
+  parseAiMode(value: string | undefined): AiModerationMode {
+    const normalised = (value || 'off').toLowerCase();
+    if (normalised === 'shadow' || normalised === 'enforce') return normalised;
+    if (normalised !== 'off' && value !== undefined) {
+      logger.warn(
+        `Unknown AI_MODERATION_MODE="${value}" — treating as "off"`
+      );
+    }
+    return 'off';
+  }
+
+  parsePositiveInt(value: string | undefined, fallback: number): number {
+    if (!value) return fallback;
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+    return parsed;
   }
 
   parseRoles(roleString: string | undefined): string[] {

@@ -96,6 +96,18 @@ N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/discord
 # n8n - OPTIONAL
 N8N_API_KEY=your_api_key_here
 
+# AI moderation (issue #16) - OPTIONAL
+# Off by default. To enable, see docs/AI_MODERATION.md for the full step-by-step
+# n8n workflow setup. Once enabled, MOD_LOG_CHANNEL_ID becomes mandatory — in
+# shadow mode it's the only place verdicts surface.
+AI_MODERATION_MODE=off
+N8N_MODERATION_WORKFLOW_URL=
+MOD_LOG_CHANNEL_ID=
+AI_MOD_EXEMPT_CHANNELS=
+AI_MOD_EXEMPT_ROLES=
+AI_MOD_MUTE_THRESHOLD=3
+AI_MOD_BAN_THRESHOLD=100
+
 # Bot Configuration - OPTIONAL
 HARDCODED_MENTION_RESPONSE=Hi! I'm an AI Assistant. Send me a DM to chat with me.
 RESTRICTED_RESPONSE=You don't have permission to use this feature. Please contact the admins.
