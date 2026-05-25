@@ -21,7 +21,15 @@ export interface ModerationConfig {
   modLogChannelId?: string;
   aiMode: AiModerationMode;
   aiModerationUrl: string;
-  exemptChannels: string[];
+  /**
+   * Allowlist of channel IDs that AI moderation analyses. Empty list = analyse
+   * nothing (strict opt-in — operator must list channels explicitly).
+   */
+  includeChannels: string[];
+  /**
+   * Denylist of role IDs whose holders are skipped by AI moderation (mods,
+   * admins, trusted bots, etc.). Empty list = no role-based exemption.
+   */
   exemptRoles: string[];
   warnMuteThreshold: number;
   warnBanThreshold: number;

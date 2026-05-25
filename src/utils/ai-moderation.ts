@@ -76,9 +76,15 @@ export function shouldAnalyze(message: Message): boolean {
   if (message.channel.type !== ChannelType.GuildText) return false;
   if (!message.guild) return false;
 
-  const { exemptChannels, exemptRoles } = configManager.config.moderation;
+  const { includeChannels, exemptRoles } = configManager.config.moderation;
 
-  if (exemptChannels.includes(message.channelId)) return false;
+  // Strict opt-in: empty allowlist means "analyse nothing". Operators must
+  // list channels in AI_MOD_INCLUDE_CHANNELS to enrol them in moderation.
+  // This keeps high-volume read-only channels (announcements, news) and any
+  // unconfigured channel out of the n8n round-trip by default.
+  if (includeChannels.length === 0) return false;
+  if (!includeChannels.includes(message.channelId)) return false;
+
   if (exemptRoles.length > 0 && message.member) {
     const memberRoleIds = new Set(message.member.roles.cache.keys());
     if (exemptRoles.some((id) => memberRoleIds.has(id))) return false;

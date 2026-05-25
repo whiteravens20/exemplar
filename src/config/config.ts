@@ -30,7 +30,7 @@ class ConfigManager {
         modLogChannelId: process.env.MOD_LOG_CHANNEL_ID || undefined,
         aiMode: this.parseAiMode(process.env.AI_MODERATION_MODE),
         aiModerationUrl: process.env.N8N_MODERATION_WORKFLOW_URL || '',
-        exemptChannels: this.parseRoles(process.env.AI_MOD_EXEMPT_CHANNELS),
+        includeChannels: this.parseRoles(process.env.AI_MOD_INCLUDE_CHANNELS),
         exemptRoles: this.parseRoles(process.env.AI_MOD_EXEMPT_ROLES),
         warnMuteThreshold: this.parsePositiveInt(
           process.env.AI_MOD_MUTE_THRESHOLD,

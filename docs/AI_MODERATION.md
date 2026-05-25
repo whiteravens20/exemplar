@@ -227,8 +227,8 @@ Activate the workflow.
 | `N8N_MODERATION_WORKFLOW_URL` | yes (to enable)    | _empty_ | If unset, AI mod stays disabled even in `shadow`/`enforce` |
 | `N8N_API_KEY`                 | yes (to enable)    | _empty_ | Reused from the chat workflow setup |
 | `MOD_LOG_CHANNEL_ID`          | **yes**            | _empty_ | Mandatory once enabled — in shadow mode it's the only place verdicts surface |
-| `AI_MOD_EXEMPT_CHANNELS`      | no                 | _empty_ | CSV of channel IDs (skip analysis entirely) |
-| `AI_MOD_EXEMPT_ROLES`         | no                 | _empty_ | CSV of role IDs (skip if author has any) |
+| `AI_MOD_INCLUDE_CHANNELS`     | **yes** (to act)   | _empty_ | CSV of channel IDs that AI moderation actively analyses. **Strict opt-in** — an empty list means nothing is analysed. Add only the channels where AI moderation should run, leaving news/announcement/read-only channels off the list. |
+| `AI_MOD_EXEMPT_ROLES`         | no                 | _empty_ | CSV of role IDs whose holders are skipped (mods, trusted bots, etc.) |
 | `AI_MOD_MUTE_THRESHOLD`       | no                 | `3`     | Active warnings that trigger auto-mute |
 | `AI_MOD_BAN_THRESHOLD`        | no                 | `100`   | Historical warnings that trigger auto-ban |
 | `DISCORD_SERVER_ID`           | yes (bot-wide)     | _empty_ | The single configured server |
@@ -252,7 +252,12 @@ warnings table.
 AI_MODERATION_MODE=shadow
 N8N_MODERATION_WORKFLOW_URL=https://your-n8n/webhook/moderation
 MOD_LOG_CHANNEL_ID=<your-mod-log-channel-id>
+AI_MOD_INCLUDE_CHANNELS=<channel_id_to_test_in>
 ```
+
+`AI_MOD_INCLUDE_CHANNELS` is strict opt-in — without at least one channel
+ID here, the bot analyses nothing. List your test channel first; expand to
+the rest of the chat channels once verdict quality is good.
 
 Post a few test messages on the server — including some you'd expect to be
 `warn`/`timeout`/`delete` and some clearly fine. Verify in your mod-log:
@@ -308,8 +313,10 @@ yourself or a real member:
 
 - **Cost**: roughly proportional to messages × LLM token cost per call. For
   a small server with `gpt-4o-mini`, expect ≪ \$1/day. Ollama is free but
-  slower. Use `AI_MOD_EXEMPT_CHANNELS` for high-volume channels you don't
-  need to moderate (e.g. bot spam).
+  slower. `AI_MOD_INCLUDE_CHANNELS` is strict opt-in — list only the
+  channels you actually want analysed. High-volume read-only channels
+  (announcements, news, bot-output) stay out of the n8n round-trip simply by
+  not being listed.
 - **Latency**: 1–3 s for cloud LLMs, 5–15 s for local Ollama on modest
   hardware. The bot fires moderation requests fire-and-forget so chat
   latency is unaffected, but deletes / timeouts may land a second or two

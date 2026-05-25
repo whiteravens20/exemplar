@@ -14,9 +14,9 @@ function setMode(mode: 'off' | 'shadow' | 'enforce', url = ''): void {
   configManager.config.moderation.aiModerationUrl = url;
 }
 
-function setExempt(channels: string[], roles: string[]): void {
-  configManager.config.moderation.exemptChannels = channels;
-  configManager.config.moderation.exemptRoles = roles;
+function setExempt(includeChannels: string[], exemptRoles: string[]): void {
+  configManager.config.moderation.includeChannels = includeChannels;
+  configManager.config.moderation.exemptRoles = exemptRoles;
 }
 
 function makeMessage(overrides: Record<string, unknown> = {}): unknown {
@@ -37,7 +37,9 @@ function makeMessage(overrides: Record<string, unknown> = {}): unknown {
 
 beforeEach(() => {
   setMode('off');
-  setExempt([], []);
+  // Default test setup: channel "chan-1" enrolled, no role exemptions.
+  // shouldAnalyze() now requires explicit channel opt-in.
+  setExempt(['chan-1'], []);
 });
 
 // validateVerdict -------------------------------------------------------------
@@ -149,20 +151,25 @@ describe('shouldAnalyze', () => {
     expect(shouldAnalyze(makeMessage({ content: '   ' }) as never)).toBe(false);
   });
 
-  it('skips exempt channels', () => {
-    setExempt(['chan-1'], []);
+  it('skips channels not in the include list', () => {
+    setExempt(['some-other-channel'], []);
+    expect(shouldAnalyze(makeMessage() as never)).toBe(false);
+  });
+
+  it('skips everything when include list is empty (strict opt-in)', () => {
+    setExempt([], []);
     expect(shouldAnalyze(makeMessage() as never)).toBe(false);
   });
 
   it('skips authors with an exempt role', () => {
-    setExempt([], ['mod-role']);
+    setExempt(['chan-1'], ['mod-role']);
     const roleCache = new Map<string, unknown>([['mod-role', {}]]);
     const msg = makeMessage({ member: { roles: { cache: roleCache } } });
     expect(shouldAnalyze(msg as never)).toBe(false);
   });
 
   it('still analyses when author has only non-exempt roles', () => {
-    setExempt([], ['mod-role']);
+    setExempt(['chan-1'], ['mod-role']);
     const roleCache = new Map<string, unknown>([['some-other-role', {}]]);
     const msg = makeMessage({ member: { roles: { cache: roleCache } } });
     expect(shouldAnalyze(msg as never)).toBe(true);
