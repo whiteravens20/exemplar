@@ -35,6 +35,10 @@ import {
 
 const ACTOR_LABEL = 'AI moderation';
 const RECENT_WARNINGS_LIMIT = 5;
+// Cap the in-memory cooldown map so a long-running bot in a noisy guild can't
+// leak unbounded entries. Eviction policy is "drop oldest"; entries older than
+// the configured cooldown are also evicted lazily on each check.
+const COOLDOWN_MAX_ENTRIES = 10_000;
 
 export type ModerationAction = 'allow' | 'warn' | 'timeout' | 'delete';
 
@@ -46,6 +50,36 @@ export interface ModerationVerdict {
 
 let cachedClient: N8NClient | null = null;
 let startupWarningLogged = false;
+const lastAnalysisAt = new Map<string, number>();
+
+/**
+ * Per-user cooldown gate. Prevents a single user from triggering unbounded
+ * concurrent n8n calls during a burst of messages in an enrolled channel.
+ * Returns true when this call is allowed (and records the timestamp); false
+ * when the user is still within their cooldown window. Cooldown of 0 disables
+ * the gate.
+ *
+ * Exported for tests.
+ */
+export function checkCooldown(userId: string, now: number = Date.now()): boolean {
+  const cooldownMs = configManager.config.moderation.userCooldownMs;
+  if (cooldownMs <= 0) return true;
+
+  const last = lastAnalysisAt.get(userId);
+  if (last !== undefined && now - last < cooldownMs) return false;
+
+  if (lastAnalysisAt.size >= COOLDOWN_MAX_ENTRIES) {
+    const oldestKey = lastAnalysisAt.keys().next().value;
+    if (oldestKey !== undefined) lastAnalysisAt.delete(oldestKey);
+  }
+  lastAnalysisAt.set(userId, now);
+  return true;
+}
+
+/** Test hook — wipes the in-memory cooldown map. */
+export function _resetCooldownForTests(): void {
+  lastAnalysisAt.clear();
+}
 
 function getClient(): N8NClient | null {
   const { aiModerationUrl } = configManager.config.moderation;
@@ -234,6 +268,15 @@ async function enforce(
 
 export async function analyzeAndAct(message: Message): Promise<void> {
   if (!shouldAnalyze(message)) return;
+
+  // Per-user cooldown — guards the n8n workflow against bursts. Checked after
+  // shouldAnalyze so an exempt/ignored message doesn't burn the user's slot.
+  if (!checkCooldown(message.author.id)) {
+    logger.debug('AI moderation: user within cooldown — skipping', {
+      userId: message.author.id,
+    });
+    return;
+  }
 
   const client = getClient();
   if (!client) return;

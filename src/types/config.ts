@@ -34,6 +34,13 @@ export interface ModerationConfig {
   warnMuteThreshold: number;
   warnBanThreshold: number;
   /**
+   * Per-user cooldown (ms) between AI moderation n8n calls. Guards against
+   * flooding the moderation workflow when a single user posts a burst of
+   * messages in an enrolled channel. 0 disables the cooldown.
+   * Source: AI_MOD_USER_COOLDOWN_MS env var.
+   */
+  userCooldownMs: number;
+  /**
    * Plain-text server rules surfaced to the AI moderation LLM. When empty
    * the LLM falls back to the generic community baseline in its system
    * prompt. Source: MOD_RULES_TEXT env var.

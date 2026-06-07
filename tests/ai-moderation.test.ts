@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { ChannelType } from 'discord.js';
 import configManager from '../src/config/config.js';
 import {
+  _resetCooldownForTests,
+  checkCooldown,
   isEnabled,
   shouldAnalyze,
   validateVerdict,
@@ -40,6 +42,8 @@ beforeEach(() => {
   // Default test setup: channel "chan-1" enrolled, no role exemptions.
   // shouldAnalyze() now requires explicit channel opt-in.
   setExempt(['chan-1'], []);
+  configManager.config.moderation.userCooldownMs = 5000;
+  _resetCooldownForTests();
 });
 
 // validateVerdict -------------------------------------------------------------
@@ -173,5 +177,36 @@ describe('shouldAnalyze', () => {
     const roleCache = new Map<string, unknown>([['some-other-role', {}]]);
     const msg = makeMessage({ member: { roles: { cache: roleCache } } });
     expect(shouldAnalyze(msg as never)).toBe(true);
+  });
+});
+
+// checkCooldown --------------------------------------------------------------
+
+describe('checkCooldown', () => {
+  it('allows the first call for a user', () => {
+    expect(checkCooldown('user-1', 1_000_000)).toBe(true);
+  });
+
+  it('blocks a second call within the cooldown window', () => {
+    checkCooldown('user-1', 1_000_000);
+    expect(checkCooldown('user-1', 1_000_000 + 4999)).toBe(false);
+  });
+
+  it('allows a call after the cooldown window elapses', () => {
+    checkCooldown('user-1', 1_000_000);
+    expect(checkCooldown('user-1', 1_000_000 + 5000)).toBe(true);
+  });
+
+  it('tracks cooldowns per user independently', () => {
+    checkCooldown('user-1', 1_000_000);
+    expect(checkCooldown('user-2', 1_000_000)).toBe(true);
+    expect(checkCooldown('user-1', 1_000_000 + 100)).toBe(false);
+  });
+
+  it('disables the gate when cooldown is 0', () => {
+    configManager.config.moderation.userCooldownMs = 0;
+    expect(checkCooldown('user-1', 1_000_000)).toBe(true);
+    expect(checkCooldown('user-1', 1_000_000 + 1)).toBe(true);
+    expect(checkCooldown('user-1', 1_000_000 + 2)).toBe(true);
   });
 });
