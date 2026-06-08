@@ -35,6 +35,11 @@ import {
 
 const ACTOR_LABEL = 'AI moderation';
 const RECENT_WARNINGS_LIMIT = 5;
+// Upper bound on message length forwarded to n8n. Discord's own 2 000-char
+// guild limit keeps real messages well under this, so the cap is a defensive
+// guard (and self-documenting intent) against any future path that bypasses
+// Discord's limit — not a constraint operators are expected to hit.
+const MAX_CONTENT_LENGTH = 4000;
 // Cap the in-memory cooldown map so a long-running bot in a noisy guild can't
 // leak unbounded entries. Eviction policy is "drop oldest"; entries older than
 // the configured cooldown are also evicted lazily on each check.
@@ -127,7 +132,7 @@ export function shouldAnalyze(message: Message): boolean {
   }
 
   const content = (message.content || '').trim();
-  if (content.length < 3) return false;
+  if (content.length < 3 || content.length > MAX_CONTENT_LENGTH) return false;
 
   return true;
 }

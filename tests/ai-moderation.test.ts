@@ -155,6 +155,15 @@ describe('shouldAnalyze', () => {
     expect(shouldAnalyze(makeMessage({ content: '   ' }) as never)).toBe(false);
   });
 
+  it('skips content above the upper length cap', () => {
+    expect(
+      shouldAnalyze(makeMessage({ content: 'a'.repeat(4000) }) as never)
+    ).toBe(true);
+    expect(
+      shouldAnalyze(makeMessage({ content: 'a'.repeat(4001) }) as never)
+    ).toBe(false);
+  });
+
   it('skips channels not in the include list', () => {
     setExempt(['some-other-channel'], []);
     expect(shouldAnalyze(makeMessage() as never)).toBe(false);
