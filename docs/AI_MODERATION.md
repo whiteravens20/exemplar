@@ -101,10 +101,46 @@ surface down.
 
 ---
 
-## n8n workflow setup (step by step)
+## n8n workflow setup
 
-Build the moderation workflow from scratch alongside your existing chat
-workflow. Total: 3 nodes.
+You have two options: **import the ready-made workflow** (fastest), or build it
+node by node. Both produce the exact same `{ "verdict": { ... } }` response the
+bot expects.
+
+### Fast path — import the ready-made workflow
+
+A working, importable workflow lives at
+[`moderation-workflow.n8n.json`](./moderation-workflow.n8n.json). It is a
+6-node graph (Webhook → Extract payload → Moderator agent → Ollama model →
+Parse verdict → Respond) tuned for a self-hosted Ollama setup.
+
+1. In n8n: **Workflows → Import from File** and pick
+   `docs/moderation-workflow.n8n.json`.
+2. **Webhook auth**: open the *Moderation Webhook* node and set its **Header
+   Auth** credential (header name `X-API-Key`, value = your `N8N_API_KEY`). The
+   import ships a placeholder credential id — create/select your own.
+3. **Model credential**: open *Qwen3 8B (moderation)* and point it at your
+   **Ollama account** credential. Swap the model (`qwen3:8b`) for
+   `qwen3.5:9b` or `qwen2.5:7b-instruct` if you prefer — see
+   [Ollama settings](#ollama-settings-8-gb-vram). Using OpenAI/Anthropic
+   instead? Delete this node, drop in that provider's chat-model node, and wire
+   it into the *Moderator* agent's **Chat Model** input.
+4. **Activate** the workflow, then copy the *Moderation Webhook* **Production
+   URL** into `.env` as `N8N_MODERATION_WORKFLOW_URL`.
+
+The verdict parser already handles the agent's `output`, strips markdown fences
+and stray `<think>` blocks, validates the action/duration, and fails open to
+`allow` on any malformed output — so a misbehaving model never takes the
+moderation surface down.
+
+Skip to [Configuration reference](#configuration-reference) once imported, or
+read on for the from-scratch build.
+
+### Manual build (from scratch)
+
+Build the moderation workflow alongside your existing chat workflow. The
+minimal version is 3 nodes (Webhook → LLM → Code); the imported workflow adds
+an *Extract payload* and an explicit *Respond* node for clarity.
 
 ### Node 1 — Webhook trigger
 
@@ -232,8 +268,10 @@ the bot expects:
 ```js
 const raw = $input.first().json;
 
-// Pick the LLM output regardless of which provider you're using.
+// Pick the LLM output regardless of which provider / node you're using.
+// `output` covers the Agent node; the rest cover plain chat-model / chain nodes.
 const candidates = [
+  raw.output,
   raw.message?.content,
   raw.text,
   raw.content,
@@ -242,7 +280,8 @@ const candidates = [
 ];
 let text = candidates.find((c) => typeof c === 'string' && c.length > 0) ?? '';
 
-// Strip ```json fences if the model added them anyway.
+// Strip a stray <think> block (qwen et al.) and any ```json fences.
+text = text.replace(/<think>[\s\S]*?<\/think>/gi, '');
 text = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
 
 const ALLOWED = new Set(['allow', 'warn', 'timeout', 'delete']);
