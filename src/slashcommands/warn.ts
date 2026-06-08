@@ -70,7 +70,10 @@ const command: SlashCommand = {
     );
 
     if (result.success && result.embed) {
-      await interaction.reply({ embeds: [result.embed] });
+      const embeds = [result.embed];
+      if (result.autoMute?.embed) embeds.push(result.autoMute.embed);
+      if (result.autoBan?.embed) embeds.push(result.autoBan.embed);
+      await interaction.reply({ embeds });
     } else {
       await interaction.reply({
         content: result.content ?? '❌ Operacja nie powiodła się.',

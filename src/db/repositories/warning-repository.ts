@@ -81,6 +81,101 @@ class WarningRepository {
   }
 
   /**
+   * Total lifetime warnings for a user (includes expired rows). Used by the
+   * escalation ladder to gate the auto-ban threshold.
+   */
+  async getTotalWarnings(discordId: string): Promise<number> {
+    if (!db.isAvailable()) return 0;
+
+    try {
+      const result = await db.query<{ count: number }>(
+        `SELECT COUNT(*)::INTEGER as count
+         FROM warnings w
+         JOIN users u ON u.id = w.user_id
+         WHERE u.discord_id = $1`,
+        [discordId]
+      );
+      return result.rows[0].count;
+    } catch (error) {
+      logger.error('Failed to get total warnings', {
+        error: (error as Error).message,
+        discordId,
+      });
+      return 0;
+    }
+  }
+
+  /**
+   * Most recent warnings for a user (any age, AI + human, active + expired) —
+   * surfaced to the AI moderation LLM so it can judge "repeated rule-breaking"
+   * with actual history rather than guessing. Returns at most `limit` rows,
+   * most recent first.
+   */
+  async getRecentWarningSummaries(
+    discordId: string,
+    limit: number
+  ): Promise<Array<{ reason: string; issued_at: Date }>> {
+    if (!db.isAvailable()) return [];
+    try {
+      const result = await db.query<{ reason: string; issued_at: Date }>(
+        `SELECT w.reason, w.issued_at
+         FROM warnings w
+         JOIN users u ON u.id = w.user_id
+         WHERE u.discord_id = $1
+         ORDER BY w.issued_at DESC
+         LIMIT $2`,
+        [discordId, limit]
+      );
+      return result.rows;
+    } catch (error) {
+      logger.error('Failed to fetch recent warning summaries', {
+        error: (error as Error).message,
+        discordId,
+      });
+      return [];
+    }
+  }
+
+  /**
+   * Earliest expiry among the user's `limit` most-recent active warnings —
+   * i.e. the moment at which removing one warning will drop the active count
+   * by one. Used to compute the auto-mute duration so the mute lifts the
+   * instant active count falls below the threshold. Returns null if the user
+   * has fewer than `limit` active warnings.
+   */
+  async getOldestActiveExpiry(
+    discordId: string,
+    limit: number
+  ): Promise<Date | null> {
+    if (!db.isAvailable()) return null;
+
+    try {
+      const result = await db.query<{ expires_at: Date }>(
+        `SELECT expires_at
+         FROM (
+           SELECT w.expires_at
+           FROM warnings w
+           JOIN users u ON u.id = w.user_id
+           WHERE u.discord_id = $1 AND w.expires_at > NOW()
+           ORDER BY w.issued_at DESC
+           LIMIT $2
+         ) AS recent
+         ORDER BY expires_at ASC
+         LIMIT 1`,
+        [discordId, limit]
+      );
+      if (result.rows.length === 0) return null;
+      return result.rows[0].expires_at;
+    } catch (error) {
+      logger.error('Failed to get oldest active warning expiry', {
+        error: (error as Error).message,
+        discordId,
+      });
+      return null;
+    }
+  }
+
+  /**
    * Get warning history for a user
    */
   async getWarningHistory(

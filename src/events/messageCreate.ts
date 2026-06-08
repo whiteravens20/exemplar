@@ -3,6 +3,7 @@ import logger from '../utils/logger.js';
 import N8NClient from '../utils/n8n-client.js';
 import RateLimiter from '../utils/rate-limiter.js';
 import { hasPermission } from '../utils/permissions.js';
+import * as aiModeration from '../utils/ai-moderation.js';
 import configManager from '../config/config.js';
 import { getTemplate } from '../config/response-templates.js';
 import { splitMessage } from '../utils/message-splitter.js';
@@ -82,6 +83,16 @@ const event: BotEvent = {
       username: message.author.username,
       contentLength: message.content.length,
     });
+
+    // AI moderation analyses every eligible guild message *before* mention
+    // handling — a hostile @mention still gets moderated. Fire-and-forget;
+    // analyzeAndAct logs its own errors and never throws.
+    if (
+      message.channel.type !== ChannelType.DM &&
+      aiModeration.isEnabled()
+    ) {
+      void aiModeration.analyzeAndAct(message);
+    }
 
     const botUser = message.client.user;
     if (!botUser) return;

@@ -4,11 +4,13 @@ import {
   type Client,
   type Guild,
   type GuildMember,
+  type Message,
   type User,
   type TextChannel,
 } from 'discord.js';
 import logger from './logger.js';
 import warningRepo from '../db/repositories/warning-repository.js';
+import aiModMuteRepo from '../db/repositories/ai-mod-mute-repository.js';
 import db from '../db/connection.js';
 import configManager from '../config/config.js';
 
@@ -36,6 +38,10 @@ export interface ActionResult {
   content?: string;
   /** Success embed. */
   embed?: EmbedBuilder;
+  /** Set when the escalation ladder auto-banned the user as part of this warn. */
+  autoBan?: ActionResult;
+  /** Set when the escalation ladder auto-muted the user as part of this warn. */
+  autoMute?: ActionResult;
 }
 
 const MAX_TIMEOUT_MS = 28 * 24 * 60 * 60 * 1000;
@@ -444,11 +450,269 @@ export async function applyWarn(
 
   await sendModLog(guild, 'Warn', target, reason, actor);
 
-  return {
+  const result: ActionResult = {
     success: true,
     embed: buildModEmbed('Ostrzeżenie wydane', target, reason, 0xffaa00, [
       { name: 'Aktywne ostrzeżenia', value: `${activeWarnings}`, inline: true },
       { name: 'DM', value: dmSent ? '✅ Doręczono' : '⚠️ Nie doręczono', inline: true },
     ]),
   };
+
+  // Escalation ladder — runs for every warn regardless of source. AI and human
+  // warns share the same warnings table; the threshold queries don't filter by
+  // issuer, so they aggregate naturally.
+  const escalation = await runEscalationLadder(
+    guild,
+    target,
+    actor,
+    activeWarnings
+  );
+  if (escalation.autoBan) result.autoBan = escalation.autoBan;
+  if (escalation.autoMute) result.autoMute = escalation.autoMute;
+
+  return result;
+}
+
+// ── Escalation ladder ───────────────────────────────────────────────────────
+
+async function runEscalationLadder(
+  guild: Guild,
+  target: User,
+  actor: Actor,
+  activeWarnings: number
+): Promise<{ autoBan?: ActionResult; autoMute?: ActionResult }> {
+  const { warnMuteThreshold, warnBanThreshold } =
+    configManager.config.moderation;
+
+  const historical = await warningRepo.getTotalWarnings(target.id);
+
+  // Ban supersedes mute — once the lifetime threshold is hit, the user is gone.
+  if (historical >= warnBanThreshold) {
+    const autoBan = await autoBanForThreshold(
+      guild,
+      target,
+      actor,
+      historical
+    );
+    return { autoBan };
+  }
+
+  if (activeWarnings >= warnMuteThreshold) {
+    const autoMute = await reconcileMuteForUser(
+      guild,
+      target,
+      actor,
+      activeWarnings
+    );
+    if (autoMute) return { autoMute };
+  }
+
+  return {};
+}
+
+async function autoBanForThreshold(
+  guild: Guild,
+  target: User,
+  actor: Actor,
+  historical: number
+): Promise<ActionResult> {
+  const reason = `Automatyczny ban: ${historical} ostrzeżeń historycznie`;
+  const escalatedActor: Actor = {
+    id: actor.id,
+    label: `${actor.label} (auto-ban)`,
+  };
+
+  const member = await resolveInvokingMember(guild, target.id);
+  if (member) {
+    return applyBan(member, reason, escalatedActor);
+  }
+
+  // User already left the guild — issue the ban by ID directly. notifyTarget
+  // would normally DM first, but a user not in the guild can't be DM'd via
+  // member; try a direct DM by user object instead.
+  await notifyTarget(
+    target,
+    guild.name,
+    '🚫 Zostałeś zbanowany na serwerze',
+    0xe74c3c,
+    reason,
+    [{ name: 'Czas trwania', value: 'Permanentny' }]
+  ).catch(() => undefined);
+
+  try {
+    await guild.bans.create(target.id, { reason });
+    await sendModLog(guild, 'Ban', target, reason, escalatedActor);
+    return {
+      success: true,
+      embed: buildModEmbed('Zbanowano', target, reason, 0xe74c3c),
+    };
+  } catch (error) {
+    logger.error('Auto-ban failed', {
+      targetId: target.id,
+      error: (error as Error).message,
+    });
+    return {
+      success: false,
+      content: `❌ Nie udało się automatycznie zbanować użytkownika: ${(error as Error).message}`,
+    };
+  }
+}
+
+/**
+ * Apply (or extend) an auto-mute for a user who has crossed the active-warning
+ * threshold. Duration = time until the oldest of their `warnMuteThreshold`
+ * most-recent active warnings expires, capped at Discord's 28-day timeout
+ * maximum. Records the mute in `ai_mod_active_mutes` so the reconciliation
+ * job can lift or extend it as warnings come and go.
+ *
+ * Returns the timeout `ActionResult` on success, or null if the user is not in
+ * the guild / has fewer than threshold active warnings.
+ */
+export async function reconcileMuteForUser(
+  guild: Guild,
+  target: User,
+  actor: Actor,
+  activeCount: number
+): Promise<ActionResult | null> {
+  const { warnMuteThreshold } = configManager.config.moderation;
+
+  const oldestExpiry = await warningRepo.getOldestActiveExpiry(
+    target.id,
+    warnMuteThreshold
+  );
+  if (!oldestExpiry) return null;
+
+  const now = Date.now();
+  const capExpiry = now + MAX_TIMEOUT_MS;
+  const expiresAt = Math.min(oldestExpiry.getTime(), capExpiry);
+  const durationMs = expiresAt - now;
+  if (durationMs <= 0) return null;
+
+  const member = await resolveInvokingMember(guild, target.id);
+  if (!member) return null;
+
+  const reason = `Automatyczne wyciszenie: ${activeCount} aktywnych ostrzeżeń`;
+  const escalatedActor: Actor = {
+    id: actor.id,
+    label: `${actor.label} (auto-mute)`,
+  };
+
+  const result = await applyTimeout(
+    member,
+    durationMs,
+    reason,
+    escalatedActor
+  );
+
+  if (result.success) {
+    await aiModMuteRepo.upsert(target.id, new Date(expiresAt));
+  }
+
+  return result;
+}
+
+/**
+ * Delete a message and notify the user + mod-log channel. The original content
+ * and channel reference are captured *before* the delete call since they're
+ * gone afterwards. Mirrors the side-effect surface of every other action
+ * (DM target + mod-log) so AI-triggered deletes have parity with hypothetical
+ * human deletes.
+ */
+export async function applyDeleteMessage(
+  message: Message,
+  reason: string,
+  actor: Actor
+): Promise<ActionResult> {
+  if (!message.guild) {
+    return { success: false, content: '❌ Wiadomość nie pochodzi z serwera.' };
+  }
+  if (message.author.bot) {
+    return { success: false, content: '❌ Nie można usunąć wiadomości bota.' };
+  }
+
+  const channelRef = `<#${message.channelId}>`;
+  const preview = buildContentPreview(message.content);
+  const guild = message.guild;
+  const target = message.author;
+
+  try {
+    await message.delete();
+  } catch (error) {
+    logger.error('Delete message failed', {
+      messageId: message.id,
+      error: (error as Error).message,
+    });
+    return {
+      success: false,
+      content: `❌ Nie udało się usunąć wiadomości: ${(error as Error).message}`,
+    };
+  }
+
+  const dmSent = await notifyTarget(
+    target,
+    guild.name,
+    '🗑️ Twoja wiadomość została usunięta',
+    0x95a5a6,
+    reason,
+    [
+      { name: 'Kanał', value: channelRef },
+      { name: 'Treść', value: preview },
+    ]
+  );
+
+  await sendDeleteModLog(guild, target, reason, actor, channelRef, preview);
+
+  return {
+    success: true,
+    embed: buildModEmbed('Wiadomość usunięta', target, reason, 0x95a5a6, [
+      { name: 'Kanał', value: channelRef, inline: true },
+      dmStatusField(dmSent),
+    ]),
+  };
+}
+
+function buildContentPreview(content: string): string {
+  const trimmed = (content || '').trim();
+  if (!trimmed) return '_(pusta wiadomość)_';
+  const truncated =
+    trimmed.length > 200 ? `${trimmed.slice(0, 200)}…` : trimmed;
+  // Code-block fence so Discord renders the preview verbatim and doesn't try
+  // to parse markdown/mentions inside it.
+  return `\`\`\`\n${truncated.replace(/```/g, '` ` `')}\n\`\`\``;
+}
+
+async function sendDeleteModLog(
+  guild: Guild,
+  target: User,
+  reason: string,
+  actor: Actor,
+  channelRef: string,
+  preview: string
+): Promise<void> {
+  const modLogChannelId = configManager.config.moderation.modLogChannelId;
+  if (!modLogChannelId) return;
+
+  try {
+    const channel = guild.channels.cache.get(modLogChannelId);
+    if (!channel || channel.type !== ChannelType.GuildText) return;
+
+    const embed = new EmbedBuilder()
+      .setColor(0x95a5a6)
+      .setTitle('🗑️ Delete message')
+      .addFields(
+        { name: 'Użytkownik', value: `${target.tag} (${target.id})`, inline: true },
+        { name: 'Moderator', value: actor.label, inline: true },
+        { name: 'Kanał', value: channelRef, inline: true },
+        { name: 'Powód', value: reason || 'Nie podano powodu' },
+        { name: 'Treść', value: preview }
+      )
+      .setTimestamp();
+
+    await (channel as TextChannel).send({ embeds: [embed] });
+  } catch (error) {
+    logger.error('Failed to send delete mod-log entry', {
+      error: (error as Error).message,
+      targetId: target.id,
+    });
+  }
 }

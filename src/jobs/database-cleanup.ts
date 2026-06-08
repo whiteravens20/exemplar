@@ -67,8 +67,10 @@ class DatabaseCleanupJob {
       // Cleanup old conversations (24H retention)
       const conversationsDeleted = await this.cleanupConversations();
 
-      // Cleanup expired warnings
-      const warningsDeleted = await this.cleanupWarnings();
+      // Warnings are intentionally not deleted — the lifetime warn count is
+      // load-bearing for the auto-ban escalation (issue #16). The
+      // cleanup_expired_warnings() SQL function stays defined for manual use
+      // but is no longer scheduled here.
 
       // Cleanup old analytics (90D retention)
       const analyticsDeleted = await this.cleanupAnalytics();
@@ -78,7 +80,6 @@ class DatabaseCleanupJob {
       logger.info('Database cleanup completed', {
         durationMs: duration,
         conversationsDeleted,
-        warningsDeleted,
         statsDeleted: analyticsDeleted.stats,
         commandsDeleted: analyticsDeleted.commands,
       });
@@ -109,29 +110,6 @@ class DatabaseCleanupJob {
       return deleted;
     } catch (error) {
       logger.error('Failed to cleanup conversations', {
-        error: (error as Error).message,
-      });
-      return 0;
-    }
-  }
-
-  /**
-   * Cleanup expired warnings
-   */
-  private async cleanupWarnings(): Promise<number> {
-    try {
-      const result = await db.query<{
-        cleanup_expired_warnings: number;
-      }>('SELECT cleanup_expired_warnings()');
-      const deleted = result.rows[0]?.cleanup_expired_warnings || 0;
-
-      if (deleted > 0) {
-        logger.debug('Cleaned up expired warnings', { deleted });
-      }
-
-      return deleted;
-    } catch (error) {
-      logger.error('Failed to cleanup warnings', {
         error: (error as Error).message,
       });
       return 0;

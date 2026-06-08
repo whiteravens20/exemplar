@@ -8,6 +8,21 @@ export interface N8NWebhookPayload {
   mode: string;
   timestamp: string;
   platform: string;
+  /** Set on moderation requests (mode === 'moderate'). */
+  channelId?: string;
+  /** Set on moderation requests (mode === 'moderate'). */
+  channelName?: string;
+  /**
+   * Moderation-only: user's recent warning history (most recent first) so the
+   * LLM can ground "repeated rule-breaking" verdicts in actual evidence.
+   */
+  recentWarnings?: Array<{ reason: string; issuedAt: string }>;
+  /**
+   * Moderation-only: plain-text server rules (from MOD_RULES_TEXT env). Empty
+   * string when the operator hasn't configured any — LLM falls back to the
+   * generic community baseline in its system prompt.
+   */
+  serverRules?: string;
   conversationContext?: Array<{
     userMessage: string;
     aiResponse: string;
@@ -16,7 +31,8 @@ export interface N8NWebhookPayload {
 }
 
 export interface N8NWebhookResponse {
-  response: string;
+  /** Set on chat replies — n8n returns the assistant message here. */
+  response?: string;
   [key: string]: unknown;
 }
 

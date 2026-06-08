@@ -1,0 +1,125 @@
+{
+  "name": "Exemplar Moderation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "moderation",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Moderation Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [-1040, 0],
+      "webhookId": "exemplar-moderation",
+      "notes": "Receives POST from the bot's AI-moderation orchestrator. Header Auth: X-API-Key must match N8N_API_KEY.",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_HEADER_AUTH_CRED_ID",
+          "name": "X-API-Key (N8N_API_KEY)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Flatten the bot payload. n8n's Webhook node nests the POST body under\n// `body`; fall back to the root for manual test executions.\nconst b = $input.first().json.body ?? $input.first().json;\n\nreturn [\n  {\n    json: {\n      userId: b.userId ?? '',\n      userName: b.userName ?? '',\n      message: b.message ?? '',\n      channelId: b.channelId ?? '',\n      channelName: b.channelName ?? '',\n      serverId: b.serverId ?? '',\n      recentWarnings: Array.isArray(b.recentWarnings) ? b.recentWarnings : [],\n      serverRules: b.serverRules ?? '',\n      mode: b.mode ?? 'moderate',\n      timestamp: b.timestamp ?? new Date().toISOString(),\n    },\n  },\n];"
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Extract payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-820, 0],
+      "notes": "Unwrap the webhook body and normalise defaults."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Channel: {{ $json.channelName }}\nUser: {{ $json.userName }}\nServer rules: {{ $json.serverRules }}\nRecent warnings: {{ JSON.stringify($json.recentWarnings) }}\nMessage: {{ $json.message }}",
+        "options": {
+          "systemMessage": "/no_think\nYou are a Discord content moderator for a single Discord server. For each incoming message decide exactly one of four actions:\n\n- \"allow\"   — the message is fine.\n- \"warn\"    — the message breaks community norms (light insult, mild spam, off-topic noise). The user receives a tracked warning.\n- \"timeout\" — the message is bad enough to silence the user temporarily (harassment, repeated rule-breaking, NSFW where forbidden). You MUST include a duration: \"30s\", \"5m\", \"1h\", \"1d\". Cap your suggestion at \"1d\" unless extreme.\n- \"delete\"  — the message itself must be removed but the user is otherwise fine (spam links, leaked secrets, accidental personal info).\n\nContext the bot gives you in each request:\n- \"Server rules\": the operator's server-specific rules. If present, treat these as the primary authority. If empty, fall back to the generic baseline below.\n- \"Recent warnings\": the user's last 5 warnings (any age) with reason and ISO timestamp. Use them to judge \"repeated\" rule-breaking objectively: a clean user gets the benefit of the doubt; a user with several recent warns for similar behaviour should escalate toward \"timeout\".\n\nGeneric community baseline (apply when Server rules is empty):\n- No slurs, harassment, or targeted hate.\n- No spam, mass-mentions, or link-flooding.\n- No NSFW content outside channels explicitly designated for it.\n- No doxxing or leaking of personal information.\n- No illegal content.\n\nReturn ONLY valid JSON, no markdown fences, no commentary. Shape:\n  {\"action\": \"<action>\", \"reason\": \"<short Polish-language reason>\", \"duration\": \"<only if action is timeout>\"}\n\nBe conservative: prefer \"allow\" over false positives. The bot fails open on malformed JSON, so a partial output is worse than \"allow\"."
+        }
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Moderator",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [-560, 0],
+      "notes": "Classifies the message. Output lands in $json.output for the parser."
+    },
+    {
+      "parameters": {
+        "model": "qwen3:8b",
+        "options": {
+          "format": "json",
+          "temperature": 0.1,
+          "numCtx": 4096,
+          "keepAlive": "30m"
+        }
+      },
+      "id": "a1b2c3d4-0004-4000-8000-000000000004",
+      "name": "Qwen3 8B (moderation)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [-560, 220],
+      "credentials": {
+        "ollamaApi": {
+          "id": "3LUhsL6e7Y91iVoU",
+          "name": "Ollama account"
+        }
+      },
+      "notes": "format:json forces valid JSON. Swap the model for qwen3.5:9b or qwen2.5:7b-instruct as you prefer."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse + validate the LLM verdict and shape it into the exact response the\n// bot reads (result.data.verdict). Fail open to `allow` on any problem.\nconst raw = $input.first().json;\n\n// The Agent node returns its text in `output`; the other keys cover plain\n// chat-model / chain setups so this parser is drop-in either way.\nconst candidates = [\n  raw.output,\n  raw.text,\n  raw.message?.content,\n  raw.content,\n  raw.output_text,\n  raw.choices?.[0]?.message?.content,\n];\nlet text = candidates.find((c) => typeof c === 'string' && c.length > 0) ?? '';\n\n// Strip ```json fences and any qwen <think> block if thinking wasn't disabled.\ntext = text.replace(/<think>[\\s\\S]*?<\\/think>/gi, '');\ntext = text.replace(/^```(?:json)?\\s*/i, '').replace(/```\\s*$/i, '').trim();\n\nconst ALLOWED = new Set(['allow', 'warn', 'timeout', 'delete']);\nconst DURATION_RE = /^\\d+[smhd]$/;\n\nfunction failOpen(reason) {\n  return [{ json: { verdict: { action: 'allow', reason: `parse-fallback: ${reason}` } } }];\n}\n\nlet parsed;\ntry {\n  parsed = JSON.parse(text);\n} catch (err) {\n  return failOpen('invalid JSON');\n}\n\nif (!parsed || typeof parsed !== 'object') return failOpen('not an object');\nif (!ALLOWED.has(parsed.action)) return failOpen('unknown action');\nif (parsed.action === 'timeout') {\n  if (typeof parsed.duration !== 'string' || !DURATION_RE.test(parsed.duration)) {\n    return failOpen('timeout missing valid duration');\n  }\n}\n\nconst verdict = { action: parsed.action };\nif (typeof parsed.reason === 'string') verdict.reason = parsed.reason;\nif (typeof parsed.duration === 'string') verdict.duration = parsed.duration;\n\nreturn [{ json: { verdict } }];"
+      },
+      "id": "a1b2c3d4-0005-4000-8000-000000000005",
+      "name": "Parse verdict",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-300, 0],
+      "notes": "Validates action + duration; fails open to allow."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"verdict\": $json.verdict } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "a1b2c3d4-0006-4000-8000-000000000006",
+      "name": "Respond to bot",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-60, 0],
+      "notes": "Returns { verdict: {...} } — the shape the bot reads as result.data.verdict."
+    }
+  ],
+  "connections": {
+    "Moderation Webhook": {
+      "main": [[{ "node": "Extract payload", "type": "main", "index": 0 }]]
+    },
+    "Extract payload": {
+      "main": [[{ "node": "Moderator", "type": "main", "index": 0 }]]
+    },
+    "Qwen3 8B (moderation)": {
+      "ai_languageModel": [[{ "node": "Moderator", "type": "ai_languageModel", "index": 0 }]]
+    },
+    "Moderator": {
+      "main": [[{ "node": "Parse verdict", "type": "main", "index": 0 }]]
+    },
+    "Parse verdict": {
+      "main": [[{ "node": "Respond to bot", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}
