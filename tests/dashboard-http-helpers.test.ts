@@ -19,6 +19,15 @@ describe('parseCookies', () => {
     expect(parseCookies(undefined)).toEqual({});
     expect(parseCookies('')).toEqual({});
   });
+  it('ignores prototype-polluting cookie names', () => {
+    const out = parseCookies('__proto__=polluted; constructor=x; prototype=y; ok=1');
+    expect(out).toEqual({ ok: '1' });
+    // The Object prototype must be untouched.
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+  it('tolerates malformed percent-encoding instead of throwing', () => {
+    expect(parseCookies('a=%E0%A4%A')).toEqual({ a: '%E0%A4%A' });
+  });
 });
 
 describe('serializeCookie', () => {

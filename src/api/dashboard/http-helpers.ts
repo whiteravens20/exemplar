@@ -16,8 +16,17 @@ export function parseCookies(header: string | undefined): Record<string, string>
     const eq = part.indexOf('=');
     if (eq < 0) continue;
     const name = part.slice(0, eq).trim();
-    const value = part.slice(eq + 1).trim();
-    if (name) out[name] = decodeURIComponent(value);
+    // Never write attacker-controlled prototype keys — a cookie named
+    // `__proto__`/`constructor`/`prototype` must not be able to taint the map.
+    if (!name || name === '__proto__' || name === 'constructor' || name === 'prototype') {
+      continue;
+    }
+    const raw = part.slice(eq + 1).trim();
+    try {
+      out[name] = decodeURIComponent(raw);
+    } catch {
+      out[name] = raw; // tolerate malformed percent-encoding rather than throw
+    }
   }
   return out;
 }

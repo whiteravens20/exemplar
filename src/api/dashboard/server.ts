@@ -83,6 +83,9 @@ class DashboardServer {
     this.app.set('trust proxy', this.secure ? 1 : false);
     this.app.disable('x-powered-by');
     this.app.use(securityHeaders(this.secure));
+    // Baseline per-IP rate limit on every request, ahead of the session lookup
+    // and static assets. Tighter limits are layered on the auth/API routes.
+    this.app.use(createRateLimiter(300, 60 * 1000));
     this.app.use(express.json({ limit: '16kb' }));
 
     // Attach the verified session (if any) to every request.
@@ -257,6 +260,9 @@ class DashboardServer {
       res.status(204).end();
     });
 
+    // Rate-limit the whole API surface (including /api/me) before any handler.
+    this.app.use('/api', apiLimiter);
+
     // Current session — drives the login/denied/authorized UI states.
     this.app.get('/api/me', this.requireAuth, (req: DashRequest, res) => {
       const s = req.dashSession;
@@ -273,8 +279,6 @@ class DashboardServer {
     });
 
     // Everything below requires live mod access.
-    this.app.use('/api', apiLimiter);
-
     this.app.get('/api/logs', this.requireModAccess, async (req, res) => {
       const q = req.query;
       const page = await moderationLogRepo.query({
