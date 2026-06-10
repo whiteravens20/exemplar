@@ -5,9 +5,9 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-dashboard-assets.mjs",
     "start": "node dist/index.js",
-    "dev": "nodemon --watch src --ext ts --exec \"npx tsc && node dist/index.js\"",
+    "dev": "nodemon --watch src --ext ts,html,css,js --exec \"npx tsc && node scripts/copy-dashboard-assets.mjs && node dist/index.js\"",
     "watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

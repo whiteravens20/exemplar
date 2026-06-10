@@ -67,6 +67,28 @@ class ConfigManager {
       health: {
         port: parseInt(process.env.HEALTH_CHECK_PORT || '3000', 10),
       },
+      dashboard: {
+        enabled: process.env.DASHBOARD_ENABLED === 'true',
+        port: parseInt(process.env.DASHBOARD_PORT || '3001', 10),
+        oauthClientSecret: process.env.DISCORD_CLIENT_SECRET || '',
+        oauthRedirectUri:
+          process.env.DASHBOARD_OAUTH_REDIRECT_URI ||
+          'http://localhost:3001/callback',
+        publicBaseUrl:
+          process.env.DASHBOARD_PUBLIC_BASE_URL || 'http://localhost:3001',
+        sessionSecret: process.env.DASHBOARD_SESSION_SECRET || '',
+        // Falls back to the AI moderation allowed-roles list when a dashboard
+        // specific list isn't provided.
+        allowedRoles: this.parseRoles(
+          process.env.DASHBOARD_ALLOWED_ROLES ||
+            process.env.ALLOWED_ROLES_FOR_AI
+        ),
+        cookieSecure: process.env.DASHBOARD_COOKIE_SECURE === 'true',
+        sessionTtlSeconds: this.parsePositiveInt(
+          process.env.DASHBOARD_SESSION_TTL_SECONDS,
+          12 * 60 * 60
+        ),
+      },
     };
 
     this.ensureLogsDir();
@@ -138,6 +160,38 @@ class ConfigManager {
       }
     }
 
+    if (!this.validateDashboardConfig()) return false;
+
+    return true;
+  }
+
+  /**
+   * When the dashboard is enabled, its security-critical secrets must be set
+   * and strong. Fail fast at startup rather than booting an unprotected admin
+   * surface. No-op when the dashboard is disabled.
+   */
+  validateDashboardConfig(): boolean {
+    const dash = this.config.dashboard;
+    if (!dash.enabled) return true;
+
+    if (!this.config.discord.clientId) {
+      logger.error('Dashboard enabled but DISCORD_CLIENT_ID is missing');
+      return false;
+    }
+    if (!dash.oauthClientSecret) {
+      logger.error('Dashboard enabled but DISCORD_CLIENT_SECRET is missing');
+      return false;
+    }
+    if (!dash.sessionSecret || dash.sessionSecret.length < 32) {
+      logger.error(
+        'Dashboard enabled but DASHBOARD_SESSION_SECRET is missing or shorter than 32 characters'
+      );
+      return false;
+    }
+    if (!dash.oauthRedirectUri) {
+      logger.error('Dashboard enabled but DASHBOARD_OAUTH_REDIRECT_URI is missing');
+      return false;
+    }
     return true;
   }
 

@@ -69,6 +69,30 @@ export interface HealthConfig {
   port: number;
 }
 
+export interface DashboardConfig {
+  /** Master switch — the dashboard server only starts when true. */
+  enabled: boolean;
+  port: number;
+  /** Discord OAuth2 client secret (the client ID is reused from `discord`). */
+  oauthClientSecret: string;
+  /** Absolute OAuth2 redirect URI registered on the Discord application. */
+  oauthRedirectUri: string;
+  /** Public base URL the dashboard is served from (used for absolute links). */
+  publicBaseUrl: string;
+  /** Secret used to HMAC-sign session + state cookies. */
+  sessionSecret: string;
+  /**
+   * Roles permitted to view the dashboard, in addition to guild owner and
+   * members holding Administrator/ManageGuild. Falls back to
+   * `moderation.allowedRoles` when unset.
+   */
+  allowedRoles: string[];
+  /** Send session cookies with the `Secure` attribute (required behind HTTPS). */
+  cookieSecure: boolean;
+  /** Session lifetime in seconds. */
+  sessionTtlSeconds: number;
+}
+
 export interface BotConfig {
   discord: DiscordConfig;
   n8n: N8NConfig;
@@ -77,4 +101,5 @@ export interface BotConfig {
   logging: LoggingConfig;
   database: DatabaseConfig;
   health: HealthConfig;
+  dashboard: DashboardConfig;
 }

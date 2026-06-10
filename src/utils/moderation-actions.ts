@@ -11,8 +11,14 @@ import {
 import logger from './logger.js';
 import warningRepo from '../db/repositories/warning-repository.js';
 import aiModMuteRepo from '../db/repositories/ai-mod-mute-repository.js';
+import moderationLogRepo from '../db/repositories/moderation-log-repository.js';
 import db from '../db/connection.js';
 import configManager from '../config/config.js';
+import type {
+  ModerationActorType,
+  ModerationEventType,
+  ModerationSeverity,
+} from '../types/database.js';
 
 /**
  * Shared moderation action layer.
@@ -30,6 +36,24 @@ export interface Actor {
   id: string;
   /** Human-readable label shown in the mod-log (e.g. a tag or "AI moderation"). */
   label: string;
+  /**
+   * Origin of the action, recorded on the dashboard event log. Defaults to
+   * `human`; the AI moderation path sets `ai`. Used to distinguish manual and
+   * automated moderation in the dashboard.
+   */
+  type?: ModerationActorType;
+}
+
+/**
+ * Static descriptor for a moderation action: how it appears in the Discord
+ * mod-log embed (`title`) plus how it is classified on the dashboard event log
+ * (`eventType`, `action`, `severity`).
+ */
+interface ModLogDescriptor {
+  title: string;
+  eventType: ModerationEventType;
+  action: string;
+  severity: ModerationSeverity;
 }
 
 export interface ActionResult {
@@ -145,11 +169,29 @@ export function checkBasePermissions(
 
 async function sendModLog(
   guild: Guild,
-  action: string,
+  descriptor: ModLogDescriptor,
   target: User,
   reason: string,
-  actor: Actor
+  actor: Actor,
+  extra?: { metadata?: Record<string, unknown> }
 ): Promise<void> {
+  // Persist to the dashboard event log first, independent of whether a Discord
+  // mod-log channel is configured — the dashboard must see every action even on
+  // servers that don't route mod-logs to a channel.
+  await moderationLogRepo.record({
+    guildId: guild.id,
+    eventType: descriptor.eventType,
+    severity: descriptor.severity,
+    actorType: actor.type ?? 'human',
+    actorId: actor.id,
+    actorLabel: actor.label,
+    targetUserId: target.id,
+    targetUsername: target.tag,
+    action: descriptor.action,
+    reason: reason || null,
+    metadata: extra?.metadata,
+  });
+
   const modLogChannelId = configManager.config.moderation.modLogChannelId;
   if (!modLogChannelId) return;
 
@@ -159,7 +201,7 @@ async function sendModLog(
 
     const embed = new EmbedBuilder()
       .setColor(0xe74c3c)
-      .setTitle(`🔨 ${action}`)
+      .setTitle(`🔨 ${descriptor.title}`)
       .addFields(
         { name: 'Użytkownik', value: `${target.tag} (${target.id})`, inline: true },
         { name: 'Moderator', value: actor.label, inline: true },
@@ -171,7 +213,7 @@ async function sendModLog(
   } catch (error) {
     logger.error('Failed to send mod-log entry', {
       error: (error as Error).message,
-      action,
+      action: descriptor.action,
       targetId: target.id,
     });
   }
@@ -275,7 +317,13 @@ export async function applyKick(
       content: `❌ Nie udało się wyrzucić użytkownika: ${(error as Error).message}`,
     };
   }
-  await sendModLog(target.guild, 'Kick', target.user, reason, actor);
+  await sendModLog(
+    target.guild,
+    { title: 'Kick', eventType: 'kick', action: 'kick', severity: 'medium' },
+    target.user,
+    reason,
+    actor
+  );
   return {
     success: true,
     embed: buildModEmbed('Wyrzucono', target.user, reason, 0xf39c12, [
@@ -310,7 +358,13 @@ export async function applyBan(
       content: `❌ Nie udało się zbanować użytkownika: ${(error as Error).message}`,
     };
   }
-  await sendModLog(target.guild, 'Ban', target.user, reason, actor);
+  await sendModLog(
+    target.guild,
+    { title: 'Ban', eventType: 'ban', action: 'ban', severity: 'high' },
+    target.user,
+    reason,
+    actor
+  );
   return {
     success: true,
     embed: buildModEmbed('Zbanowano', target.user, reason, 0xe74c3c, [
@@ -327,7 +381,13 @@ export async function applyUnban(
   try {
     await guild.bans.remove(userId);
     const user = await guild.client.users.fetch(userId);
-    await sendModLog(guild, 'Unban', user, 'Odbanowano', actor);
+    await sendModLog(
+      guild,
+      { title: 'Unban', eventType: 'unban', action: 'unban', severity: 'info' },
+      user,
+      'Odbanowano',
+      actor
+    );
     return {
       success: true,
       embed: buildModEmbed('Odbanowano', user, 'Odbanowano', 0x2ecc71),
@@ -375,7 +435,14 @@ export async function applyTimeout(
       content: `❌ Nie udało się wyciszyć użytkownika: ${(error as Error).message}`,
     };
   }
-  await sendModLog(target.guild, 'Mute (Timeout)', target.user, reason, actor);
+  await sendModLog(
+    target.guild,
+    { title: 'Mute (Timeout)', eventType: 'mute', action: 'timeout', severity: 'medium' },
+    target.user,
+    reason,
+    actor,
+    { metadata: { durationMs } }
+  );
   return {
     success: true,
     embed: buildModEmbed('Wyciszono', target.user, reason, 0x9b59b6, [
@@ -408,7 +475,13 @@ export async function applyUntimeout(
       content: `❌ Nie udało się zdjąć wyciszenia: ${(error as Error).message}`,
     };
   }
-  await sendModLog(target.guild, 'Unmute', target.user, 'Wyciszenie zdjęte', actor);
+  await sendModLog(
+    target.guild,
+    { title: 'Unmute', eventType: 'unmute', action: 'unmute', severity: 'info' },
+    target.user,
+    'Wyciszenie zdjęte',
+    actor
+  );
   return {
     success: true,
     embed: buildModEmbed('Wyciszenie zdjęte', target.user, 'Wyciszenie zdjęte', 0x2ecc71),
@@ -448,7 +521,13 @@ export async function applyWarn(
     actor.id
   );
 
-  await sendModLog(guild, 'Warn', target, reason, actor);
+  await sendModLog(
+    guild,
+    { title: 'Warn', eventType: 'warn', action: 'warn', severity: 'low' },
+    target,
+    reason,
+    actor
+  );
 
   const result: ActionResult = {
     success: true,
@@ -541,7 +620,13 @@ async function autoBanForThreshold(
 
   try {
     await guild.bans.create(target.id, { reason });
-    await sendModLog(guild, 'Ban', target, reason, escalatedActor);
+    await sendModLog(
+      guild,
+      { title: 'Ban', eventType: 'ban', action: 'ban', severity: 'high' },
+      target,
+      reason,
+      escalatedActor
+    );
     return {
       success: true,
       embed: buildModEmbed('Zbanowano', target, reason, 0xe74c3c),
@@ -660,7 +745,15 @@ export async function applyDeleteMessage(
     ]
   );
 
-  await sendDeleteModLog(guild, target, reason, actor, channelRef, preview);
+  await sendDeleteModLog(
+    guild,
+    target,
+    reason,
+    actor,
+    message.channelId,
+    channelRef,
+    preview
+  );
 
   return {
     success: true,
@@ -686,9 +779,24 @@ async function sendDeleteModLog(
   target: User,
   reason: string,
   actor: Actor,
+  channelId: string,
   channelRef: string,
   preview: string
 ): Promise<void> {
+  await moderationLogRepo.record({
+    guildId: guild.id,
+    eventType: 'delete',
+    severity: 'low',
+    actorType: actor.type ?? 'human',
+    actorId: actor.id,
+    actorLabel: actor.label,
+    targetUserId: target.id,
+    targetUsername: target.tag,
+    channelId,
+    action: 'delete',
+    reason: reason || null,
+  });
+
   const modLogChannelId = configManager.config.moderation.modLogChannelId;
   if (!modLogChannelId) return;
 

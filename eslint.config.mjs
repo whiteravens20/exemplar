@@ -44,6 +44,17 @@ export default [
     },
   },
   {
+    // Hand-written browser frontend for the dashboard — browser globals, not Node.
+    files: ['src/api/dashboard/public/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.browser,
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     ignores: ['dist/**', 'node_modules/**', '*.js', '*.mjs'],
   },
 ];
