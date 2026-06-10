@@ -5,6 +5,7 @@ import express, {
   type Response,
   type NextFunction,
 } from 'express';
+import rateLimit from 'express-rate-limit';
 import type { Server } from 'node:http';
 import type { Client } from 'discord.js';
 import logger from '../../utils/logger.js';
@@ -32,7 +33,6 @@ import {
   asEventType,
   asSearch,
   asSeverity,
-  createRateLimiter,
   isSnowflake,
   parseCookies,
   randomNonce,
@@ -85,14 +85,21 @@ class DashboardServer {
     this.app.use(securityHeaders(this.secure));
     // Baseline per-IP rate limit on every request, ahead of the session lookup
     // and static assets. Tighter limits are layered on the auth/API routes.
-    this.app.use(createRateLimiter(300, 60 * 1000));
+    this.app.use(
+      rateLimit({
+        windowMs: 60 * 1000,
+        limit: 300,
+        standardHeaders: true,
+        legacyHeaders: false,
+      })
+    );
     this.app.use(express.json({ limit: '16kb' }));
 
     // Attach the verified session (if any) to every request.
     this.app.use((req: DashRequest, _res, next) => {
       const cookies = parseCookies(req.headers.cookie);
       req.dashSession = verifySession(
-        cookies[SESSION_COOKIE],
+        cookies.get(SESSION_COOKIE),
         configManager.config.dashboard.sessionSecret
       );
       next();
@@ -150,8 +157,18 @@ class DashboardServer {
     const discord = configManager.config.discord;
 
     // Throttle the auth endpoints harder than the read API.
-    const authLimiter = createRateLimiter(10, 60 * 1000);
-    const apiLimiter = createRateLimiter(120, 60 * 1000);
+    const authLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      limit: 10,
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
+    const apiLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      limit: 120,
+      standardHeaders: true,
+      legacyHeaders: false,
+    });
 
     // Begin OAuth: set a signed CSRF state and redirect to Discord.
     this.app.get('/login', authLimiter, (req: DashRequest, res) => {
@@ -180,7 +197,7 @@ class DashboardServer {
     this.app.get('/callback', authLimiter, async (req: DashRequest, res) => {
       try {
         const cookies = parseCookies(req.headers.cookie);
-        const nonce = cookies[STATE_COOKIE];
+        const nonce = cookies.get(STATE_COOKIE);
         const state = typeof req.query.state === 'string' ? req.query.state : undefined;
         const code = typeof req.query.code === 'string' ? req.query.code : undefined;
 

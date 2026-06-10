@@ -13,20 +13,26 @@ import {
 
 describe('parseCookies', () => {
   it('parses a multi-value cookie header', () => {
-    expect(parseCookies('a=1; b=two; c=')).toEqual({ a: '1', b: 'two', c: '' });
+    expect(parseCookies('a=1; b=two; c=')).toEqual(
+      new Map([
+        ['a', '1'],
+        ['b', 'two'],
+        ['c', ''],
+      ])
+    );
   });
   it('handles an empty/undefined header', () => {
-    expect(parseCookies(undefined)).toEqual({});
-    expect(parseCookies('')).toEqual({});
+    expect(parseCookies(undefined).size).toBe(0);
+    expect(parseCookies('').size).toBe(0);
   });
-  it('ignores prototype-polluting cookie names', () => {
-    const out = parseCookies('__proto__=polluted; constructor=x; prototype=y; ok=1');
-    expect(out).toEqual({ ok: '1' });
-    // The Object prototype must be untouched.
+  it('cannot pollute the Object prototype via a crafted cookie name', () => {
+    const out = parseCookies('__proto__=polluted; ok=1');
+    expect(out.get('ok')).toBe('1');
+    // The Map holds the key inertly; the Object prototype stays untouched.
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
   it('tolerates malformed percent-encoding instead of throwing', () => {
-    expect(parseCookies('a=%E0%A4%A')).toEqual({ a: '%E0%A4%A' });
+    expect(parseCookies('a=%E0%A4%A').get('a')).toBe('%E0%A4%A');
   });
 });
 

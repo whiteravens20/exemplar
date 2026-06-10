@@ -8,24 +8,24 @@ import type {
 
 // ── Cookies ──────────────────────────────────────────────────────────────────
 
-/** Parse a `Cookie:` header into a name→value map. */
-export function parseCookies(header: string | undefined): Record<string, string> {
-  const out: Record<string, string> = {};
+/**
+ * Parse a `Cookie:` header into a name→value `Map`. A `Map` is used rather than
+ * a plain object so attacker-controlled cookie names are never used as dynamic
+ * object property keys (no property-injection / prototype-pollution surface).
+ */
+export function parseCookies(header: string | undefined): Map<string, string> {
+  const out = new Map<string, string>();
   if (!header) return out;
   for (const part of header.split(';')) {
     const eq = part.indexOf('=');
     if (eq < 0) continue;
     const name = part.slice(0, eq).trim();
-    // Never write attacker-controlled prototype keys — a cookie named
-    // `__proto__`/`constructor`/`prototype` must not be able to taint the map.
-    if (!name || name === '__proto__' || name === 'constructor' || name === 'prototype') {
-      continue;
-    }
+    if (!name) continue;
     const raw = part.slice(eq + 1).trim();
     try {
-      out[name] = decodeURIComponent(raw);
+      out.set(name, decodeURIComponent(raw));
     } catch {
-      out[name] = raw; // tolerate malformed percent-encoding rather than throw
+      out.set(name, raw); // tolerate malformed percent-encoding rather than throw
     }
   }
   return out;
@@ -95,43 +95,6 @@ export function securityHeaders(secure: boolean) {
         'max-age=31536000; includeSubDomains'
       );
     }
-    next();
-  };
-}
-
-// ── Rate limiting ────────────────────────────────────────────────────────────
-
-/**
- * Small fixed-window per-IP rate limiter. In-memory only (one bot process), so
- * it's a guard against brute-force/abuse, not a distributed quota. Returns 429
- * with a `Retry-After` header when exceeded.
- */
-export function createRateLimiter(maxPerWindow: number, windowMs: number) {
-  const hits = new Map<string, { count: number; resetAt: number }>();
-
-  return (req: Request, res: Response, next: NextFunction): void => {
-    const now = Date.now();
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    const entry = hits.get(ip);
-
-    if (!entry || entry.resetAt <= now) {
-      hits.set(ip, { count: 1, resetAt: now + windowMs });
-    } else {
-      entry.count += 1;
-      if (entry.count > maxPerWindow) {
-        res.setHeader('Retry-After', Math.ceil((entry.resetAt - now) / 1000));
-        res.status(429).json({ error: 'Too many requests' });
-        return;
-      }
-    }
-
-    // Opportunistic cleanup so the map can't grow unbounded.
-    if (hits.size > 10_000) {
-      for (const [key, value] of hits) {
-        if (value.resetAt <= now) hits.delete(key);
-      }
-    }
-
     next();
   };
 }
