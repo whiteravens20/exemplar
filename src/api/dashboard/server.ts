@@ -346,7 +346,7 @@ class DashboardServer {
     // empty feed today so the "Users feedback" view renders cleanly; #17 will
     // replace this with real rating/comment data.
     this.app.get('/api/feedback', this.requireModAccess, (_req, res) => {
-      res.json({ items: [], notImplemented: true });
+      res.json({ items: [] });
     });
 
     this.app.get('/api/config', this.requireModAccess, (_req, res) => {

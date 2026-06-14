@@ -35,7 +35,9 @@ CREATE TABLE IF NOT EXISTS moderation_logs (
   ai_reasoning TEXT,
   ai_rule VARCHAR(120),
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP DEFAULT NOW()
+  -- TIMESTAMPTZ (not TIMESTAMP): an immutable audit log must order correctly
+  -- regardless of the server's TimeZone GUC or DST changes.
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_modlogs_created ON moderation_logs(created_at DESC);

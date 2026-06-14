@@ -114,7 +114,7 @@ The User Feedback & Rating System (#17) plugs in with minimal work:
   `event_type = 'feedback'` (already a reserved value), putting the rating and
   comment in `metadata` — or add a dedicated `feedback` table.
 - **API** — replace the stub in `GET /api/feedback` (currently returns
-  `{ items: [], notImplemented: true }`) with real data. The frontend already
+  `{ items: [] }`) with real data. The frontend already
   renders each item as a post card from this shape:
 
   ```jsonc
