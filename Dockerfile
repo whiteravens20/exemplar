@@ -6,6 +6,11 @@ WORKDIR /app
 # Patch Alpine base packages
 RUN apk upgrade --no-cache
 
+# Upgrade npm to the version required by package.json `engines` (>=11.12.1).
+# node:22-alpine ships npm 10, which cannot validate lockfiles that use nested
+# overrides and fails `npm ci` with a spurious "does not satisfy" error.
+RUN npm install -g npm@latest
+
 # Copy .npmrc for supply-chain hardening (min-release-age, ignore-scripts)
 COPY .npmrc ./
 
