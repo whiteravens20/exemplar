@@ -12,6 +12,7 @@ import logger from './utils/logger.js';
 import configManager from './config/config.js';
 import db from './db/connection.js';
 import HealthCheckServer from './api/server.js';
+import DashboardServer from './api/dashboard/server.js';
 import cleanupJob from './jobs/database-cleanup.js';
 import muteReconciliationJob from './jobs/mute-reconciliation.js';
 import type { SlashCommand } from './types/discord.js';
@@ -117,8 +118,9 @@ async function registerCommands(): Promise<void> {
   }
 }
 
-// Health check server reference for graceful shutdown
+// Server references for graceful shutdown
 let healthServer: HealthCheckServer | null = null;
+let dashboardServer: DashboardServer | null = null;
 
 // Login to Discord
 async function start(): Promise<void> {
@@ -142,6 +144,18 @@ async function start(): Promise<void> {
     // applied by the escalation ladder before the previous shutdown).
     client.once('ready', () => {
       muteReconciliationJob.start(client);
+
+      // Start the logging dashboard (issue #18) once the client is ready — it
+      // reuses the client for RBAC and live ban/mute lookups. Opt-in.
+      if (configManager.config.dashboard.enabled) {
+        dashboardServer = new DashboardServer(client);
+        dashboardServer.start().catch((error: Error) => {
+          logger.error('Failed to start dashboard server', {
+            error: error.message,
+          });
+          dashboardServer = null;
+        });
+      }
     });
 
     await registerCommands();
@@ -162,8 +176,9 @@ process.on('SIGINT', async () => {
   cleanupJob.stop();
   muteReconciliationJob.stop();
 
-  // Stop health check server
+  // Stop HTTP servers
   if (healthServer) await healthServer.stop();
+  if (dashboardServer) await dashboardServer.stop();
 
   // Close database connection
   await db.close();
@@ -180,6 +195,7 @@ process.on('SIGTERM', async () => {
   cleanupJob.stop();
   muteReconciliationJob.stop();
   if (healthServer) await healthServer.stop();
+  if (dashboardServer) await dashboardServer.stop();
   await db.close();
   await client.destroy();
 

@@ -106,6 +106,90 @@ export interface CommandPopularity {
   usage_count: number;
 }
 
+// ── Dashboard moderation event log (issue #18, migration 005) ────────────────
+
+export type ModerationEventType =
+  | 'warn'
+  | 'ban'
+  | 'kick'
+  | 'mute'
+  | 'unmute'
+  | 'unban'
+  | 'delete'
+  | 'ai_flag'
+  // Reserved for the User Feedback & Rating System (issue #17).
+  | 'feedback';
+
+export type ModerationSeverity = 'info' | 'low' | 'medium' | 'high' | 'critical';
+
+export type ModerationActorType = 'human' | 'ai' | 'system';
+
+/** Shape inserted into `moderation_logs` via {@link ModerationLogRepository.record}. */
+export interface ModerationLogEntry {
+  guildId?: string | null;
+  eventType: ModerationEventType;
+  severity?: ModerationSeverity;
+  actorType?: ModerationActorType;
+  actorId?: string | null;
+  actorLabel?: string | null;
+  targetUserId?: string | null;
+  targetUsername?: string | null;
+  channelId?: string | null;
+  action?: string | null;
+  reason?: string | null;
+  aiReasoning?: string | null;
+  aiRule?: string | null;
+  metadata?: Record<string, unknown>;
+}
+
+/** Row shape as returned from `moderation_logs`. */
+export interface ModerationLogRow {
+  id: string;
+  guild_id: string | null;
+  event_type: string;
+  severity: string;
+  actor_type: string;
+  actor_id: string | null;
+  actor_label: string | null;
+  target_user_id: string | null;
+  target_username: string | null;
+  channel_id: string | null;
+  action: string | null;
+  reason: string | null;
+  ai_reasoning: string | null;
+  ai_rule: string | null;
+  metadata: Record<string, unknown>;
+  created_at: Date;
+}
+
+/** Filter set accepted by {@link ModerationLogRepository.query}. */
+export interface ModerationLogFilters {
+  from?: Date;
+  to?: Date;
+  targetUserId?: string;
+  channelId?: string;
+  actorType?: ModerationActorType;
+  eventType?: ModerationEventType;
+  severity?: ModerationSeverity;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ModerationLogPage {
+  rows: ModerationLogRow[];
+  total: number;
+}
+
+export interface ModerationLogStats {
+  total: number;
+  byType: Record<string, number>;
+  bySeverity: Record<string, number>;
+  byActorType: Record<string, number>;
+  daily: Array<{ day: string; count: number }>;
+  topTargets: Array<{ userId: string; username: string | null; count: number }>;
+}
+
 export interface RateLimitCheckResult {
   allowed: boolean;
   remaining: number;

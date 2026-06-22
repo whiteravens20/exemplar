@@ -8,6 +8,7 @@ import logger from './logger.js';
 import configManager from '../config/config.js';
 import N8NClient from './n8n-client.js';
 import warningRepo from '../db/repositories/warning-repository.js';
+import moderationLogRepo from '../db/repositories/moderation-log-repository.js';
 import {
   applyDeleteMessage,
   applyTimeout,
@@ -15,6 +16,7 @@ import {
   parseDuration,
   type Actor,
 } from './moderation-actions.js';
+import type { ModerationSeverity } from '../types/database.js';
 
 /**
  * AI-driven automated moderation (issue #16).
@@ -51,6 +53,12 @@ export interface ModerationVerdict {
   action: ModerationAction;
   reason?: string;
   duration?: string;
+  /**
+   * Optional rule the verdict was attributed to, surfaced to the dashboard as
+   * the "triggered rule". The n8n workflow may include it; when absent the
+   * dashboard simply shows the reasoning without a rule.
+   */
+  rule?: string;
 }
 
 let cachedClient: N8NClient | null = null;
@@ -152,6 +160,7 @@ export function validateVerdict(raw: unknown): ModerationVerdict | null {
   const verdict: ModerationVerdict = { action };
   if (typeof v.reason === 'string') verdict.reason = v.reason;
   if (typeof v.duration === 'string') verdict.duration = v.duration;
+  if (typeof v.rule === 'string') verdict.rule = v.rule;
   if (action === 'timeout') {
     if (!verdict.duration || parseDuration(verdict.duration) === null) {
       return null;
@@ -218,7 +227,7 @@ async function enforce(
   const botUser = message.client.user;
   if (!guild || !botUser) return;
 
-  const actor: Actor = { id: botUser.id, label: ACTOR_LABEL };
+  const actor: Actor = { id: botUser.id, label: ACTOR_LABEL, type: 'ai' };
   const reason = verdict.reason || 'Naruszenie wykryte przez moderację AI';
 
   switch (verdict.action) {
@@ -347,10 +356,57 @@ export async function analyzeAndAct(message: Message): Promise<void> {
   if (verdict.action === 'allow') return;
 
   const mode = configManager.config.moderation.aiMode;
+
+  // Record the AI decision itself (the transparent "why") on the dashboard
+  // event log, in both shadow and enforce modes. In enforce mode the resulting
+  // enforcement action is logged separately by the moderation-actions layer, so
+  // the dashboard shows the decision and the action as two linked rows.
+  await recordAiDecision(message, verdict, mode);
+
   if (mode === 'shadow') {
     await postShadowLog(message, verdict);
     return;
   }
 
   await enforce(message, verdict);
+}
+
+/** Map a non-`allow` verdict to a dashboard severity. */
+function verdictSeverity(action: ModerationAction): ModerationSeverity {
+  switch (action) {
+    case 'timeout':
+      return 'high';
+    case 'warn':
+      return 'medium';
+    case 'delete':
+      return 'low';
+    default:
+      return 'info';
+  }
+}
+
+async function recordAiDecision(
+  message: Message,
+  verdict: ModerationVerdict,
+  mode: string
+): Promise<void> {
+  await moderationLogRepo.record({
+    guildId: message.guild?.id ?? null,
+    eventType: 'ai_flag',
+    severity: verdictSeverity(verdict.action),
+    actorType: 'ai',
+    actorId: message.client.user?.id ?? null,
+    actorLabel: ACTOR_LABEL,
+    targetUserId: message.author.id,
+    targetUsername: message.author.tag,
+    channelId: message.channelId,
+    action: verdict.action,
+    reason: verdict.reason ?? null,
+    aiReasoning: verdict.reason ?? null,
+    aiRule: verdict.rule ?? null,
+    metadata: {
+      mode,
+      ...(verdict.duration ? { duration: verdict.duration } : {}),
+    },
+  });
 }

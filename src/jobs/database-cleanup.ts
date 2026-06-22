@@ -75,6 +75,9 @@ class DatabaseCleanupJob {
       // Cleanup old analytics (90D retention)
       const analyticsDeleted = await this.cleanupAnalytics();
 
+      // Cleanup old dashboard moderation logs (90D retention)
+      const modLogsDeleted = await this.cleanupModerationLogs();
+
       const duration = Date.now() - startTime;
 
       logger.info('Database cleanup completed', {
@@ -82,6 +85,7 @@ class DatabaseCleanupJob {
         conversationsDeleted,
         statsDeleted: analyticsDeleted.stats,
         commandsDeleted: analyticsDeleted.commands,
+        moderationLogsDeleted: modLogsDeleted,
       });
     } catch (error) {
       logger.error('Database cleanup failed', {
@@ -138,6 +142,30 @@ class DatabaseCleanupJob {
         error: (error as Error).message,
       });
       return { stats: 0, commands: 0 };
+    }
+  }
+
+  /**
+   * Cleanup old dashboard moderation logs (90-day retention).
+   */
+  private async cleanupModerationLogs(): Promise<number> {
+    try {
+      const result = await db.query<{ cleanup_old_moderation_logs: number }>(
+        'SELECT cleanup_old_moderation_logs($1)',
+        [90]
+      );
+      const deleted = result.rows[0]?.cleanup_old_moderation_logs || 0;
+
+      if (deleted > 0) {
+        logger.debug('Cleaned up old moderation logs', { deleted });
+      }
+
+      return deleted;
+    } catch (error) {
+      logger.error('Failed to cleanup moderation logs', {
+        error: (error as Error).message,
+      });
+      return 0;
     }
   }
 }
