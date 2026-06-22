@@ -7,6 +7,7 @@ import {
   REST,
   Routes,
   Partials,
+  Events,
 } from 'discord.js';
 import logger from './utils/logger.js';
 import configManager from './config/config.js';
@@ -31,6 +32,7 @@ import unmuteCommand from './slashcommands/unmute.js';
 import unbanCommand from './slashcommands/unban.js';
 import warnCommand from './slashcommands/warn.js';
 import helpCommand from './slashcommands/help.js';
+import rulesCommand from './slashcommands/rules.js';
 import codeCommand from './slashcommands/code.js';
 import flushmemoryCommand from './slashcommands/flushmemory.js';
 import warningsCommand from './slashcommands/warnings.js';
@@ -70,6 +72,7 @@ const slashCommands: SlashCommand[] = [
   unbanCommand,
   warnCommand,
   helpCommand,
+  rulesCommand,
   codeCommand,
   flushmemoryCommand,
   warningsCommand,
@@ -142,7 +145,7 @@ async function start(): Promise<void> {
     // Start mute reconciliation after the client is ready so guild + member
     // lookups succeed on the first run (handles restart-resilience of mutes
     // applied by the escalation ladder before the previous shutdown).
-    client.once('ready', () => {
+    client.once(Events.ClientReady, () => {
       muteReconciliationJob.start(client);
 
       // Start the logging dashboard (issue #18) once the client is ready — it

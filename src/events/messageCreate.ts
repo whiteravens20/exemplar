@@ -190,6 +190,26 @@ const event: BotEvent = {
           return;
         }
 
+        // A DM that reads like "/help" or "/code …" is almost always an attempt
+        // to invoke a slash command that wasn't picked from Discord's command
+        // menu, so it lands here as plain text and would otherwise be forwarded
+        // to the LLM. Nudge the user instead — but only when the first token
+        // actually matches a registered command, so genuine chat/code content
+        // like "/usr/bin/env" or "// comment" still reaches the AI (notably the
+        // `/code` programmer mode, whose messages often contain leading slashes).
+        const slashMatch = sanitizedContent.match(/^\/([a-z0-9_-]+)/i);
+        const typedCommand = slashMatch?.[1].toLowerCase();
+        if (typedCommand && message.client.commands.has(typedCommand)) {
+          await message.reply({
+            content: `Aby użyć komendy \`/${typedCommand}\`, wybierz ją z menu komend Discorda (wpisz \`/\` i kliknij ją na liście) — wpisana ręcznie jako zwykła wiadomość nie zostanie wykonana.`,
+          });
+          logger.info('Intercepted command-like DM text', {
+            userId: message.author.id,
+            command: typedCommand,
+          });
+          return;
+        }
+
         // All bot commands are slash commands handled by interactionCreate.
         // A plain DM is always a chat-mode message for the n8n workflow.
         const mode = 'chat';

@@ -121,9 +121,20 @@ export function isEnabled(): boolean {
 }
 
 export function shouldAnalyze(message: Message): boolean {
-  if (message.author.bot || message.system) return false;
-  if (message.channel.type !== ChannelType.GuildText) return false;
-  if (!message.guild) return false;
+  const skip = (reason: string): false => {
+    logger.debug('AI moderation: message skipped', {
+      reason,
+      channelId: message.channelId,
+      channelType: message.channel.type,
+      userId: message.author.id,
+    });
+    return false;
+  };
+
+  if (message.author.bot || message.system) return skip('author is bot/system');
+  if (message.channel.type !== ChannelType.GuildText)
+    return skip('channel is not a standard text channel (thread/forum/news?)');
+  if (!message.guild) return skip('no guild');
 
   const { includeChannels, exemptRoles } = configManager.config.moderation;
 
@@ -131,16 +142,20 @@ export function shouldAnalyze(message: Message): boolean {
   // list channels in AI_MOD_INCLUDE_CHANNELS to enrol them in moderation.
   // This keeps high-volume read-only channels (announcements, news) and any
   // unconfigured channel out of the n8n round-trip by default.
-  if (includeChannels.length === 0) return false;
-  if (!includeChannels.includes(message.channelId)) return false;
+  if (includeChannels.length === 0)
+    return skip('AI_MOD_INCLUDE_CHANNELS is empty');
+  if (!includeChannels.includes(message.channelId))
+    return skip('channel not in AI_MOD_INCLUDE_CHANNELS');
 
   if (exemptRoles.length > 0 && message.member) {
     const memberRoleIds = new Set(message.member.roles.cache.keys());
-    if (exemptRoles.some((id) => memberRoleIds.has(id))) return false;
+    if (exemptRoles.some((id) => memberRoleIds.has(id)))
+      return skip('author holds an AI_MOD_EXEMPT_ROLES role');
   }
 
   const content = (message.content || '').trim();
-  if (content.length < 3 || content.length > MAX_CONTENT_LENGTH) return false;
+  if (content.length < 3 || content.length > MAX_CONTENT_LENGTH)
+    return skip('content too short/long or empty (missing MessageContent intent?)');
 
   return true;
 }
@@ -174,10 +189,22 @@ async function postShadowLog(
   verdict: ModerationVerdict
 ): Promise<void> {
   const modLogChannelId = configManager.config.moderation.modLogChannelId;
-  if (!modLogChannelId || !message.guild) return;
+  if (!modLogChannelId || !message.guild) {
+    logger.warn('Shadow verdict not posted: MOD_LOG_CHANNEL_ID is unset', {
+      userId: message.author.id,
+    });
+    return;
+  }
 
   const channel = message.guild.channels.cache.get(modLogChannelId);
-  if (!channel || channel.type !== ChannelType.GuildText) return;
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    logger.warn('Shadow verdict not posted: mod-log channel not found or not a text channel', {
+      modLogChannelId,
+      found: !!channel,
+      channelType: channel?.type,
+    });
+    return;
+  }
 
   const preview = buildPreview(message.content);
 
@@ -353,9 +380,20 @@ export async function analyzeAndAct(message: Message): Promise<void> {
     return;
   }
 
-  if (verdict.action === 'allow') return;
-
   const mode = configManager.config.moderation.aiMode;
+
+  // Surface every verdict so the decision trail is visible in the logs (and not
+  // just on the dashboard). `allow` verdicts intentionally produce no mod-log
+  // entry — log them so a benign test message doesn't look like a silent failure.
+  logger.info('AI moderation verdict', {
+    action: verdict.action,
+    reason: verdict.reason,
+    mode,
+    userId: message.author.id,
+    channelId: message.channelId,
+  });
+
+  if (verdict.action === 'allow') return;
 
   // Record the AI decision itself (the transparent "why") on the dashboard
   // event log, in both shadow and enforce modes. In enforce mode the resulting

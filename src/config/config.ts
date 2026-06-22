@@ -24,6 +24,7 @@ class ConfigManager {
         restrictedResponse:
           process.env.RESTRICTED_RESPONSE ||
           "You don't have permission to use this feature. Please contact the admins.",
+        rulesText: process.env.RULES_TEXT || '',
       },
       moderation: {
         allowedRoles: this.parseRoles(process.env.ALLOWED_ROLES_FOR_AI),

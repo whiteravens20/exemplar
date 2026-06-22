@@ -12,6 +12,12 @@ export interface N8NConfig {
 export interface BotSettings {
   mentionResponse: string;
   restrictedResponse: string;
+  /**
+   * Human-facing server rules shown by the `/rules` command. Source: RULES_TEXT
+   * env var. Unlike `moderation.rulesText` (the AI's rulebook), this is for
+   * people, so a pointer + Discord link is fine. Empty = a "not configured" notice.
+   */
+  rulesText: string;
 }
 
 export type AiModerationMode = 'off' | 'shadow' | 'enforce';
