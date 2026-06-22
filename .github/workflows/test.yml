@@ -36,6 +36,9 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
+      - name: Update npm to 11+
+        run: npm install -g npm@latest
+
       - name: Install dependencies
         id: install
         run: npm ci --ignore-scripts
