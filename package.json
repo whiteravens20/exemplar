@@ -54,7 +54,7 @@
   "overrides": {
     "minimatch": "10.2.4",
     "follow-redirects": "1.16.0",
-    "postcss": "8.5.10",
+    "postcss": "8.5.22",
     "discord.js": {
       "undici": "^6.27.0"
     }
