@@ -23,16 +23,29 @@ What you expected to happen.
 ## Actual Behavior
 What actually happens. Include any error messages or unexpected output.
 
+## Affected Area
+- [ ] AI assistant (n8n chat flow)
+- [ ] AI moderation
+- [ ] Slash commands
+- [ ] Web dashboard
+- [ ] Database / migrations
+- [ ] Deployment (Docker, health check)
+- [ ] Other
+
 ## Environment
 
 | Field | Value |
 |---|---|
 | Node.js version | e.g. 22.x |
-| Bot version | e.g. v3.0.7 (`package.json`) |
+| Bot version | from `package.json` |
 | Operating System | e.g. Ubuntu 24.04 |
 | Deployment method | Docker / direct Node.js |
 | Discord.js version | check `package.json` |
-| PostgreSQL version | e.g. 16 (if persistent-storage is enabled) |
+| PostgreSQL version | e.g. 16 (if persistent storage is enabled) |
+| n8n version | e.g. 1.x (if the AI assistant or moderation is involved) |
+| n8n reachable | does `N8N_WORKFLOW_URL` respond? yes / no |
+| `AI_MODERATION_MODE` | off / … (if moderation is involved) |
+| `DASHBOARD_ENABLED` | true / false (if the dashboard is involved) |
 
 ## Logs
 ```
