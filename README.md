@@ -322,7 +322,6 @@ verdict quality before flipping to `enforce`. Full setup guide:
 
 discord-ai-bot/
 ├── 📄 README.md                  # Main documentation
-├── 📄 CHANGELOG.md               # Version history
 ├── 📄 CONTRIBUTING.md            # Contributing guidelines
 ├── 📄 CODE_OF_CONDUCT.md         # Community guidelines
 ├── 📄 SECURITY.md                # Security policy
