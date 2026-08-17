@@ -127,10 +127,13 @@ Before you start coding, understand these key architectural decisions:
 
 ### 🌿 Branching Strategy
 
+`dev` is the active development branch and the target for every pull request.
+`main` holds released code and is updated only by a release PR from `dev`.
+
 ```bash
-# Always start from an up-to-date main branch
-git checkout main
-git pull upstream main
+# Always start from an up-to-date dev branch
+git checkout dev
+git pull upstream dev
 
 # Create a feature branch with a descriptive name
 git checkout -b feature/awesome-new-feature
@@ -502,7 +505,7 @@ Good documentation is just as important as good code! 📖
 Update the docs when you:
 
 - ✨ Add a new feature → Update `README.md` and relevant guides
-- 🐛 Fix a bug → Update `CHANGELOG.md`
+- 🐛 Fix a bug → Make sure the PR title describes it (release notes are generated from PR titles)
 - 🔧 Change configuration → Update `SETUP.md` and `.env.example`
 - 🏗️ Modify project structure → Update `PROJECT_STRUCTURE.md`
 - 🎯 Add new commands → Update usage documentation
@@ -516,7 +519,7 @@ Before submitting your PR:
 - [ ] 📝 Updated relevant doc files in `/docs/`
 - [ ] 💬 Added/updated inline code comments
 - [ ] 🔧 Updated `.env.example` for new variables
-- [ ] 📊 Updated `CHANGELOG.md` (follow Keep a Changelog format)
+- [ ] 📊 PR title follows Conventional Commits (it becomes the release-note entry)
 - [ ] 🏗️ Updated `PROJECT_STRUCTURE.md` if you added new files
 
 ### ✍️ Writing Style
@@ -636,14 +639,14 @@ Make sure you've:
 - ✅ Updated relevant documentation
 - ✅ Followed the coding standards
 - ✅ Written clear commit messages
-- ✅ Synced with the latest main branch
+- ✅ Synced with the latest dev branch
 
 ```bash
 # Sync with upstream
-git checkout main
-git pull upstream main
+git checkout dev
+git pull upstream dev
 git checkout your-feature-branch
-git rebase main
+git rebase dev
 ```
 
 ### 2️⃣ Creating the PR
@@ -683,9 +686,9 @@ Here's what happens after you submit:
    - Respond to comments
 
 4. ✅ **Approval** - Once approved:
-   - PR is merged to main
-   - Changes are included in next release
-   - You're credited in CHANGELOG! 🎉
+   - PR is merged to `dev`
+   - Changes ship to `main` with the next release PR
+   - You're credited in the release notes! 🎉
 
 5. 🎊 **Celebrate** - You're now a contributor! 🙌
 
@@ -753,7 +756,7 @@ We're excited to see what you'll build! 🚀
 ### 🏆 Recognition
 
 Contributors are recognized in:
-- 📝 CHANGELOG.md for their contributions
+- 📝 The auto-generated release notes for their contributions
 - 🌟 GitHub contributors page
 - 💚 Our eternal gratitude
 
