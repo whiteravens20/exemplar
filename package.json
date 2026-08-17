@@ -30,33 +30,34 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "axios": "1.18.1",
+    "axios": "1.19.0",
     "discord.js": "14.27.0",
     "dotenv": "17.4.2",
     "express": "5.2.1",
-    "express-rate-limit": "8.6.0",
-    "pg": "8.22.0",
-    "undici": "8.8.0",
+    "express-rate-limit": "8.6.2",
+    "pg": "8.23.0",
+    "undici": "8.10.0",
     "winston": "3.19.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/express": "5.0.6",
-    "@types/node": "26.0.0",
-    "@types/pg": "8.20.0",
-    "eslint": "10.6.0",
-    "globals": "17.7.0",
+    "@types/node": "26.2.0",
+    "@types/pg": "8.21.0",
+    "eslint": "10.8.1",
+    "globals": "17.9.0",
     "nodemon": "3.1.14",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.62.0",
-    "vitest": "4.1.9"
+    "typescript-eslint": "8.66.0",
+    "vitest": "4.1.10"
   },
   "overrides": {
-    "minimatch": "10.2.4",
+    "minimatch": "10.2.6",
     "follow-redirects": "1.16.0",
-    "postcss": "8.5.22",
+    "postcss": "8.5.26",
+    "ip-address": "10.4.0",
     "discord.js": {
-      "undici": "^6.27.0"
+      "undici": "6.28.0"
     }
   },
   "engines": {
