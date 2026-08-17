@@ -4,7 +4,6 @@
 discord-ai-bot/
 │
 ├── 📄 README.md                  # Main documentation
-├── 📄 CHANGELOG.md               # Version history and changes
 ├── 📄 CONTRIBUTING.md            # Contribution guidelines
 ├── 📄 CODE_OF_CONDUCT.md         # Community guidelines
 ├── 📄 SECURITY.md                # Security policy

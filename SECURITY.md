@@ -23,17 +23,17 @@ We actively maintain and provide security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 2.0.x   | ✅ Yes            | Active development |
-| 1.x.x   | ⚠️ Limited        | Critical security fixes only |
-| < 1.0   | ❌ No             | No longer supported |
+| 3.0.x   | ✅ Yes            | Active development |
+| 2.x.x   | ⚠️ Limited        | Critical security fixes only |
+| < 2.0   | ❌ No             | No longer supported |
 
-**Current Stable Version:** v2.0.0 (Released: 2026-02-09)
+**Current Stable Version:** see [`package.json`](package.json) and the [latest release](../../releases/latest)
 
 ### 🔄 Update Recommendations
 
 - **Always use the latest version** for the best security and features
 - **Subscribe to releases** on GitHub to get notified of security updates
-- **Review CHANGELOG.md** before upgrading to understand breaking changes
+- **Review the [release notes](../../releases)** before upgrading to understand breaking changes
 
 ---
 
@@ -41,16 +41,15 @@ We actively maintain and provide security updates for the following versions:
 
 **⚠️ IMPORTANT: Please DO NOT report security vulnerabilities through public GitHub issues!**
 
-### 📧 How to Report
+### 🔐 How to Report
 
-If you discover a security vulnerability, please email us privately:
+Use GitHub's private vulnerability reporting — it is the only supported channel:
 
-**Email:** [Create a private security advisory on GitHub]
+1. Open [Report a vulnerability](https://github.com/whiteravens20/exemplar/security/advisories/new)
+2. Fill in the details listed below
+3. Submit — the report is visible only to the maintainers
 
-Or use GitHub's Security Advisory feature:
-1. Go to the [Security tab](https://github.com/whiteravens20/exemplar/security)
-2. Click "Report a vulnerability"
-3. Fill in the details
+The advisory stays private until a fix ships and we publish it.
 
 ### 📝 What to Include
 
@@ -192,14 +191,11 @@ All package managers are configured with minimum release age to block compromise
 - Node.js 22+ (latest LTS with security fixes)
 - Discord.js 14.x (actively maintained)
 - All dependencies regularly updated via Dependabot
-- No known vulnerable dependencies (0 vulnerabilities as of 2026-04-02)
+- `npm audit --audit-level=high` runs on every push and pull request, and weekly on a schedule — a high or critical finding fails the build
 
-**Key Dependencies (pinned):**
-- `discord.js`: 14.25.1
-- `axios`: 1.14.0
-- `undici`: 7.24.7
-- `winston`: 3.19.0
-- `dotenv`: 17.3.1
+**Key Dependencies:** the authoritative, exact-pinned list lives in [`package.json`](package.json); it is not duplicated here, so that it cannot drift out of date.
+
+> **Note:** the `overrides` block in `package.json` is *not* covered by Dependabot. Review it by hand during every dependency sweep — a stale pin there can force a transitive dependency *down* into a vulnerable range.
 
 ### 🛡️ Code Security
 
@@ -407,15 +403,14 @@ We thank the following security researchers and contributors who have helped mak
 - 📖 [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines including security practices
 - 📚 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community standards
 - 📋 [README.md](README.md) - Project overview and features
-- 📝 [CHANGELOG.md](CHANGELOG.md) - Version history and security updates
+- 📝 [Releases](../../releases) - Version history and security updates
 - 🔧 [docs/SETUP.md](docs/SETUP.md) - Secure configuration guide
 - 🐳 [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md) - Docker security best practices
 
 ---
 
-**Last Updated:** February 12, 2026  
-**Version:** 1.0.0  
-**Project Version:** 2.0.0
+**Last Updated:** August 17, 2026  
+**Policy Version:** 1.1.0
 
 ---
 
