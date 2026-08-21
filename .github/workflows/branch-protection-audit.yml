@@ -73,15 +73,19 @@ jobs:
           assert "block branch deletions"               '(.allow_deletions.enabled // false) | not'
 
           # Required CI contexts that must pass before merge.
-          # Names match the actual job IDs / names produced by this repo's workflows:
+          # These must be the check names GitHub actually reports, not the job
+          # names in the workflow files — a job using `strategy.matrix` reports
+          # its name with the matrix value appended, so `Analyze Code` becomes
+          # `Analyze Code (javascript-typescript)`. A name that no job ever
+          # produces can never be satisfied and blocks every merge.
           #   test.yml          → job id `test`
-          #   codeql.yml        → "Analyze Code"
+          #   codeql.yml        → "Analyze Code" + matrix language
           #   security.yml      → "npm audit", "Trivy filesystem scan"
           REQUIRED_CHECKS=$(echo "$PROT" | jq -r '.required_status_checks.contexts[]? // empty' | sort)
           echo "Configured required checks:"
           echo "$REQUIRED_CHECKS" | sed 's/^/  - /'
 
-          for must in "test" "Analyze Code" "npm audit" "Trivy filesystem scan"; do
+          for must in "test" "Analyze Code (javascript-typescript)" "npm audit" "Trivy filesystem scan"; do
             if ! echo "$REQUIRED_CHECKS" | grep -Fxq "$must"; then
               echo "::error::Required status check missing: '${must}'"
               fail=1
