@@ -39,16 +39,7 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Install dependencies
-        id: install
         run: npm ci --ignore-scripts
-
-      - name: Remove quarantine label
-        if: success() && github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          gh pr edit "$PR_NUMBER" --remove-label "min-release-age" 2>/dev/null || true
 
       - name: Run linting
         run: npm run lint --if-present
