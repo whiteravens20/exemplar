@@ -2,369 +2,125 @@
 
 ## Overview
 
-Discord Bot sends messages to an n8n workflow via Webhook. n8n processes the message and returns a response, which the bot sends back to the user.
+The bot sends every DM (and every `/code` request) to an n8n workflow via a webhook. The workflow returns a reply, which the bot sends back to the user. The assistant only works in DMs.
 
-**Important:** Bot works **only in DMs** (Direct Messages). All channel commands are ignored.
+AI moderation uses a second, separate workflow; see [AI_MODERATION.md](AI_MODERATION.md).
 
-## Payload Sent to n8n
+## Payload sent to n8n
 
 ```json
 {
-  "userId": "discord_user_id",
+  "userId": "123456789012345678",
   "userName": "discord_username",
   "message": "message from user",
-  "serverId": "discord_server_id",
+  "serverId": "987654321098765432",
   "mode": "chat",
-  "timestamp": "2024-02-02T10:30:00.000Z",
-  "platform": "discord"
+  "timestamp": "2026-09-21T10:30:00.000Z",
+  "platform": "discord",
+  "conversationContext": [
+    { "userMessage": "...", "aiResponse": "...", "timestamp": "2026-09-21T10:29:00.000Z" }
+  ]
 }
 ```
 
-### Field Descriptions
+| Field | Description |
+|---|---|
+| `userId` | Discord user ID; the bundled workflow uses it as the memory session key |
+| `userName` | Discord username |
+| `message` | The user's message |
+| `serverId` | `DISCORD_SERVER_ID` |
+| `mode` | `"chat"` for a plain DM, `"code"` for the `/code` command |
+| `timestamp` | ISO timestamp |
+| `platform` | Always `"discord"` |
+| `conversationContext` | The bot's own recent history for this user, when it has any. The bundled workflow ignores it and uses n8n's Postgres memory instead |
 
-- `userId` - Discord user ID
-- `userName` - Discord username
-- `message` - User's message content
-- `serverId` - Discord server ID (from bot configuration)
-- `mode` - **"chat"** (plain DM) or **"code"** (when user runs the `/code` command)
-- `timestamp` - ISO timestamp
-- `platform` - Always "discord"
+When `N8N_API_KEY` is set, every request carries it as an `X-API-Key` header.
 
-### Mode Field
-
-The `mode` field allows you to route messages to different LLMs:
-
-- **`"chat"`** - General conversation, use GPT-3.5/GPT-4 or similar
-- **`"code"`** - Programming/coding help, use code-optimized LLM or system prompt
-
-**User activates code mode by:**
-```
-/code message: write a function to sort an array
-```
-
-Bot will send:
-```json
-{
-  "message": "write a function to sort an array",
-  "mode": "code"
-}
-```
-
-## Expected Response from n8n
+## Expected response
 
 ```json
 {
-  "response": "Response for user"
+  "response": "Reply for the user"
 }
 ```
 
-## Creating Workflow in n8n
+The bot splits long replies to fit Discord's message limit.
 
-### Method 1: Webhook Trigger (Recommended)
+## The bundled workflow
 
-1. **Create a new workflow**
-2. **Add Webhook Trigger**
-   - HTTP Method: POST
-   - Path: `/discord` (or another)
-3. **Add processing logic**
-   - E.g. function node to handle messages
-   - Integration with API (OpenAI, others)
-4. **Add Response Node**
-   - Return `{ response: "Your response" }`
-
-### Method 2: HTTP Request (for existing APIs)
-
-If you already have an API:
-```
-POST https://your-api.com/chat
-Body: { message, userId, userName }
-Response: { response }
-```
-
-Just set `N8N_WORKFLOW_URL` to the n8n endpoint that forwards requests.
-
-## Workflow Examples
-
-### 1. Mode-Based Routing (Recommended)
-
-Use an IF node to route based on `mode`:
-
-```javascript
-// IF Node condition:
-// $json.mode === "code"
-
-// TRUE branch (Coding LLM):
-const message = $json.message;
-const userName = $json.userName;
-
-// Use OpenAI with coding system prompt
-// or specialized coding LLM
-return {
-  response: `Here's the code solution...`,
-  mode: 'code'
-};
-
-// FALSE branch (Chat LLM):
-const message = $json.message;
-const userName = $json.userName;
-
-// Use general conversational LLM
-return {
-  response: `Hi ${userName}, let me help you...`,
-  mode: 'chat'
-};
-```
-
-### 2. Simple Echo Bot
-
-```javascript
-// Function Node
-const message = $input.first().json.message;
-const userName = $input.first().json.userName;
-const mode = $input.first().json.mode;
-
-return {
-  response: `[${mode}] You said: "${message}", ${userName}!`
-};
-```
-
-### 3. OpenAI Integration
+[`assistant-workflow.n8n.json`](assistant-workflow.n8n.json) is a ready-to-import version of the workflow the bot is developed against:
 
 ```
-Webhook -> Check Mode (IF) -> 
-  ├─ [code] -> OpenAI (with code system prompt) -> Return Response
-  └─ [chat] -> OpenAI (with chat system prompt) -> Return Response
+Discord Webhook → Extract payload → Check Mode ─┬─ code → Code agent ────┬→ ResponseMerger → Send Response to Discord
+                                                └─ chat → General agent ─┘
 ```
 
-### 4. Database Integration
+- **Code** agent: coding system prompt, `qwen2.5-coder:7b-instruct` on Ollama.
+- **General** agent: `ministral-3:8b` on Ollama, with two tools: `web_search` (SearXNG) and `wikipedia`.
+- **Postgres Chat Memory**, shared by both agents: session key `userId`, window of 20 messages.
 
-```
-Webhook -> Save to DB -> Query DB for context -> Check Mode -> Call appropriate LLM -> Return Response
-```
+Swap the models freely. The General agent's model must support tool calling. For another provider, replace the Ollama node with that provider's chat-model node and connect it to the agent's **Chat Model** input.
 
-## Monitoring and Debugging
+### Import and configure
 
-### Logs in n8n
-- Check the n8n dashboard for each execution
-- Click on each step to see input/output
+1. In n8n: **Workflows → Import from File** → `docs/assistant-workflow.n8n.json`.
+2. **Discord Webhook**: select a **Header Auth** credential with header name `X-API-Key` and your `N8N_API_KEY` as the value. The import ships a placeholder credential ID, so create or pick your own.
+3. **Qwen2.5 Coder 7B** and **Ministral3 8B**: select your **Ollama** credential.
+4. **Postgres Chat Memory**: select a **Postgres** credential for the **bot's database** (the same `DB_*` values as in `.env`). n8n creates its `n8n_chat_histories` table there, and the bot's `/flushmemory` and `/flushdb` clear it. With a different database, those commands only clear the bot's side.
+5. **web_search**: replace `https://searxng.example.com/search` with your SearXNG instance (see below), or delete the node to run without web search.
+6. **Activate** the workflow and copy the webhook's **Production URL** into `.env` as `N8N_WORKFLOW_URL`.
 
-### Logs in Bot
-```bash
-tail -f combined.log          # All logs
-tail -f error.log             # Errors only
-```
+### SearXNG for web search
 
-### Testing Workflow
+The `web_search` tool calls `GET <url>?q=<query>&format=json`. The model writes the query itself (`$fromAI('query')`), and the response is trimmed to each result's `title`, `url` and `content` before the model sees it.
+
+Your SearXNG instance must:
+
+- **Serve JSON**: add `json` to `search.formats` in `settings.yml`. It is off by default, and without it every request fails.
+- **Not rate-limit n8n**: with `server.limiter` or `server.public_instance` enabled, the limiter blocks non-browser clients (HTTP 429). Add the address n8n reaches SearXNG from to `botdetection.ip_lists.pass_ip` in `limiter.toml`. If n8n goes through a published Docker port, SearXNG sees the Docker network gateway rather than n8n's own IP, so that gateway is the address to allow. Alternatively, run a private instance with the limiter off.
+
+Keep the JSON endpoint reachable only from n8n, e.g. over a private network or VPN, rather than exposing an unthrottled search API publicly.
+
+## Testing the workflow
 
 ```bash
-# Test chat mode (default)
-curl -X POST https://your-n8n.com/webhook/discord \
+# Chat mode
+curl -X POST https://your-n8n.example.com/webhook/exemplar \
   -H "Content-Type: application/json" \
-  -d '{
-    "userId": "123",
-    "userName": "testuser",
-    "message": "hello",
-    "serverId": "456",
-    "mode": "chat",
-    "timestamp": "2024-02-02T10:00:00Z",
-    "platform": "discord"
-  }'
+  -H "X-API-Key: $N8N_API_KEY" \
+  -d '{"userId":"test-user","userName":"tester","message":"hello","serverId":"0","mode":"chat","timestamp":"2026-09-21T10:00:00Z","platform":"discord"}'
 
-# Test code mode
-curl -X POST https://your-n8n.com/webhook/discord \
+# Code mode
+curl -X POST https://your-n8n.example.com/webhook/exemplar \
   -H "Content-Type: application/json" \
-  -d '{
-    "userId": "123",
-    "userName": "testuser",
-    "message": "write a function to sort array",
-    "serverId": "456",
-    "mode": "code",
-    "timestamp": "2024-02-02T10:00:00Z",
-    "platform": "discord"
-  }'
+  -H "X-API-Key: $N8N_API_KEY" \
+  -d '{"userId":"test-user","userName":"tester","message":"write a function to sort an array","serverId":"0","mode":"code","timestamp":"2026-09-21T10:00:00Z","platform":"discord"}'
 ```
+
+Test calls are stored in the chat memory under their `userId`. Use a throwaway ID, and remove it afterwards with `DELETE FROM n8n_chat_histories WHERE session_id = 'test-user';`.
 
 ## Troubleshooting
 
-### Bot Says "Error processing your message"
+The bot classifies n8n failures and shows the user a matching message (texts in `src/config/response-templates.ts`):
 
-**Causes:**
-- n8n workflow is offline
-- Webhook URL is wrong
-- n8n returns an error
-- Response missing `response` field
+| Error the user sees | Likely cause |
+|---|---|
+| Backend unavailable | n8n is down or `N8N_WORKFLOW_URL` points at the wrong host |
+| Workflow not found (404) | The workflow isn't active, or the URL is the test URL instead of the production one |
+| Authentication failed (401/403) | `N8N_API_KEY` doesn't match the webhook's Header Auth credential |
+| Timeout | The workflow took longer than the client timeout (120 s, `src/utils/n8n-client.ts`); common with a cold local model |
+| Missing `response` field | The workflow responded without a `response` key |
+| Assistant never uses web search, or says it failed | SearXNG returns 429 or 403 to n8n; see [SearXNG for web search](#searxng-for-web-search) |
 
-**Solution:**
-```bash
-# 1. Check URL
-echo $N8N_WORKFLOW_URL
+Check each execution in n8n's **Executions** view. On the bot side, logs are in `logs/combined.log` and `logs/error.log`.
 
-# 2. Test workflow in n8n UI
+## Building your own workflow
 
-# 3. Check logs
-tail -f error.log
+Any workflow works as long as it accepts the payload above on a POST webhook and responds with `{ "response": "..." }`. Use **Respond to Webhook** (response mode "Using 'Respond to Webhook' node") so the reply goes back in the same HTTP request, and route on `mode` if you want a separate coding model.
 
-# 4. Make sure response has "response" field
-```
+To pass extra data from the bot, extend `N8NWebhookPayload` in `src/types/n8n.ts` and `sendMessage()` in `src/utils/n8n-client.ts`.
 
-### Timeouts
+## Resources
 
-If workflow takes >30 seconds, bot will display timeout.
-
-**Solution:**
-- Optimize n8n workflow
-- Change timeout in `src/utils/n8n-client.ts` (parametr `timeout`)
-
-### Rate Limiting
-
-If you have many users, set rate limiting in n8n or middleware.
-
-## API Keys and Security
-
-If your workflow requires API keys:
-
-```env
-N8N_API_KEY=your_api_key_here
-```
-
-Bot will add it to the header:
-```
-X-API-Key: your_api_key_here
-```
-
-## Advanced
-
-### Using PostgreSQL as AI Agent Memory
-
-The bot sends `conversationContext` in the payload (last 20 messages), but you can configure the **AI Agent node** in n8n to use PostgreSQL as persistent memory storage.
-
-#### Setup PostgreSQL Memory in n8n:
-
-**1. Create PostgreSQL Credential in n8n:**
-```
-Settings → Credentials → Add Credential → Postgres account
-- Host: postgres (if n8n is in docker-compose) or 192.168.2.16 (external)
-- Port: 5432
-- Database: exemplar (or your DB_NAME)
-- User: dbot_user (or your DB_USER)
-- Password: [your DB_PASSWORD]
-```
-
-**2. Configure AI Agent Node:**
-```javascript
-AI Agent Node Settings:
-┌─────────────────────────────┐
-│ Memory                      │
-│ ✓ Use Memory               │
-│                             │
-│ Memory Type: PostgreSQL     │ ← Select this
-│                             │
-│ Connection:                 │
-│   [Select PostgreSQL Cred]  │
-│                             │
-│ Session ID:                 │
-│   {{ $json.userId }}        │ ← Important: Use Discord user ID
-│                             │
-│ Window Size: 20             │ ← Number of messages to remember
-└─────────────────────────────┘
-```
-
-**3. Memory Schema (Auto-created by n8n):**
-```sql
--- n8n will create this table automatically:
-CREATE TABLE IF NOT EXISTS n8n_chat_histories (
-  session_id VARCHAR(255) PRIMARY KEY,
-  messages JSONB,
-  updated_at TIMESTAMP DEFAULT NOW()
-);
-```
-
-#### Benefits:
-
-1. **Persistent Memory** - Conversations survive bot restarts
-2. **Per-User Memory** - Each user has isolated conversation history
-3. **Automatic Management** - n8n handles memory lifecycle
-4. **Window Control** - Limits memory to last N messages (recommended: 20)
-
-#### Example Workflow:
-
-```
-┌────────────────┐
-│ Webhook Trigger│ ← Receives Discord message
-└────────┬───────┘
-         │
-┌────────▼─────────────────────────┐
-│ AI Agent Node                    │
-│                                  │
-│ Memory: PostgreSQL               │
-│ Session ID: {{ $json.userId }}  │
-│ Window: 20 messages              │
-│                                  │
-│ Model: ChatOpenAI                │
-│ System Prompt: "You are..."     │
-└────────┬─────────────────────────┘
-         │
-┌────────▼────────┐
-│ Return Response │
-└─────────────────┘
-```
-
-#### How It Works:
-
-1. Discord bot sends message with `userId`
-2. AI Agent looks up memory by `sessionId` (userId)
-3. Loads last 20 messages from PostgreSQL
-4. Processes new message with context
-5. Saves updated conversation to PostgreSQL
-6. Returns response
-
-#### Optional: Use Bot's Conversation Context
-
-The bot already sends conversation history in the payload. You can choose:
-
-**Option A: Use AI Agent PostgreSQL Memory (Recommended)**
-- Clean and automatic
-- Managed by n8n
-- Separate from bot's analytics
-
-**Option B: Use Bot's `conversationContext` Payload**
-- Already available in webhook payload
-- Good for temporary context
-- Shared with bot's analytics database
-
-**Option C: Hybrid Approach**
-```javascript
-// Use both: bot context + AI Agent memory
-// AI Agent will merge them automatically
-```
-
-### Multi-Language Support
-
-```javascript
-// Detect language
-const language = $input.first().json.language || 'en';
-
-// Route to appropriate workflow
-// Or process message with language context
-```
-
-### Custom User Data
-
-You can extend the payload:
-
-1. **In bot** - edit `src/events/messageCreate.ts`:
-```typescript
-const result = await n8nClient.sendMessage({
-  ...data,
-  customField: 'value',
-  userLevel: member.roles.highest.position
-});
-```
-
-2. **In n8n** - you'll receive it in the payload
-
-## Wsparcie
-
-- [n8n Documentation](https://docs.n8n.io/)
-- [n8n Community](https://community.n8n.io/)
-- Discord Bot Issues: Sprawdź `combined.log`
+- [n8n documentation](https://docs.n8n.io/)
+- [SearXNG limiter](https://docs.searxng.org/admin/searx.limiter.html)
