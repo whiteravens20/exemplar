@@ -73,6 +73,7 @@ jobs:
       packages: write   # Required to push to ghcr.io
       id-token: write   # Sign the provenance attestation
       attestations: write
+      artifact-metadata: write   # Storage record for the attested image
 
     outputs:
       digest: ${{ steps.build.outputs.digest }}
