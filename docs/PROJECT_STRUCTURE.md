@@ -16,17 +16,17 @@ discord-ai-bot/
 ├── 📄 docker-compose.yml         # Docker services (bot + PostgreSQL)
 ├── 📄 Dockerfile                 # Bot container image (multi-stage w/ tsc)
 ├── 📄 eslint.config.mjs          # ESLint + typescript-eslint configuration
-├── 📄 n8n-workflow-example.json  # Example n8n workflow
 │
 ├── 📁 docs/                      # Documentation
 │   ├── SETUP.md                  # Setup instructions
 │   ├── QUICKSTART.md             # Quick start guide
 │   ├── DATABASE.md               # Database documentation
 │   ├── N8N_INTEGRATION.md        # n8n workflow guide
+│   ├── assistant-workflow.n8n.json  # Importable n8n assistant workflow
+│   ├── moderation-workflow.n8n.json # Importable n8n moderation workflow
 │   ├── DOCKER_SETUP.md           # Docker deployment
 │   ├── DEPLOYMENT_CHECKLIST.md   # Production checklist
 │   ├── PROJECT_STRUCTURE.md      # This file
-│   ├── CI_CD_GUIDE.md            # CI/CD documentation
 │   └── FAQ.md                    # Common questions
 │
 ├── 📁 migrations/                # Database migrations

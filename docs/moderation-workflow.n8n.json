@@ -66,7 +66,7 @@
       "position": [-560, 220],
       "credentials": {
         "ollamaApi": {
-          "id": "3LUhsL6e7Y91iVoU",
+          "id": "REPLACE_WITH_YOUR_OLLAMA_CRED_ID",
           "name": "Ollama account"
         }
       },
