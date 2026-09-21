@@ -94,7 +94,8 @@ DISCORD_SERVER_ID=your_server_id_here
 N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/discord
 
 # n8n - OPTIONAL
-N8N_API_KEY=your_api_key_here
+# Random secret (openssl rand -hex 32), same value as the webhooks' Header Auth
+N8N_API_KEY=replace_with_a_random_secret
 
 # AI moderation (issue #16) - OPTIONAL
 # Off by default. To enable, see docs/AI_MODERATION.md for the full step-by-step

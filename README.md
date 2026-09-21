@@ -80,7 +80,7 @@ Fill in `.env`. The minimum is:
 | `DISCORD_CLIENT_ID` | Application ID |
 | `DISCORD_SERVER_ID` | The one server the bot serves |
 | `N8N_WORKFLOW_URL` | Production URL of the assistant workflow's webhook |
-| `N8N_API_KEY` | Sent as `X-API-Key`; must match the webhook's Header Auth credential |
+| `N8N_API_KEY` | Random shared secret (`openssl rand -hex 32`) sent as `X-API-Key`; must match the webhooks' Header Auth credential. Not an n8n API key |
 | `ALLOWED_ROLES_FOR_AI` | Comma-separated role IDs allowed to use the assistant |
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | PostgreSQL connection |
 
