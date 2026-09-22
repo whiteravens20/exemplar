@@ -146,9 +146,8 @@ docker run -d --env-file .env discord-bot
 ### Q: Slash commands don't work
 **A:**
 1. Wait 5-60 minutes for Discord synchronization
-2. Re-deploy: `npm run deploy-commands`
-3. Restart bot
-4. Check if bot has Permission "applications.commands"
+2. Restart bot (commands are registered with Discord on every start)
+3. Check if bot has Permission "applications.commands"
 
 ### Q: DM doesn't send to n8n
 **A:**

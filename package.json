@@ -13,7 +13,6 @@
     "test": "vitest run",
     "test:all": "vitest run",
     "test:watch": "vitest",
-    "deploy-commands": "node dist/deploy-commands.js",
     "release-package": "bash scripts/create-release-package.sh",
     "lint": "eslint src --fix",
     "migrate:up": "node dist/scripts/migrate.js up",

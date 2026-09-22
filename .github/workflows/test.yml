@@ -59,7 +59,6 @@ jobs:
       - name: Verify required files
         run: |
           test -f src/index.ts || (echo "src/index.ts missing" && exit 1)
-          test -f src/deploy-commands.ts || (echo "src/deploy-commands.ts missing" && exit 1)
           test -f tsconfig.json || (echo "tsconfig.json missing" && exit 1)
           test -f package.json || (echo "package.json missing" && exit 1)
           test -f Dockerfile || (echo "Dockerfile missing" && exit 1)

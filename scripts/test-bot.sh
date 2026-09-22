@@ -74,7 +74,6 @@ run_test "vitest installed" "npm ls vitest"
 # 3. Check file structure
 echo -e "\n${BLUE}3️⃣ Checking File Structure...${NC}"
 run_test "src/index.ts exists" "test -f src/index.ts"
-run_test "src/deploy-commands.ts exists" "test -f src/deploy-commands.ts"
 run_test "tsconfig.json exists" "test -f tsconfig.json"
 run_test "vitest.config.ts exists" "test -f vitest.config.ts"
 run_test "src/types/ exists" "test -d src/types"

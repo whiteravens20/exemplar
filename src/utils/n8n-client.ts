@@ -4,7 +4,6 @@ import type {
   N8NClientOptions,
   N8NWebhookPayload,
   N8NWorkflowResult,
-  N8NHealthCheckResult,
   ConversationContextRow,
 } from '../types/n8n.js';
 
@@ -164,26 +163,6 @@ class N8NClient {
     }
 
     return this.triggerWorkflow(payload);
-  }
-
-  isConfigured(): boolean {
-    return !!this.workflowUrl;
-  }
-
-  async healthCheck(): Promise<N8NHealthCheckResult> {
-    try {
-      const response = await this.client.get(this.workflowUrl, {
-        timeout: 5000,
-      });
-      return { healthy: true, status: response.status };
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      return {
-        healthy: false,
-        error: axiosError.message,
-        status: axiosError.response?.status,
-      };
-    }
   }
 }
 
