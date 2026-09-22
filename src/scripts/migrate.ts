@@ -71,18 +71,23 @@ async function runMigration(direction = 'up'): Promise<void> {
             'utf8'
           );
 
-          await pool.query('BEGIN');
+          // A transaction has to run on a single connection; pool.query() may
+          // hand each statement to a different pooled client.
+          const client = await pool.connect();
           try {
-            await pool.query(sql);
-            await pool.query(
+            await client.query('BEGIN');
+            await client.query(sql);
+            await client.query(
               'INSERT INTO schema_migrations (migration_name) VALUES ($1)',
               [file]
             );
-            await pool.query('COMMIT');
+            await client.query('COMMIT');
             console.log(`✓ Migration ${file} completed`);
           } catch (error) {
-            await pool.query('ROLLBACK');
+            await client.query('ROLLBACK');
             throw error;
+          } finally {
+            client.release();
           }
         } else {
           console.log(`- Migration ${file} already executed`);
@@ -98,23 +103,16 @@ async function runMigration(direction = 'up'): Promise<void> {
         const lastMigration = rows[0].migration_name;
         console.log(`Rolling back migration: ${lastMigration}`);
 
-        await pool.query('BEGIN');
-        try {
-          await pool.query(
-            'DELETE FROM schema_migrations WHERE migration_name = $1',
-            [lastMigration]
-          );
-          await pool.query('COMMIT');
-          console.log(
-            `✓ Migration ${lastMigration} rolled back (tracking only)`
-          );
-          console.log(
-            'Warning: Manual database cleanup may be required'
-          );
-        } catch (error) {
-          await pool.query('ROLLBACK');
-          throw error;
-        }
+        await pool.query(
+          'DELETE FROM schema_migrations WHERE migration_name = $1',
+          [lastMigration]
+        );
+        console.log(
+          `✓ Migration ${lastMigration} rolled back (tracking only)`
+        );
+        console.log(
+          'Warning: Manual database cleanup may be required'
+        );
       } else {
         console.log('No migrations to roll back');
       }
