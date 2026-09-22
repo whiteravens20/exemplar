@@ -504,6 +504,17 @@ export async function applyWarn(
     return { success: false, content: '❌ Nie można ostrzec bota.' };
   }
 
+  // Persist first: a warning that failed to save must not be announced.
+  const activeWarnings = await warningRepo.addWarning(
+    target.id,
+    target.username,
+    reason,
+    actor.id
+  );
+  if (activeWarnings === 0) {
+    return { success: false, content: '❌ Nie udało się zapisać ostrzeżenia.' };
+  }
+
   const dmSent = await notifyTarget(
     target,
     guild.name,
@@ -512,13 +523,6 @@ export async function applyWarn(
     reason,
     [{ name: 'Wygasa', value: 'za 30 dni' }],
     'Kontynuowanie niewłaściwego zachowania może skutkować dalszymi sankcjami'
-  );
-
-  const activeWarnings = await warningRepo.addWarning(
-    target.id,
-    target.username,
-    reason,
-    actor.id
   );
 
   await sendModLog(
