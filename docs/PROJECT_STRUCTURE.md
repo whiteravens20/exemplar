@@ -27,7 +27,6 @@ discord-ai-bot/
 │   ├── DOCKER_SETUP.md           # Docker deployment
 │   ├── DEPLOYMENT_CHECKLIST.md   # Production checklist
 │   ├── PROJECT_STRUCTURE.md      # This file
-│   ├── CI_CD_GUIDE.md            # CI/CD documentation
 │   └── FAQ.md                    # Common questions
 │
 ├── 📁 migrations/                # Database migrations

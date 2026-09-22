@@ -34,7 +34,7 @@ AI moderation uses a second, separate workflow; see [AI_MODERATION.md](AI_MODERA
 | `platform` | Always `"discord"` |
 | `conversationContext` | The bot's own recent history for this user, when it has any. The bundled workflow ignores it and uses n8n's Postgres memory instead |
 
-When `N8N_API_KEY` is set, every request carries it as an `X-API-Key` header.
+When `N8N_API_KEY` is set, every request carries it as an `X-API-Key` header. Use a random secret for it (`openssl rand -hex 32`), not an n8n API key: the value is sent with every webhook call and stored in the webhook's credential.
 
 ## Expected response
 
