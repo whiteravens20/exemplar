@@ -36,7 +36,6 @@
     "express": "5.2.1",
     "express-rate-limit": "8.7.0",
     "pg": "8.23.0",
-    "undici": "8.10.2",
     "winston": "3.19.0"
   },
   "devDependencies": {
