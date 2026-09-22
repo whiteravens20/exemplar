@@ -28,7 +28,9 @@ const config: PoolConfig = {
 };
 
 if (process.env.DB_SSL === 'true') {
-  config.ssl = { rejectUnauthorized: false };
+  config.ssl = {
+    rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false',
+  };
 }
 
 const pool = new Pool(config);
