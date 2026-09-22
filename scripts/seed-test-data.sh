@@ -5,7 +5,9 @@ set -e
 
 # Source .env if it exists
 if [ -f .env ]; then
-  export $(cat .env | grep -v '^#' | xargs)
+  set -a
+  . ./.env
+  set +a
 fi
 
 # Database configuration
