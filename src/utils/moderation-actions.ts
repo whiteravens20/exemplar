@@ -350,7 +350,7 @@ export async function applyBan(
     [{ name: 'Czas trwania', value: 'Permanentny' }]
   );
   try {
-    await target.ban({ reason, deleteMessageDays: 0 });
+    await target.ban({ reason });
   } catch (error) {
     logger.error('Ban failed', { targetId: target.id, error: (error as Error).message });
     return {
