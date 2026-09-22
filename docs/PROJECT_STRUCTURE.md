@@ -220,6 +220,7 @@ npm run migrate:up    # Run database migrations
 npm run migrate:down  # Rollback last migration
 npm run db:seed       # Seed test data
 npm run lint          # Run ESLint + typescript-eslint
+npm run lint:fix      # Same, applying auto-fixes
 npm run release-package # Create release package
 ```
 

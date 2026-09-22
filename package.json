@@ -14,7 +14,8 @@
     "test:all": "vitest run",
     "test:watch": "vitest",
     "release-package": "bash scripts/create-release-package.sh",
-    "lint": "eslint src --fix",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "migrate:up": "node dist/scripts/migrate.js up",
     "migrate:down": "node dist/scripts/migrate.js down",
     "db:seed": "bash scripts/seed-test-data.sh"

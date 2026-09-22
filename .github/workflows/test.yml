@@ -42,7 +42,7 @@ jobs:
         run: npm ci --ignore-scripts
 
       - name: Run linting
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Run all tests
         run: npm run test:all
@@ -72,5 +72,5 @@ jobs:
           echo "✅ Environment variables configured"
 
       - name: Package.json validation
-        run: |
-          npm ls --depth=0 2>&1 | grep -q "ERR!" && (echo "❌ Package.json has issues" && exit 1) || echo "✅ Package.json OK"
+        # Exits non-zero on missing, invalid or extraneous packages.
+        run: npm ls --depth=0
