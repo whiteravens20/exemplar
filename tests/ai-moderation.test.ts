@@ -59,6 +59,11 @@ describe('validateVerdict', () => {
     ).toEqual({ action: 'warn', reason: 'spam' });
   });
 
+  it('caps the reason at the Discord audit-log limit', () => {
+    const verdict = validateVerdict({ action: 'warn', reason: 'x'.repeat(600) });
+    expect(verdict?.reason).toHaveLength(512);
+  });
+
   it('accepts timeout with parseable duration', () => {
     expect(
       validateVerdict({ action: 'timeout', duration: '10m', reason: 'flood' })

@@ -37,6 +37,8 @@ import type { ModerationSeverity } from '../types/database.js';
 
 const ACTOR_LABEL = 'AI moderation';
 const RECENT_WARNINGS_LIMIT = 5;
+// Discord caps audit-log reasons at 512 characters.
+const MAX_REASON_LENGTH = 512;
 // Upper bound on message length forwarded to n8n. Discord's own 2 000-char
 // guild limit keeps real messages well under this, so the cap is a defensive
 // guard (and self-documenting intent) against any future path that bypasses
@@ -173,7 +175,8 @@ export function validateVerdict(raw: unknown): ModerationVerdict | null {
     return null;
   }
   const verdict: ModerationVerdict = { action };
-  if (typeof v.reason === 'string') verdict.reason = v.reason;
+  if (typeof v.reason === 'string')
+    verdict.reason = v.reason.slice(0, MAX_REASON_LENGTH);
   if (typeof v.duration === 'string') verdict.duration = v.duration;
   if (typeof v.rule === 'string') verdict.rule = v.rule;
   if (action === 'timeout') {

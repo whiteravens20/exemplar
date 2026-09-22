@@ -27,6 +27,7 @@ const command: SlashCommand = {
         option
           .setName('reason')
           .setDescription('Powód ostrzeżenia')
+          .setMaxLength(512)
           .setRequired(true)
       )
   ),
