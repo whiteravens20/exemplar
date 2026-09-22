@@ -73,7 +73,10 @@ const command: SlashCommand = {
     if (!result.success || !result.data?.response) {
       const status = result.status;
       let errorMessage: string;
-      if (!result.success && !status) {
+      // A timeout carries no status, so it has to be checked first.
+      if (result.error?.includes('timeout')) {
+        errorMessage = getTemplate('error', 'timeout');
+      } else if (!result.success && !status) {
         errorMessage = getTemplate('error', 'n8nDown');
       } else if (status === 404) {
         errorMessage = getTemplate('error', 'notFound');
@@ -82,8 +85,6 @@ const command: SlashCommand = {
           '🔒 Błąd uwierzytelnienia backendu. Sprawdź konfigurację klucza API.';
       } else if (status && status >= 500) {
         errorMessage = getTemplate('error', 'n8nDown');
-      } else if (result.error?.includes('timeout')) {
-        errorMessage = getTemplate('error', 'timeout');
       } else {
         errorMessage = getTemplate('error', 'processing');
       }
