@@ -22,14 +22,15 @@ COPY tsconfig.json ./
 # --ignore-scripts blocks postinstall malware vectors
 RUN npm ci --ignore-scripts
 
-# Copy source files
+# Copy source files and the build helper that copies the dashboard's static assets
 COPY src/ ./src/
+COPY scripts/copy-dashboard-assets.mjs ./scripts/
 
-# Build TypeScript
-RUN npx tsc
+# Build TypeScript and copy the dashboard assets into dist/
+RUN npm run build
 
 # Remove dev dependencies
-RUN npm prune --production --ignore-scripts
+RUN npm prune --omit=dev --ignore-scripts
 
 # Runtime stage
 FROM node:22-alpine
