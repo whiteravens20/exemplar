@@ -42,6 +42,11 @@ class N8NClient {
   }
 
   private isRetryableError(error: AxiosError): boolean {
+    // A request that timed out has most likely reached n8n and is still being
+    // processed; resending it would run the workflow (and the LLM) twice.
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      return false;
+    }
     if (!error.response) {
       return true;
     }
