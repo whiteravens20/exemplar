@@ -34,12 +34,13 @@ class DatabaseConnection {
 
     this.pool = new Pool(poolConfig);
 
+    // Emitted when an idle client loses its connection. The pool drops that
+    // client and opens a new one on demand, so availability is unaffected.
     this.pool.on('error', (err) => {
       logger.error('Unexpected database pool error', {
         error: err.message,
         stack: err.stack,
       });
-      this.isConnected = false;
     });
 
     await this.testConnection();
