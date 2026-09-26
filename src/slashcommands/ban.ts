@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
 import { applyBan } from '../utils/moderation-actions.js';
+import { t } from '../utils/i18n.js';
 import {
   withAppAvailability,
   resolveModerationContext,
@@ -16,15 +17,18 @@ const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('ban')
-      .setDescription('Banuje użytkownika na skonfigurowanym serwerze')
+      .setDescription(t('commands.ban.description'))
       .addUserOption((option) =>
         option
           .setName('user')
-          .setDescription('Użytkownik do zbanowania')
+          .setDescription(t('commands.ban.options.user'))
           .setRequired(true)
       )
       .addStringOption((option) =>
-        option.setName('reason').setDescription('Powód bana').setMaxLength(512)
+        option
+          .setName('reason')
+          .setDescription(t('commands.ban.options.reason'))
+          .setMaxLength(512)
       )
   ),
 
@@ -38,7 +42,7 @@ const command: SlashCommand = {
       return;
     }
 
-    const reason = interaction.options.getString('reason') ?? 'Nie podano powodu';
+    const reason = interaction.options.getString('reason') ?? t('moderation.noReason');
     const result = await applyBan(
       ctx.targetMember,
       reason,
@@ -49,7 +53,7 @@ const command: SlashCommand = {
       await interaction.reply({ embeds: [result.embed] });
     } else {
       await interaction.reply({
-        content: result.content ?? '❌ Operacja nie powiodła się.',
+        content: result.content ?? t('errors.operationFailed'),
         flags: MessageFlags.Ephemeral,
       });
     }

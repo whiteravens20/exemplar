@@ -29,10 +29,52 @@ async function api(path) {
   return res.json();
 }
 
+// ── Texts ────────────────────────────────────────────────────────────────────
+// The server sends the dashboard group of the locale files, in the bot's
+// language with English for any key it lacks. Plural keys keep their suffix.
+let lang = 'en';
+let strings = {};
+
+async function loadStrings() {
+  try {
+    const res = await fetch('/api/i18n', { credentials: 'same-origin', headers: { accept: 'application/json' } });
+    if (!res.ok) return;
+    const data = await res.json();
+    lang = data.language.replace(/_/g, '-');
+    strings = data.strings;
+  } catch { /* the page then shows the keys */ }
+}
+
+// `{{name}}` takes vars.name; vars.count also picks the plural form.
+function t(key, vars = {}) {
+  const plural = typeof vars.count === 'number'
+    ? strings[key + '_' + new Intl.PluralRules(lang).select(vars.count)] ?? strings[key + '_other']
+    : undefined;
+  const text = plural ?? strings[key] ?? key;
+  return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, name) => (name in vars ? String(vars[name]) : match));
+}
+
+// Display name of a stored value (event type, severity, source, action).
+function label(group, value) {
+  return strings[group + '.' + value] ?? value;
+}
+
+function translatePage() {
+  document.documentElement.lang = lang;
+  document.title = t('title');
+  document.querySelectorAll('[data-i18n]').forEach((node) => {
+    const count = node.dataset.i18nCount;
+    node.textContent = t(node.dataset.i18n, count ? { count: Number(count) } : {});
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+    node.placeholder = t(node.dataset.i18nPlaceholder);
+  });
+}
+
 function fmtTime(iso) {
   if (!iso) return '';
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? String(iso) : d.toLocaleString();
+  return Number.isNaN(d.getTime()) ? String(iso) : d.toLocaleString(lang);
 }
 
 // ── View routing ─────────────────────────────────────────────────────────────
@@ -42,7 +84,7 @@ function showLogin() {
   $('#app-view').classList.add('hidden');
 }
 function showDenied(username) {
-  $('#denied-user').textContent = username || 'unknown';
+  $('#denied-text').textContent = t('denied.body', { user: username || t('denied.unknownUser') });
   $('#denied-view').classList.remove('hidden');
   $('#login-view').classList.add('hidden');
   $('#app-view').classList.add('hidden');
@@ -51,13 +93,13 @@ function showApp(me) {
   $('#app-view').classList.remove('hidden');
   $('#login-view').classList.add('hidden');
   $('#denied-view').classList.add('hidden');
-  $('#whoami').textContent = me.username + (me.isAdmin ? ' (admin)' : '');
+  $('#whoami').textContent = me.isAdmin ? t('whoamiAdmin', { user: me.username }) : me.username;
 }
 
 const tabs = ['overview', 'logs', 'user', 'feedback', 'config'];
 function selectTab(name) {
-  for (const t of tabs) {
-    $('#tab-' + t).classList.toggle('hidden', t !== name);
+  for (const tab of tabs) {
+    $('#tab-' + tab).classList.toggle('hidden', tab !== name);
   }
   document.querySelectorAll('.nav-item').forEach((b) => {
     b.classList.toggle('active', b.dataset.tab === name);
@@ -69,17 +111,18 @@ function selectTab(name) {
 }
 
 // ── Overview ─────────────────────────────────────────────────────────────────
-function barChart(container, data, accentByKey) {
+// `group` names the labels for the keys; `colors` sets bar colours by key.
+function barChart(container, data, { group, colors } = {}) {
   clear(container);
   const entries = Object.entries(data);
-  if (!entries.length) { container.appendChild(el('p', { class: 'muted', text: 'No data.' })); return; }
+  if (!entries.length) { container.appendChild(el('p', { class: 'muted', text: t('noData') })); return; }
   const max = Math.max(...entries.map(([, v]) => v), 1);
   for (const [key, value] of entries.sort((a, b) => b[1] - a[1])) {
     const fill = el('div', { class: 'bar-fill' });
     fill.style.width = Math.round((value / max) * 100) + '%';
-    if (accentByKey && accentByKey[key]) fill.style.background = accentByKey[key];
+    if (colors && colors[key]) fill.style.background = colors[key];
     container.appendChild(el('div', { class: 'bar-row' },
-      el('div', { class: 'bar-label', text: key }),
+      el('div', { class: 'bar-label', text: group ? label(group, key) : key }),
       el('div', { class: 'bar-track' }, fill),
       el('div', { class: 'bar-value', text: String(value) })
     ));
@@ -99,17 +142,17 @@ async function loadOverview() {
   const totalAi = stats.byActorType.ai || 0;
   const totalHuman = stats.byActorType.human || 0;
   const flags = stats.byType.ai_flag || 0;
-  const card = (num, label) => el('div', { class: 'stat-card' },
+  const card = (num, caption) => el('div', { class: 'stat-card' },
     el('div', { class: 'num', text: String(num) }),
-    el('div', { class: 'label', text: label }));
-  cards.appendChild(card(stats.total, 'Total events'));
-  cards.appendChild(card(flags, 'AI flags'));
-  cards.appendChild(card(totalHuman, 'Human actions'));
-  cards.appendChild(card(totalAi, 'AI actions'));
+    el('div', { class: 'label', text: caption }));
+  cards.appendChild(card(stats.total, t('overview.totalEvents')));
+  cards.appendChild(card(flags, t('overview.aiFlags')));
+  cards.appendChild(card(totalHuman, t('overview.humanActions')));
+  cards.appendChild(card(totalAi, t('overview.aiActions')));
 
-  barChart($('#chart-type'), stats.byType);
-  barChart($('#chart-severity'), stats.bySeverity, SEV_COLORS);
-  barChart($('#chart-actor'), stats.byActorType);
+  barChart($('#chart-type'), stats.byType, { group: 'eventTypes' });
+  barChart($('#chart-severity'), stats.bySeverity, { group: 'severities', colors: SEV_COLORS });
+  barChart($('#chart-actor'), stats.byActorType, { group: 'actorTypes' });
 
   const daily = {};
   for (const d of stats.daily) daily[d.day] = d.count;
@@ -117,15 +160,15 @@ async function loadOverview() {
 
   const top = $('#top-targets');
   clear(top);
-  if (!stats.topTargets.length) { top.appendChild(el('p', { class: 'muted', text: 'No data.' })); }
-  for (const t of stats.topTargets) {
+  if (!stats.topTargets.length) { top.appendChild(el('p', { class: 'muted', text: t('noData') })); }
+  for (const target of stats.topTargets) {
     top.appendChild(el('div', { class: 'bar-row' },
-      el('div', { class: 'bar-label', text: t.username || t.userId }),
+      el('div', { class: 'bar-label', text: target.username || target.userId }),
       el('div', { class: 'bar-track' }, el('div', { class: 'bar-fill' })),
-      el('div', { class: 'bar-value', text: String(t.count) })));
+      el('div', { class: 'bar-value', text: String(target.count) })));
   }
   // size the top-target bars
-  const tmax = Math.max(...stats.topTargets.map((t) => t.count), 1);
+  const tmax = Math.max(...stats.topTargets.map((target) => target.count), 1);
   top.querySelectorAll('.bar-row').forEach((row, i) => {
     const fill = row.querySelector('.bar-fill');
     if (fill) fill.style.width = Math.round((stats.topTargets[i].count / tmax) * 100) + '%';
@@ -150,25 +193,26 @@ function filterParams() {
   return p;
 }
 
-function sevBadge(sev) { return el('span', { class: 'badge sev-' + sev, text: sev }); }
-function srcBadge(src) { return el('span', { class: 'badge src-' + src, text: src }); }
+function sevBadge(sev) { return el('span', { class: 'badge sev-' + sev, text: label('severities', sev) }); }
+function srcBadge(src) { return el('span', { class: 'badge src-' + src, text: label('actorTypes', src) }); }
+function actionText(action) { return action ? label('actions', action) : '—'; }
 
 async function loadLogs() {
   let page;
   try { page = await api('/api/logs?' + filterParams().toString()); }
   catch { return; }
 
-  $('#logs-meta').textContent = page.rows.length + ' shown · ' + page.total + ' total match';
+  $('#logs-meta').textContent = t('logs.meta', { shown: page.rows.length, total: page.total });
   const tbody = $('#logs-table').querySelector('tbody');
   clear(tbody);
   for (const r of page.rows) {
     const tr = el('tr', { onclick: () => openDrawer(r.id) },
       el('td', { text: fmtTime(r.created_at) }),
-      el('td', { text: r.event_type }),
+      el('td', { text: label('eventTypes', r.event_type) }),
       el('td', {}, sevBadge(r.severity)),
       el('td', {}, srcBadge(r.actor_type)),
       el('td', { text: r.target_username || r.target_user_id || '—' }),
-      el('td', { text: r.action || '—' }),
+      el('td', { text: actionText(r.action) }),
       el('td', { class: 'wrap', text: r.reason || '' }));
     tbody.appendChild(tr);
   }
@@ -181,10 +225,10 @@ function startLogsPolling() {
 function stopLogsPolling() { if (logsTimer) { clearInterval(logsTimer); logsTimer = null; } }
 
 // ── Detail drawer ────────────────────────────────────────────────────────────
-function field(label, value) {
+function field(caption, value) {
   if (value == null || value === '') return null;
   return el('div', { class: 'field' },
-    el('div', { class: 'field-label', text: label }),
+    el('div', { class: 'field-label', text: caption }),
     el('div', { text: String(value) }));
 }
 
@@ -194,18 +238,18 @@ async function openDrawer(id) {
   catch { return; }
   const body = $('#drawer-body');
   clear(body);
-  body.appendChild(el('h3', { text: r.event_type + ' · ' + r.severity }));
-  body.appendChild(field('Time', fmtTime(r.created_at)));
-  body.appendChild(field('Source', r.actor_type));
-  body.appendChild(field('Moderator', r.actor_label));
-  body.appendChild(field('Target', (r.target_username || '') + (r.target_user_id ? ' (' + r.target_user_id + ')' : '')));
-  body.appendChild(field('Channel', r.channel_id));
-  body.appendChild(field('Action', r.action));
-  body.appendChild(field('Reason', r.reason));
-  if (r.ai_reasoning) body.appendChild(field('AI reasoning', r.ai_reasoning));
-  if (r.ai_rule) body.appendChild(field('Triggered rule', r.ai_rule));
+  body.appendChild(el('h3', { text: label('eventTypes', r.event_type) + ' · ' + label('severities', r.severity) }));
+  body.appendChild(field(t('columns.time'), fmtTime(r.created_at)));
+  body.appendChild(field(t('columns.source'), r.actor_type && label('actorTypes', r.actor_type)));
+  body.appendChild(field(t('drawer.moderator'), r.actor_label));
+  body.appendChild(field(t('drawer.target'), (r.target_username || '') + (r.target_user_id ? ' (' + r.target_user_id + ')' : '')));
+  body.appendChild(field(t('drawer.channel'), r.channel_id));
+  body.appendChild(field(t('columns.action'), r.action && label('actions', r.action)));
+  body.appendChild(field(t('columns.reason'), r.reason));
+  if (r.ai_reasoning) body.appendChild(field(t('drawer.aiReasoning'), r.ai_reasoning));
+  if (r.ai_rule) body.appendChild(field(t('drawer.rule'), r.ai_rule));
   if (r.metadata && Object.keys(r.metadata).length) {
-    const f = el('div', { class: 'field' }, el('div', { class: 'field-label', text: 'Metadata' }));
+    const f = el('div', { class: 'field' }, el('div', { class: 'field-label', text: t('drawer.metadata') }));
     f.appendChild(el('pre', { text: JSON.stringify(r.metadata, null, 2) }));
     body.appendChild(f);
   }
@@ -218,25 +262,25 @@ async function lookupUser(userId) {
   clear(out);
   let data;
   try { data = await api('/api/users/' + encodeURIComponent(userId)); }
-  catch (e) { out.appendChild(el('p', { class: 'muted', text: 'Lookup failed: ' + e.message })); return; }
+  catch (e) { out.appendChild(el('p', { class: 'muted', text: t('user.lookupFailed', { error: e.message }) })); return; }
 
   const status = el('div', { class: 'status-row' });
-  status.appendChild(el('span', { class: 'badge ' + (data.banned ? 'badge-danger' : 'badge-ok'), text: data.banned ? 'Banned' : 'Not banned' }));
-  status.appendChild(el('span', { class: 'badge ' + (data.muted ? 'badge-warn' : 'badge-ok'), text: data.muted ? 'Muted' : 'Not muted' }));
-  status.appendChild(el('span', { class: 'badge ' + (data.activeWarnings > 0 ? 'badge-warn' : 'badge-ok'), text: data.activeWarnings + ' active warning(s)' }));
+  status.appendChild(el('span', { class: 'badge ' + (data.banned ? 'badge-danger' : 'badge-ok'), text: data.banned ? t('user.banned') : t('user.notBanned') }));
+  status.appendChild(el('span', { class: 'badge ' + (data.muted ? 'badge-warn' : 'badge-ok'), text: data.muted ? t('user.muted') : t('user.notMuted') }));
+  status.appendChild(el('span', { class: 'badge ' + (data.activeWarnings > 0 ? 'badge-warn' : 'badge-ok'), text: t('user.activeWarnings', { count: data.activeWarnings }) }));
   out.appendChild(el('div', { class: 'card' },
     el('h3', { text: (data.username || userId) }),
     status,
     el('dl', { class: 'kv' },
-      el('dt', { text: 'User ID' }), el('dd', { text: data.userId }),
-      el('dt', { text: 'Ban reason' }), el('dd', { text: data.banReason || '—' }),
-      el('dt', { text: 'Muted until' }), el('dd', { text: data.mutedUntil ? fmtTime(data.mutedUntil) : '—' }))));
+      el('dt', { text: t('user.userId') }), el('dd', { text: data.userId }),
+      el('dt', { text: t('user.banReason') }), el('dd', { text: data.banReason || '—' }),
+      el('dt', { text: t('user.mutedUntil') }), el('dd', { text: data.mutedUntil ? fmtTime(data.mutedUntil) : '—' }))));
 
   // Active warnings
-  const wcard = el('div', { class: 'card' }, el('h3', { text: 'Active warnings' }));
-  if (!data.warnings.length) wcard.appendChild(el('p', { class: 'muted', text: 'None.' }));
+  const wcard = el('div', { class: 'card' }, el('h3', { text: t('user.warningsTitle') }));
+  if (!data.warnings.length) wcard.appendChild(el('p', { class: 'muted', text: t('none') }));
   else {
-    const t = el('table', {}, el('thead', {}, el('tr', {}, el('th', { text: 'Issued' }), el('th', { text: 'Expires' }), el('th', { text: 'By' }), el('th', { text: 'Reason' }))));
+    const table = el('table', {}, el('thead', {}, el('tr', {}, el('th', { text: t('columns.issued') }), el('th', { text: t('columns.expires') }), el('th', { text: t('columns.by') }), el('th', { text: t('columns.reason') }))));
     const tb = el('tbody');
     for (const w of data.warnings) {
       tb.appendChild(el('tr', {},
@@ -245,27 +289,27 @@ async function lookupUser(userId) {
         el('td', { text: w.issuedBy }),
         el('td', { class: 'wrap', text: w.reason })));
     }
-    t.appendChild(tb);
-    wcard.appendChild(el('div', { class: 'table-wrap' }, t));
+    table.appendChild(tb);
+    wcard.appendChild(el('div', { class: 'table-wrap' }, table));
   }
   out.appendChild(wcard);
 
   // Recent events
-  const ecard = el('div', { class: 'card' }, el('h3', { text: 'Recent events' }));
-  if (!data.recentEvents.length) ecard.appendChild(el('p', { class: 'muted', text: 'None.' }));
+  const ecard = el('div', { class: 'card' }, el('h3', { text: t('user.eventsTitle') }));
+  if (!data.recentEvents.length) ecard.appendChild(el('p', { class: 'muted', text: t('none') }));
   else {
-    const t = el('table', {}, el('thead', {}, el('tr', {}, el('th', { text: 'Time' }), el('th', { text: 'Type' }), el('th', { text: 'Severity' }), el('th', { text: 'Action' }), el('th', { text: 'Reason' }))));
+    const table = el('table', {}, el('thead', {}, el('tr', {}, el('th', { text: t('columns.time') }), el('th', { text: t('columns.type') }), el('th', { text: t('columns.severity') }), el('th', { text: t('columns.action') }), el('th', { text: t('columns.reason') }))));
     const tb = el('tbody');
     for (const r of data.recentEvents) {
       tb.appendChild(el('tr', { onclick: () => openDrawer(r.id) },
         el('td', { text: fmtTime(r.created_at) }),
-        el('td', { text: r.event_type }),
+        el('td', { text: label('eventTypes', r.event_type) }),
         el('td', {}, sevBadge(r.severity)),
-        el('td', { text: r.action || '—' }),
+        el('td', { text: actionText(r.action) }),
         el('td', { class: 'wrap', text: r.reason || '' })));
     }
-    t.appendChild(tb);
-    ecard.appendChild(el('div', { class: 'table-wrap' }, t));
+    table.appendChild(tb);
+    ecard.appendChild(el('div', { class: 'table-wrap' }, table));
   }
   out.appendChild(ecard);
 }
@@ -279,8 +323,8 @@ async function loadFeedback() {
   catch { return; }
   if (!data.items || !data.items.length) {
     feed.appendChild(el('div', { class: 'empty' },
-      el('p', { text: 'No feedback yet.' }),
-      el('p', { class: 'muted', text: 'User feedback collection ships with the Feedback & Rating System (issue #17). Submissions will appear here as posts.' })));
+      el('p', { text: t('feedback.empty') }),
+      el('p', { class: 'muted', text: t('feedback.emptyHint') })));
     return;
   }
   for (const item of data.items) {
@@ -289,7 +333,7 @@ async function loadFeedback() {
       el('div', { class: 'post-head' },
         el('div', { class: 'post-avatar' }),
         el('div', {},
-          el('div', { class: 'post-name', text: item.username || item.userId || 'User' }),
+          el('div', { class: 'post-name', text: item.username || item.userId || t('feedback.anonymous') }),
           el('div', { class: 'post-meta', text: fmtTime(item.createdAt) }))),
       el('div', { class: 'stars', text: stars }),
       el('p', { text: item.comment || '' })));
@@ -352,6 +396,8 @@ function bind() {
 
 async function init() {
   bind();
+  await loadStrings();
+  translatePage();
   let me;
   try { me = await api('/api/me'); }
   catch { showLogin(); return; }

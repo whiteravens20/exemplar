@@ -8,17 +8,18 @@ import logger from '../utils/logger.js';
 import db from '../db/connection.js';
 import analyticsRepo from '../db/repositories/analytics-repository.js';
 import { formatStatsEmbed, type StatsData } from '../utils/stats-embed.js';
+import { t } from '../utils/i18n.js';
 import { withAppAvailability, getDmAccess } from './shared.js';
 
 const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('stats')
-      .setDescription('Pokazuje statystyki użycia bota (tylko administratorzy)')
+      .setDescription(t('commands.stats.description'))
       .addIntegerOption((option) =>
         option
           .setName('days')
-          .setDescription('Liczba dni do uwzględnienia (1-90, domyślnie 7)')
+          .setDescription(t('commands.stats.options.days'))
           .setMinValue(1)
           .setMaxValue(90)
       )
@@ -28,8 +29,7 @@ const command: SlashCommand = {
     const access = await getDmAccess(interaction);
     if (!access.isAdmin) {
       await interaction.reply({
-        content:
-          '❌ Nie masz uprawnień do użycia tej komendy. Wymagane: Administrator lub Moderator.',
+        content: t('errors.adminOnly'),
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -37,7 +37,7 @@ const command: SlashCommand = {
 
     if (!db.isAvailable()) {
       await interaction.reply({
-        content: '❌ Baza danych niedostępna. Nie można pobrać statystyk.',
+        content: t('commands.stats.databaseUnavailable'),
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -47,7 +47,7 @@ const command: SlashCommand = {
     const stats = await analyticsRepo.getGlobalStats(days);
     if (!stats) {
       await interaction.reply({
-        content: '❌ Nie udało się pobrać statystyk. Spróbuj ponownie później.',
+        content: t('commands.stats.fetchFailed'),
         flags: MessageFlags.Ephemeral,
       });
       return;

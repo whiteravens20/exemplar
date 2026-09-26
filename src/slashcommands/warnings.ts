@@ -10,6 +10,7 @@ import logger from '../utils/logger.js';
 import db from '../db/connection.js';
 import warningRepo from '../db/repositories/warning-repository.js';
 import analyticsRepo from '../db/repositories/analytics-repository.js';
+import { t } from '../utils/i18n.js';
 import type { Warning } from '../types/database.js';
 import { withAppAvailability, getDmAccess } from './shared.js';
 
@@ -17,11 +18,11 @@ const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('warnings')
-      .setDescription('Pokazuje aktywne ostrzeżenia (Twoje lub — dla adminów — wybranego użytkownika)')
+      .setDescription(t('commands.warnings.description'))
       .addUserOption((option) =>
         option
           .setName('user')
-          .setDescription('Użytkownik do sprawdzenia (tylko dla administratorów)')
+          .setDescription(t('commands.warnings.options.user'))
       )
   ),
 
@@ -37,7 +38,7 @@ const command: SlashCommand = {
 
     if (!db.isAvailable()) {
       await interaction.reply({
-        content: '❌ Baza danych niedostępna. Nie można pobrać ostrzeżeń.',
+        content: t('commands.warnings.databaseUnavailable'),
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -52,25 +53,25 @@ const command: SlashCommand = {
 
     if (access.isAdmin && !targetUser) {
       warnings = await warningRepo.getAllWarnings(false);
-      title = '⚠️ Wszystkie Aktywne Ostrzeżenia';
+      title = t('commands.warnings.all.title');
       description =
         warnings.length > 0
-          ? `Znaleziono **${warnings.length}** aktywnych ostrzeżeń.`
-          : 'Brak aktywnych ostrzeżeń w systemie.';
+          ? t('commands.warnings.all.count', { count: warnings.length })
+          : t('commands.warnings.all.none');
     } else if (targetUser) {
       warnings = await warningRepo.getWarningHistory(targetUser.id, false);
-      title = `⚠️ Ostrzeżenia: ${targetUser.username}`;
+      title = t('commands.warnings.user.title', { user: targetUser.username });
       description =
         warnings.length > 0
-          ? `Użytkownik ma **${warnings.length}** aktywnych ostrzeżeń.`
-          : 'Użytkownik nie ma aktywnych ostrzeżeń.';
+          ? t('commands.warnings.user.count', { count: warnings.length })
+          : t('commands.warnings.user.none');
     } else {
       warnings = await warningRepo.getWarningHistory(interaction.user.id, false);
-      title = '⚠️ Twoje Ostrzeżenia';
+      title = t('commands.warnings.own.title');
       description =
         warnings.length > 0
-          ? `Masz **${warnings.length}** aktywnych ostrzeżeń.`
-          : 'Nie masz aktywnych ostrzeżeń! ✅';
+          ? t('commands.warnings.own.count', { count: warnings.length })
+          : t('commands.warnings.own.none');
     }
 
     await analyticsRepo
@@ -100,18 +101,27 @@ const command: SlashCommand = {
       const fieldName =
         access.isAdmin && !targetUser
           ? `${warning.username || warning.user_discord_id}`
-          : `Ostrzeżenie ${index + 1}`;
+          : t('commands.warnings.entryTitle', { number: index + 1 });
 
-      let fieldValue = `**Powód:** ${warning.reason}\n**Wydano:** ${issuedAt.toLocaleDateString('pl-PL')}\n**Wygasa za:** ${daysLeft} dni`;
+      const lines = [
+        t('commands.warnings.reason', { reason: warning.reason }),
+        t('commands.warnings.issued', { date: issuedAt }),
+        t('commands.warnings.expiresIn', { count: daysLeft }),
+      ];
       if (access.isAdmin && warning.issued_by_username) {
-        fieldValue += `\n**Wydane przez:** ${warning.issued_by_username}`;
+        lines.push(
+          t('commands.warnings.issuedBy', { moderator: warning.issued_by_username })
+        );
       }
+      const fieldValue = lines.join('\n');
 
       embed.addFields({ name: fieldName, value: fieldValue, inline: false });
     }
 
     if (warnings.length > 25) {
-      embed.setFooter({ text: `Pokazano 25 z ${warnings.length} ostrzeżeń` });
+      embed.setFooter({
+        text: t('commands.warnings.footer', { shown: 25, total: warnings.length }),
+      });
     }
 
     await interaction.reply({ embeds: [embed] });

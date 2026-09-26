@@ -1,0 +1,457 @@
+{
+  "presence": {
+    "helpInDm": "DM /help dla komend",
+    "discordMessages": "obserwuję wiadomości Discord",
+    "aiChatInDm": "DM dla czatu z AI",
+    "serverActivity": "sprawdzam aktywność serwera",
+    "imperium": "monitoruję wiadomości w Imperium"
+  },
+  "bot": {
+    "mentionResponse": "Cześć! Jestem asystentem AI. Wyślij mi wiadomość prywatną, aby ze mną porozmawiać.",
+    "restrictedResponse": "Nie masz uprawnień do użycia tej funkcji. Skontaktuj się z administratorami."
+  },
+  "errors": {
+    "commandFailed": "❌ Wystąpił błąd podczas wykonywania tej komendy!",
+    "operationFailed": "❌ Operacja nie powiodła się.",
+    "missingPermission": "❌ Nie masz wymaganych uprawnień do użycia tej komendy.",
+    "adminOnly": "❌ Nie masz uprawnień do użycia tej komendy. Wymagane: Administrator lub Moderator.",
+    "guildUnavailable": "❌ Skonfigurowany serwer jest obecnie niedostępny.",
+    "notAMember": "❌ Nie jesteś członkiem skonfigurowanego serwera.",
+    "targetNotAMember": "❌ Ten użytkownik nie jest członkiem serwera."
+  },
+  "assistant": {
+    "rateLimited_one": "⏳ Przekroczono limit wiadomości. Poczekaj {{count}} sekundę przed wysłaniem kolejnej wiadomości.",
+    "rateLimited_few": "⏳ Przekroczono limit wiadomości. Poczekaj {{count}} sekundy przed wysłaniem kolejnej wiadomości.",
+    "rateLimited_many": "⏳ Przekroczono limit wiadomości. Poczekaj {{count}} sekund przed wysłaniem kolejnej wiadomości.",
+    "rateLimited_other": "⏳ Przekroczono limit wiadomości. Poczekaj {{count}} sekundy przed wysłaniem kolejnej wiadomości.",
+    "tooLong_one": "❌ Wiadomość za długa. Maksymalna długość to {{count}} znak.",
+    "tooLong_few": "❌ Wiadomość za długa. Maksymalna długość to {{count}} znaki.",
+    "tooLong_many": "❌ Wiadomość za długa. Maksymalna długość to {{count}} znaków.",
+    "tooLong_other": "❌ Wiadomość za długa. Maksymalna długość to {{count}} znaku.",
+    "empty": "❌ Otrzymano pustą wiadomość.",
+    "useCommandMenu": "Aby użyć komendy `/{{command}}`, wybierz ją z menu komend Discorda (wpisz `/` i kliknij ją na liście) — wpisana ręcznie jako zwykła wiadomość nie zostanie wykonana.",
+    "errors": {
+      "processing": "❌ Błąd w przetwarzaniu wiadomości. Spróbuj ponownie później.",
+      "unavailable": "⚠️ Backend jest chwilowo niedostępny. Spróbuj ponownie za moment.",
+      "timeout": "⏱️ Przekroczono czas oczekiwania. Przetwarzanie trwało zbyt długo.",
+      "notFound": "⚠️ Nie znaleziono workflow w backendzie. Sprawdź konfigurację.",
+      "auth": "🔒 Błąd uwierzytelnienia backendu. Sprawdź konfigurację klucza API.",
+      "generic": "💥 Coś poszło nie tak! Spróbuj ponownie lub skontaktuj się z supportem.",
+      "missingResponse": "❌ Błąd konfiguracji n8n workflow. Brak pola \"response\" w odpowiedzi. Sprawdź konfigurację workflow."
+    }
+  },
+  "commands": {
+    "ban": {
+      "description": "Banuje użytkownika na skonfigurowanym serwerze",
+      "options": {
+        "user": "Użytkownik do zbanowania",
+        "reason": "Powód bana"
+      }
+    },
+    "code": {
+      "description": "Wysyła zapytanie do AI w trybie programistycznym",
+      "options": {
+        "message": "Treść zapytania programistycznego"
+      },
+      "empty": "❌ Podaj treść zapytania."
+    },
+    "flushdb": {
+      "description": "Czyści bazę danych — konwersacje, rate limity, statystyki (admin)",
+      "options": {
+        "confirm": "Ustaw na true, aby potwierdzić tę nieodwracalną operację"
+      },
+      "databaseUnavailable": "❌ Baza danych niedostępna. Nie można wykonać operacji.",
+      "confirmPrompt": "⚠️ **UWAGA:** Ta operacja usunie wszystkie konwersacje (bot + n8n AI Agent), rate limity i statystyki.\n\nUruchom ponownie z `confirm: true`, aby potwierdzić. Użytkownicy i ostrzeżenia zostają zachowane.",
+      "done_one": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomość konwersacji (bot + n8n AI Agent).",
+      "done_few": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomości konwersacji (bot + n8n AI Agent).",
+      "done_many": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomości konwersacji (bot + n8n AI Agent).",
+      "done_other": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomości konwersacji (bot + n8n AI Agent)."
+    },
+    "flushmemory": {
+      "description": "Czyści Twoją historię konwersacji (bot + n8n AI Agent)",
+      "done_one": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomość (bot + n8n AI Agent).",
+      "done_few": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent).",
+      "done_many": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent).",
+      "done_other": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent)."
+    },
+    "help": {
+      "description": "Pokazuje dostępne komendy i sposób korzystania z bota",
+      "title": "🤖 AI Assistant Bot - Pomoc",
+      "intro": "Witaj! Jestem botem AI. Napisz do mnie w wiadomości prywatnej, aby porozmawiać. Wszystkie komendy `/` działają w DM z botem.",
+      "usage": {
+        "name": "💬 Jak korzystać?",
+        "value": "Po prostu wyślij mi wiadomość prywatną — odpowiem z pomocą AI. Komendy `/` uruchamiasz w tym samym oknie DM."
+      },
+      "userCommands": {
+        "name": "📋 Komendy użytkownika",
+        "value": "• `/help` — ta wiadomość\n• `/rules` — regulamin serwera\n• `/code <wiadomość>` — tryb programistyczny\n• `/flushmemory` — wyczyść pamięć konwersacji\n• `/warnings` — pokaż swoje ostrzeżenia"
+      },
+      "moderationCommands": {
+        "name": "👮 Komendy moderacji (wymagane uprawnienia)",
+        "value": "• `/kick`, `/ban`, `/unban`\n• `/mute`, `/unmute`\n• `/warn` — wystaw ostrzeżenie"
+      },
+      "adminCommands": {
+        "name": "🔐 Komendy administratora",
+        "value": "• `/warnings [user]` — przegląd ostrzeżeń\n• `/stats [days]` — statystyki bota\n• `/flushdb` — wyczyść bazę danych"
+      },
+      "note": {
+        "name": "⚠️ Uwaga",
+        "value": "Komenda użyta na kanale serwera nie zostanie wykonana — bot odeśle Cię do DM."
+      }
+    },
+    "kick": {
+      "description": "Wyrzuca użytkownika ze skonfigurowanego serwera",
+      "options": {
+        "user": "Użytkownik do wyrzucenia",
+        "reason": "Powód wyrzucenia"
+      }
+    },
+    "mute": {
+      "description": "Wycisza (timeout) użytkownika na skonfigurowanym serwerze",
+      "options": {
+        "user": "Użytkownik do wyciszenia",
+        "duration": "Czas wyciszenia, np. 30s, 10m, 1h, 1d (maks. 28 dni)",
+        "reason": "Powód wyciszenia"
+      },
+      "invalidDuration": "❌ Nieprawidłowy format czasu. Użyj: `30s`, `10m`, `1h`, `1d`."
+    },
+    "rules": {
+      "description": "Pokazuje regulamin serwera",
+      "title": "📜 Regulamin serwera",
+      "notConfigured": "Regulamin nie został jeszcze skonfigurowany. Skontaktuj się z administracją serwera."
+    },
+    "stats": {
+      "description": "Pokazuje statystyki użycia bota (tylko administratorzy)",
+      "options": {
+        "days": "Liczba dni do uwzględnienia (1-90, domyślnie 7)"
+      },
+      "databaseUnavailable": "❌ Baza danych niedostępna. Nie można pobrać statystyk.",
+      "fetchFailed": "❌ Nie udało się pobrać statystyk. Spróbuj ponownie później.",
+      "embed": {
+        "title": "📊 Statystyki bota",
+        "footer_one": "Statystyki z ostatniego dnia",
+        "footer_few": "Statystyki z ostatnich {{count}} dni",
+        "footer_many": "Statystyki z ostatnich {{count}} dni",
+        "footer_other": "Statystyki z ostatnich {{count}} dnia",
+        "overview": {
+          "name": "📈 Przegląd",
+          "value": "**Wiadomości łącznie:** {{messages, number}}\n**Unikalni użytkownicy:** {{users, number}}\n**Średni czas odpowiedzi:** {{avgMs, number(maximumFractionDigits: 0)}} ms"
+        },
+        "byType": "📝 Według typu",
+        "topUsers": "👥 Najaktywniejsi użytkownicy",
+        "peakHours": "⏰ Godziny szczytu",
+        "peakHour_one": "**{{hour}}:00** - {{count}} wiadomość",
+        "peakHour_few": "**{{hour}}:00** - {{count}} wiadomości",
+        "peakHour_many": "**{{hour}}:00** - {{count}} wiadomości",
+        "peakHour_other": "**{{hour}}:00** - {{count}} wiadomości",
+        "topCommands": "🔧 Najczęstsze komendy",
+        "noData": "Brak danych"
+      }
+    },
+    "unban": {
+      "description": "Zdejmuje bana z użytkownika na skonfigurowanym serwerze",
+      "options": {
+        "userId": "ID użytkownika do odbanowania"
+      },
+      "invalidId": "❌ Nieprawidłowe ID użytkownika."
+    },
+    "unmute": {
+      "description": "Zdejmuje wyciszenie z użytkownika na skonfigurowanym serwerze",
+      "options": {
+        "user": "Użytkownik, z którego zdjąć wyciszenie"
+      }
+    },
+    "warn": {
+      "description": "Wystawia ostrzeżenie użytkownikowi (zapisywane w bazie)",
+      "options": {
+        "user": "Użytkownik do ostrzeżenia",
+        "reason": "Powód ostrzeżenia"
+      },
+      "cannotWarn": "❌ Nie możesz ostrzec tego użytkownika (hierarchia ról lub akcja na sobie/właścicielu)."
+    },
+    "warnings": {
+      "description": "Pokazuje aktywne ostrzeżenia (Twoje lub — dla adminów — wybranego użytkownika)",
+      "options": {
+        "user": "Użytkownik do sprawdzenia (tylko dla administratorów)"
+      },
+      "databaseUnavailable": "❌ Baza danych niedostępna. Nie można pobrać ostrzeżeń.",
+      "all": {
+        "title": "⚠️ Wszystkie Aktywne Ostrzeżenia",
+        "count_one": "Znaleziono **{{count}}** aktywne ostrzeżenie.",
+        "count_few": "Znaleziono **{{count}}** aktywne ostrzeżenia.",
+        "count_many": "Znaleziono **{{count}}** aktywnych ostrzeżeń.",
+        "count_other": "Znaleziono **{{count}}** aktywnego ostrzeżenia.",
+        "none": "Brak aktywnych ostrzeżeń w systemie."
+      },
+      "user": {
+        "title": "⚠️ Ostrzeżenia: {{user}}",
+        "count_one": "Użytkownik ma **{{count}}** aktywne ostrzeżenie.",
+        "count_few": "Użytkownik ma **{{count}}** aktywne ostrzeżenia.",
+        "count_many": "Użytkownik ma **{{count}}** aktywnych ostrzeżeń.",
+        "count_other": "Użytkownik ma **{{count}}** aktywnego ostrzeżenia.",
+        "none": "Użytkownik nie ma aktywnych ostrzeżeń."
+      },
+      "own": {
+        "title": "⚠️ Twoje Ostrzeżenia",
+        "count_one": "Masz **{{count}}** aktywne ostrzeżenie.",
+        "count_few": "Masz **{{count}}** aktywne ostrzeżenia.",
+        "count_many": "Masz **{{count}}** aktywnych ostrzeżeń.",
+        "count_other": "Masz **{{count}}** aktywnego ostrzeżenia.",
+        "none": "Nie masz aktywnych ostrzeżeń! ✅"
+      },
+      "entryTitle": "Ostrzeżenie {{number}}",
+      "reason": "**Powód:** {{reason}}",
+      "issued": "**Wydano:** {{date, datetime}}",
+      "expiresIn_one": "**Wygasa za:** {{count}} dzień",
+      "expiresIn_few": "**Wygasa za:** {{count}} dni",
+      "expiresIn_many": "**Wygasa za:** {{count}} dni",
+      "expiresIn_other": "**Wygasa za:** {{count}} dnia",
+      "issuedBy": "**Wydane przez:** {{moderator}}",
+      "footer": "Pokazano {{shown}} z {{total}} ostrzeżeń"
+    }
+  },
+  "moderation": {
+    "noReason": "Nie podano powodu",
+    "emptyMessage": "_(pusta wiadomość)_",
+    "aiModerator": "Moderacja AI",
+    "dmDelivered": "✅ Doręczono",
+    "dmNotDelivered": "⚠️ Nie doręczono",
+    "fields": {
+      "user": "Użytkownik",
+      "moderator": "Moderator",
+      "reason": "Powód",
+      "server": "Serwer",
+      "duration": "Czas trwania",
+      "expires": "Wygasa",
+      "channel": "Kanał",
+      "content": "Treść",
+      "dm": "DM",
+      "activeWarnings": "Aktywne ostrzeżenia"
+    },
+    "errors": {
+      "selfAction": "❌ Nie możesz wykonać tej akcji na sobie.",
+      "ownerAction": "❌ Nie możesz wykonać tej akcji na właścicielu serwera.",
+      "hierarchy": "❌ Nie możesz wykonać tej akcji na tym użytkowniku (hierarchia ról lub uprawnienia)."
+    },
+    "kick": {
+      "logTitle": "Wyrzucenie",
+      "done": "Wyrzucono",
+      "cannot": "❌ Nie mogę wyrzucić tego użytkownika.",
+      "failed": "❌ Nie udało się wyrzucić użytkownika: {{error}}",
+      "dmTitle": "👢 Zostałeś wyrzucony z serwera"
+    },
+    "ban": {
+      "logTitle": "Ban",
+      "done": "Zbanowano",
+      "cannot": "❌ Nie mogę zbanować tego użytkownika.",
+      "failed": "❌ Nie udało się zbanować użytkownika: {{error}}",
+      "dmTitle": "🚫 Zostałeś zbanowany na serwerze",
+      "permanent": "Permanentny"
+    },
+    "unban": {
+      "logTitle": "Odbanowanie",
+      "done": "Odbanowano",
+      "failed": "❌ Nie udało się odbanować użytkownika. Upewnij się, że ID jest prawidłowe."
+    },
+    "mute": {
+      "logTitle": "Wyciszenie (timeout)",
+      "done": "Wyciszono",
+      "cannot": "❌ Nie mogę wyciszyć tego użytkownika.",
+      "tooLong": "❌ Maksymalny czas wyciszenia to 28 dni.",
+      "failed": "❌ Nie udało się wyciszyć użytkownika: {{error}}",
+      "dmTitle": "🔇 Zostałeś wyciszony na serwerze"
+    },
+    "unmute": {
+      "logTitle": "Zdjęcie wyciszenia",
+      "done": "Wyciszenie zdjęte",
+      "cannot": "❌ Nie mogę wyłączyć wyciszenia tego użytkownika.",
+      "notMuted": "❌ Ten użytkownik nie jest obecnie wyciszony.",
+      "failed": "❌ Nie udało się zdjąć wyciszenia: {{error}}",
+      "auditReason": "Wyciszenie zdjęte przez moderatora"
+    },
+    "warn": {
+      "logTitle": "Ostrzeżenie",
+      "done": "Ostrzeżenie wydane",
+      "databaseUnavailable": "❌ Baza danych niedostępna. Ostrzeżenia nie mogą być zapisane.",
+      "botTarget": "❌ Nie można ostrzec bota.",
+      "saveFailed": "❌ Nie udało się zapisać ostrzeżenia.",
+      "dmTitle": "⚠️ Otrzymałeś ostrzeżenie",
+      "expiresValue": "za 30 dni",
+      "dmFooter": "Kontynuowanie niewłaściwego zachowania może skutkować dalszymi sankcjami"
+    },
+    "autoBan": {
+      "reason_one": "Automatyczny ban: {{count}} ostrzeżenie historycznie",
+      "reason_few": "Automatyczny ban: {{count}} ostrzeżenia historycznie",
+      "reason_many": "Automatyczny ban: {{count}} ostrzeżeń historycznie",
+      "reason_other": "Automatyczny ban: {{count}} ostrzeżenia historycznie",
+      "actor": "{{actor}} (automatyczny ban)",
+      "failed": "❌ Nie udało się automatycznie zbanować użytkownika: {{error}}"
+    },
+    "autoMute": {
+      "reason_one": "Automatyczne wyciszenie: {{count}} aktywne ostrzeżenie",
+      "reason_few": "Automatyczne wyciszenie: {{count}} aktywne ostrzeżenia",
+      "reason_many": "Automatyczne wyciszenie: {{count}} aktywnych ostrzeżeń",
+      "reason_other": "Automatyczne wyciszenie: {{count}} aktywnego ostrzeżenia",
+      "actor": "{{actor}} (automatyczne wyciszenie)"
+    },
+    "delete": {
+      "logTitle": "🗑️ Usunięcie wiadomości",
+      "done": "Wiadomość usunięta",
+      "notFromGuild": "❌ Wiadomość nie pochodzi z serwera.",
+      "botMessage": "❌ Nie można usunąć wiadomości bota.",
+      "failed": "❌ Nie udało się usunąć wiadomości: {{error}}",
+      "dmTitle": "🗑️ Twoja wiadomość została usunięta"
+    }
+  },
+  "aiModeration": {
+    "defaultReason": "Naruszenie wykryte przez moderację AI",
+    "shadowTitle": "🤖 [SHADOW] {{action}}",
+    "shadowFooter": "Tryb shadow — żadna akcja nie została wykonana.",
+    "noReason": "_(brak)_"
+  },
+  "dashboard": {
+    "title": "Panel moderacji",
+    "login": {
+      "intro": "Zaloguj się przez Discorda, aby przeglądać działania moderacji.",
+      "signIn": "Zaloguj się przez Discorda"
+    },
+    "denied": {
+      "title": "Brak dostępu",
+      "body": "Twoje konto Discord jest zalogowane jako {{user}}, ale nie ma dostępu do tego panelu. Poproś administratora serwera o dostęp.",
+      "unknownUser": "nieznany"
+    },
+    "signOut": "Wyloguj się",
+    "brand": "🛡️ Moderacja",
+    "whoamiAdmin": "{{user}} (admin)",
+    "nav": {
+      "overview": "Przegląd",
+      "logs": "Logi",
+      "user": "Wyszukaj użytkownika",
+      "feedback": "Opinie użytkowników",
+      "config": "Konfiguracja"
+    },
+    "overview": {
+      "title": "Przegląd",
+      "window": "Okres",
+      "last24h": "24 h",
+      "days_one": "{{count}} dzień",
+      "days_few": "{{count}} dni",
+      "days_many": "{{count}} dni",
+      "days_other": "{{count}} dnia",
+      "byType": "Zdarzenia według typu",
+      "bySeverity": "Zdarzenia według wagi",
+      "bySource": "Zdarzenia według źródła",
+      "topTargets": "Najczęściej zgłaszani użytkownicy",
+      "daily": "Aktywność (dziennie)",
+      "totalEvents": "Wszystkie zdarzenia",
+      "aiFlags": "Flagi AI",
+      "humanActions": "Akcje moderatorów",
+      "aiActions": "Akcje AI"
+    },
+    "logs": {
+      "title": "Logi",
+      "autoRefresh": "Automatyczne odświeżanie",
+      "search": "Szukaj w powodzie / uzasadnieniu / użytkowniku…",
+      "anyType": "Dowolny typ",
+      "anySeverity": "Dowolna waga",
+      "anySource": "Dowolne źródło",
+      "userId": "ID użytkownika",
+      "channelId": "ID kanału",
+      "from": "Od",
+      "to": "Do",
+      "apply": "Zastosuj",
+      "clear": "Wyczyść",
+      "meta": "Wyświetlono: {{shown}} · pasujących: {{total}}"
+    },
+    "columns": {
+      "time": "Czas",
+      "type": "Typ",
+      "severity": "Waga",
+      "source": "Źródło",
+      "user": "Użytkownik",
+      "action": "Akcja",
+      "reason": "Powód",
+      "issued": "Wydano",
+      "expires": "Wygasa",
+      "by": "Przez"
+    },
+    "drawer": {
+      "moderator": "Moderator",
+      "target": "Cel",
+      "channel": "Kanał",
+      "aiReasoning": "Uzasadnienie AI",
+      "rule": "Naruszona zasada",
+      "metadata": "Metadane"
+    },
+    "user": {
+      "title": "Wyszukaj użytkownika",
+      "placeholder": "ID użytkownika Discord",
+      "lookUp": "Szukaj",
+      "lookupFailed": "Wyszukiwanie nie powiodło się: {{error}}",
+      "banned": "Ban aktywny",
+      "notBanned": "Bez bana",
+      "muted": "Wyciszenie aktywne",
+      "notMuted": "Bez wyciszenia",
+      "activeWarnings_one": "{{count}} aktywne ostrzeżenie",
+      "activeWarnings_few": "{{count}} aktywne ostrzeżenia",
+      "activeWarnings_many": "{{count}} aktywnych ostrzeżeń",
+      "activeWarnings_other": "{{count}} aktywnego ostrzeżenia",
+      "userId": "ID użytkownika",
+      "banReason": "Powód bana",
+      "mutedUntil": "Wyciszenie do",
+      "warningsTitle": "Aktywne ostrzeżenia",
+      "eventsTitle": "Ostatnie zdarzenia"
+    },
+    "feedback": {
+      "title": "Opinie użytkowników",
+      "empty": "Brak opinii.",
+      "emptyHint": "Zbieranie opinii pojawi się wraz z systemem opinii i ocen (issue #17). Zgłoszenia będą tu widoczne jako posty.",
+      "anonymous": "Użytkownik"
+    },
+    "config": {
+      "title": "Konfiguracja",
+      "intro": "Podgląd bieżącej konfiguracji bota, tylko do odczytu. Sekrety nigdy nie są pokazywane."
+    },
+    "noData": "Brak danych.",
+    "none": "Brak.",
+    "eventTypes": {
+      "warn": "ostrzeżenie",
+      "ban": "ban",
+      "kick": "wyrzucenie",
+      "mute": "wyciszenie",
+      "unmute": "zdjęcie wyciszenia",
+      "unban": "odbanowanie",
+      "delete": "usunięcie",
+      "ai_flag": "flaga AI",
+      "feedback": "opinia"
+    },
+    "severities": {
+      "info": "info",
+      "low": "niska",
+      "medium": "średnia",
+      "high": "wysoka",
+      "critical": "krytyczna"
+    },
+    "actorTypes": {
+      "human": "człowiek",
+      "ai": "AI",
+      "system": "system"
+    },
+    "actions": {
+      "warn": "ostrzeżenie",
+      "ban": "ban",
+      "kick": "wyrzucenie",
+      "timeout": "wyciszenie",
+      "unmute": "zdjęcie wyciszenia",
+      "unban": "odbanowanie",
+      "delete": "usunięcie"
+    },
+    "callback": {
+      "invalidState": "Nieprawidłowe lub wygasłe żądanie logowania. Spróbuj ponownie.",
+      "missingCode": "Brak kodu autoryzacji.",
+      "authFailed": "Uwierzytelnienie przez Discorda nie powiodło się.",
+      "profileFailed": "Nie udało się wczytać Twojego profilu Discord.",
+      "failed": "Logowanie nie powiodło się."
+    }
+  }
+}

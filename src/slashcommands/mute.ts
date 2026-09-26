@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
 import { applyTimeout, parseDuration } from '../utils/moderation-actions.js';
+import { t } from '../utils/i18n.js';
 import {
   withAppAvailability,
   resolveModerationContext,
@@ -16,21 +17,24 @@ const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('mute')
-      .setDescription('Wycisza (timeout) użytkownika na skonfigurowanym serwerze')
+      .setDescription(t('commands.mute.description'))
       .addUserOption((option) =>
         option
           .setName('user')
-          .setDescription('Użytkownik do wyciszenia')
+          .setDescription(t('commands.mute.options.user'))
           .setRequired(true)
       )
       .addStringOption((option) =>
         option
           .setName('duration')
-          .setDescription('Czas wyciszenia, np. 30s, 10m, 1h, 1d (maks. 28 dni)')
+          .setDescription(t('commands.mute.options.duration'))
           .setRequired(true)
       )
       .addStringOption((option) =>
-        option.setName('reason').setDescription('Powód wyciszenia').setMaxLength(512)
+        option
+          .setName('reason')
+          .setDescription(t('commands.mute.options.reason'))
+          .setMaxLength(512)
       )
   ),
 
@@ -47,13 +51,13 @@ const command: SlashCommand = {
     const durationMs = parseDuration(interaction.options.getString('duration', true));
     if (durationMs === null) {
       await interaction.reply({
-        content: '❌ Nieprawidłowy format czasu. Użyj: `30s`, `10m`, `1h`, `1d`.',
+        content: t('commands.mute.invalidDuration'),
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
-    const reason = interaction.options.getString('reason') ?? 'Nie podano powodu';
+    const reason = interaction.options.getString('reason') ?? t('moderation.noReason');
     const result = await applyTimeout(
       ctx.targetMember,
       durationMs,
@@ -65,7 +69,7 @@ const command: SlashCommand = {
       await interaction.reply({ embeds: [result.embed] });
     } else {
       await interaction.reply({
-        content: result.content ?? '❌ Operacja nie powiodła się.',
+        content: result.content ?? t('errors.operationFailed'),
         flags: MessageFlags.Ephemeral,
       });
     }

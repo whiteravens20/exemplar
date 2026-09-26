@@ -22,15 +22,18 @@ COPY tsconfig.json ./
 # --ignore-scripts blocks postinstall malware vectors
 RUN npm ci --ignore-scripts
 
-# Copy source files and the build helper that copies the dashboard's static assets
+# Copy source files and the build helper that copies the dashboard assets and
+# translations
 COPY src/ ./src/
-COPY scripts/copy-dashboard-assets.mjs ./scripts/
+COPY scripts/copy-assets.mjs ./scripts/
 
-# Build TypeScript and copy the dashboard assets into dist/
+# Build TypeScript and copy the dashboard assets and translations into dist/
 RUN npm run build
 
-# Remove dev dependencies
-RUN npm prune --omit=dev --ignore-scripts
+# Remove dev dependencies. TypeScript is an optional peer of i18next, which
+# npm keeps under --omit=dev alone; the only other optional package in the
+# production tree, pg-cloudflare, is never loaded on Node.
+RUN npm prune --omit=dev --omit=optional --ignore-scripts
 
 # Runtime stage
 FROM node:22-alpine
