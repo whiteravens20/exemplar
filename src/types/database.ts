@@ -190,6 +190,24 @@ export interface ModerationLogStats {
   topTargets: Array<{ userId: string; username: string | null; count: number }>;
 }
 
+// ── Reaction roles (issue #24, migration 006) ────────────────────────────────
+
+/** Row shape as returned from `reaction_roles`. */
+export interface ReactionRoleRow {
+  id: number;
+  guild_id: string;
+  channel_id: string;
+  message_id: string;
+  emoji_key: string;
+  emoji_display: string;
+  role_id: string;
+  created_by: string;
+  created_at: Date;
+}
+
+/** Shape inserted into `reaction_roles`. */
+export type ReactionRoleInput = Omit<ReactionRoleRow, 'id' | 'created_at'>;
+
 export interface RateLimitCheckResult {
   allowed: boolean;
   remaining: number;
