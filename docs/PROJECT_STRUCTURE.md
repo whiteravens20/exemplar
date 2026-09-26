@@ -356,10 +356,3 @@ For issues:
 6. Check n8n workflow logs
 7. Review Discord permissions
 8. See [DATABASE.md](DATABASE.md) for database troubleshooting
-
----
-
-**Created:** 2024-02-02  
-**Last Updated:** 2026-02-16  
-**Version:** 3.0.0  
-**License:** MIT

@@ -233,5 +233,3 @@ ps aux | grep node
 ---
 
 **Didn't find answer?** Create Issue on [GitHub](https://github.com/whiteravens20/exemplar/issues)
-
-**Last Updated:** 2024-02-02
