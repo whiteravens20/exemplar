@@ -3,6 +3,7 @@ import {
   ApplicationIntegrationType,
   type SlashCommandBuilder,
   type SlashCommandOptionsOnlyBuilder,
+  type SlashCommandSubcommandsOnlyBuilder,
   type ChatInputCommandInteraction,
   type Guild,
   type GuildMember,
@@ -18,7 +19,10 @@ import {
   type Actor,
 } from '../utils/moderation-actions.js';
 
-type AnyCommandBuilder = SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
+type AnyCommandBuilder =
+  | SlashCommandBuilder
+  | SlashCommandOptionsOnlyBuilder
+  | SlashCommandSubcommandsOnlyBuilder;
 
 /**
  * Declare command availability explicitly per the modern Discord apps model:
@@ -46,7 +50,7 @@ type GuildInvoker =
 
 /** Resolve the configured guild and the invoking user as a member of it. */
 export async function resolveGuildInvoker(
-  interaction: ChatInputCommandInteraction
+  interaction: Pick<ChatInputCommandInteraction, 'client' | 'user'>
 ): Promise<GuildInvoker> {
   const guild = getConfiguredGuild(interaction.client);
   if (!guild) {

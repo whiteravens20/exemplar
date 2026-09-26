@@ -3,8 +3,10 @@ import type {
   Collection,
   Message,
   ChatInputCommandInteraction,
+  AutocompleteInteraction,
   SlashCommandBuilder,
   SlashCommandOptionsOnlyBuilder,
+  SlashCommandSubcommandsOnlyBuilder,
 } from 'discord.js';
 
 export interface BotEvent {
@@ -15,8 +17,13 @@ export interface BotEvent {
 }
 
 export interface SlashCommand {
-  data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
+  data:
+    | SlashCommandBuilder
+    | SlashCommandOptionsOnlyBuilder
+    | SlashCommandSubcommandsOnlyBuilder;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
+  /** Answers autocomplete for options declared with `setAutocomplete(true)`. */
+  autocomplete?: (interaction: AutocompleteInteraction) => Promise<void>;
 }
 
 // Extend Discord.js Client to include commands collection

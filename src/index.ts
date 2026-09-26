@@ -43,6 +43,7 @@ import flushmemoryCommand from './slashcommands/flushmemory.js';
 import warningsCommand from './slashcommands/warnings.js';
 import statsCommand from './slashcommands/stats.js';
 import flushdbCommand from './slashcommands/flushdb.js';
+import reactionroleCommand from './slashcommands/reactionrole.js';
 
 // Validate configuration
 if (!configManager.validateRequiredConfig()) {
@@ -86,6 +87,7 @@ const slashCommands: SlashCommand[] = [
   warningsCommand,
   statsCommand,
   flushdbCommand,
+  reactionroleCommand,
 ];
 
 const commandsJson: unknown[] = [];

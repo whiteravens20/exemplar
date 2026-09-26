@@ -91,7 +91,7 @@ describe('locale files', () => {
 
     it('keeps slash command descriptions within Discord limits', () => {
       for (const [key, value] of values) {
-        if (!/^commands\.\w+\.(description|options\.\w+)$/.test(key)) continue;
+        if (!/^commands\.\w+\.(description|(options|subcommands)\.\w+)$/.test(key)) continue;
         expect(value.length, key).toBeGreaterThan(0);
         expect(value.length, key).toBeLessThanOrEqual(100);
       }
