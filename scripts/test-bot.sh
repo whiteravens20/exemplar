@@ -74,7 +74,6 @@ run_test "vitest installed" "npm ls vitest"
 # 3. Check file structure
 echo -e "\n${BLUE}3️⃣ Checking File Structure...${NC}"
 run_test "src/index.ts exists" "test -f src/index.ts"
-run_test "src/deploy-commands.ts exists" "test -f src/deploy-commands.ts"
 run_test "tsconfig.json exists" "test -f tsconfig.json"
 run_test "vitest.config.ts exists" "test -f vitest.config.ts"
 run_test "src/types/ exists" "test -d src/types"
@@ -135,7 +134,7 @@ run_test "valid JSON" "node --input-type=module -e \"import{readFileSync}from'fs
 run_test "main field set to dist/index.js" "node --input-type=module -e \"import{readFileSync}from'fs';const p=JSON.parse(readFileSync('./package.json','utf8'));if(p.main!=='dist/index.js')process.exit(1);\""
 run_test "type field set to module" "node --input-type=module -e \"import{readFileSync}from'fs';const p=JSON.parse(readFileSync('./package.json','utf8'));if(p.type!=='module')process.exit(1);\""
 run_test "Node.js 22+ required" "grep -q '\"node\": \">=22.0.0\"' package.json"
-run_test "npm 11+ required" "grep -q '\"npm\": \">=11.0.0\"' package.json"
+run_test "npm 11+ required" "grep -q '\"npm\": \">=11' package.json"
 
 # 8. Check npm scripts
 echo -e "\n${BLUE}8️⃣ Checking npm Scripts...${NC}"

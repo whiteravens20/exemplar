@@ -24,7 +24,7 @@ const command: SlashCommand = {
           .setRequired(true)
       )
       .addStringOption((option) =>
-        option.setName('reason').setDescription('Powód bana')
+        option.setName('reason').setDescription('Powód bana').setMaxLength(512)
       )
   ),
 

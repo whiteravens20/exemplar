@@ -180,7 +180,7 @@ docker compose logs -f bot
 
 ### Slash commands not working?
 ```bash
-npm run deploy-commands
+# Commands are registered with Discord on every start
 npm start
 ```
 Wait 5 minutes for Discord synchronization.

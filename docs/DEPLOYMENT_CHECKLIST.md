@@ -251,14 +251,11 @@ curl -X POST $N8N_WORKFLOW_URL \
 
 ### Commands don't work
 ```bash
-# 1. Re-deploy slash commands
-npm run deploy-commands
-
-# 2. Restart bot
+# 1. Restart bot (slash commands are registered with Discord on every start)
 pkill -f "node dist/index.js"
 npm start
 
-# 3. Check permissions
+# 2. Check permissions
 # Bot must have Administrator or specific moderation perms
 ```
 

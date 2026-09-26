@@ -189,13 +189,13 @@ class WarningRepository {
 
     try {
       const query = includeExpired
-        ? `SELECT w.*, u.username as issued_by_username, u.discord_id as user_discord_id
+        ? `SELECT w.*, issuer.username as issued_by_username, u.discord_id as user_discord_id
            FROM warnings w
            JOIN users u ON u.id = w.user_id
            LEFT JOIN users issuer ON issuer.discord_id = w.issued_by
            WHERE u.discord_id = $1
            ORDER BY w.issued_at DESC`
-        : `SELECT w.*, u.username as issued_by_username, u.discord_id as user_discord_id
+        : `SELECT w.*, issuer.username as issued_by_username, u.discord_id as user_discord_id
            FROM warnings w
            JOIN users u ON u.id = w.user_id
            LEFT JOIN users issuer ON issuer.discord_id = w.issued_by

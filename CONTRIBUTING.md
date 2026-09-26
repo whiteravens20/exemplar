@@ -105,10 +105,8 @@ npm install
 cp .env.example .env
 # Edit .env with your test bot token and n8n details
 
-# 6. Deploy slash commands to your test server
-npm run deploy-commands
-
-# 7. Start in development mode with auto-reload 🔥
+# 6. Start in development mode with auto-reload 🔥
+#    (slash commands are registered with Discord on every start)
 npm run dev
 ```
 
@@ -356,7 +354,7 @@ const command: SlashCommand = {
 export default command;
 ```
 
-**Don't forget:** Run `npm run deploy-commands` after adding new commands! 🔄
+**Don't forget:** add the command to the `slashCommands` list in `src/index.ts` — the bot registers that list with Discord on every start. 🔄
 
 ### 🎯 Adding an Event Handler
 
@@ -434,16 +432,13 @@ Testing is super important! 🧪 Here's how to make sure your code works:
 # 1. Type check your code
 npm run typecheck
 
-# 2. Deploy commands (if you added/modified slash commands)
-npm run deploy-commands
-
-# 3. Build the project
+# 2. Build the project
 npm run build
 
-# 4. Start the bot in dev mode
+# 3. Start the bot in dev mode (slash commands are registered on start)
 npm run dev
 
-# 5. Test in Discord!
+# 4. Test in Discord!
 # - Create a test server
 # - Add your bot
 # - Try all the features you changed

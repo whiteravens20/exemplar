@@ -336,7 +336,14 @@ const event: BotEvent = {
           let errorMessage: string;
           const status = result.status;
 
-          if (!status) {
+          // A timeout carries no status, so it has to be checked first.
+          if (result.error?.includes('timeout')) {
+            errorMessage = getTemplate('error', 'timeout');
+            logger.error('❌ n8n timeout', {
+              userId: message.author.id,
+              error: result.error,
+            });
+          } else if (!status) {
             errorMessage = getTemplate('error', 'n8nDown');
             logger.error('❌ n8n unreachable (network error)', {
               userId: message.author.id,
@@ -361,12 +368,6 @@ const event: BotEvent = {
             logger.error('❌ n8n server error', {
               userId: message.author.id,
               status,
-              error: result.error,
-            });
-          } else if (result.error?.includes('timeout')) {
-            errorMessage = getTemplate('error', 'timeout');
-            logger.error('❌ n8n timeout', {
-              userId: message.author.id,
               error: result.error,
             });
           } else {

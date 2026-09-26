@@ -14,12 +14,6 @@ export interface BotEvent {
   execute: (...args: any[]) => void | Promise<void>;
 }
 
-export interface BotCommand {
-  name: string;
-  description: string;
-  execute: (interaction: ChatInputCommandInteraction) => Promise<void>;
-}
-
 export interface SlashCommand {
   data: SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
   execute: (interaction: ChatInputCommandInteraction) => Promise<void>;

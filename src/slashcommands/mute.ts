@@ -30,7 +30,7 @@ const command: SlashCommand = {
           .setRequired(true)
       )
       .addStringOption((option) =>
-        option.setName('reason').setDescription('Powód wyciszenia')
+        option.setName('reason').setDescription('Powód wyciszenia').setMaxLength(512)
       )
   ),
 

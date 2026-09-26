@@ -50,12 +50,6 @@ export interface N8NClientOptions {
   timeout?: number;
 }
 
-export interface N8NHealthCheckResult {
-  healthy: boolean;
-  status?: number;
-  error?: string;
-}
-
 export type ConversationContextRow = Pick<UserContext, 'user_message' | 'ai_response'> & {
   timestamp: Date;
 };

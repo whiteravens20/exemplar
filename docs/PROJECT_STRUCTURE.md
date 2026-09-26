@@ -55,7 +55,6 @@ discord-ai-bot/
 ├── 🚀 src/
 │   │
 │   ├── 📄 index.ts               # Main entry point
-│   ├── 📄 deploy-commands.ts     # Slash commands deployment
 │   │
 │   ├── 📁 types/                 # Shared TypeScript type definitions
 │   │   ├── index.ts              # Barrel exports
@@ -95,7 +94,6 @@ discord-ai-bot/
 │   │   ├── logger.ts             # Winston logger
 │   │   ├── n8n-client.ts         # n8n integration
 │   │   ├── permissions.ts        # Role checking
-│   │   ├── error-handler.ts      # Error utilities
 │   │   ├── rate-limiter.ts       # Rate limiting logic
 │   │   ├── message-splitter.ts   # Discord 2000 char splitting
 │   │   ├── token-estimator.ts    # Token counting
@@ -217,13 +215,12 @@ npm run build         # Compile TypeScript to dist/
 npm run typecheck     # Type-check without emitting
 npm run dev           # Development with auto-reload
 npm run test          # Run tests (Vitest)
-npm run test:unit     # Run unit tests
 npm run test:all      # Run all tests
-npm run deploy-commands # Deploy slash commands
 npm run migrate:up    # Run database migrations
 npm run migrate:down  # Rollback last migration
 npm run db:seed       # Seed test data
 npm run lint          # Run ESLint + typescript-eslint
+npm run lint:fix      # Same, applying auto-fixes
 npm run release-package # Create release package
 ```
 
