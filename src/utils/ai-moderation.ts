@@ -5,7 +5,7 @@ import {
   type TextChannel,
 } from 'discord.js';
 import logger from './logger.js';
-import { t } from './i18n.js';
+import { i18n, t } from './i18n.js';
 import configManager from '../config/config.js';
 import N8NClient from './n8n-client.js';
 import warningRepo from '../db/repositories/warning-repository.js';
@@ -369,6 +369,7 @@ export async function analyzeAndAct(message: Message): Promise<void> {
       timestamp: new Date().toISOString(),
       recentWarnings,
       serverRules: configManager.config.moderation.rulesText,
+      language: i18n.language,
     });
   } catch (error) {
     logger.error('AI moderation: n8n request threw', {
