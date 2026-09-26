@@ -306,5 +306,4 @@ pm2 restart discord-bot
 - [ ] README.md updated
 - [ ] SETUP.md complete
 - [ ] N8N_INTEGRATION.md ready
-- [ ] Change log updated
 - [ ] Known issues documented
