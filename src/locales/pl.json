@@ -309,6 +309,10 @@
     "shadowFooter": "Tryb shadow — żadna akcja nie została wykonana.",
     "noReason": "_(brak)_"
   },
+  "reactionRoles": {
+    "auditGrant": "Rola za reakcję: dodano reakcję {{emoji}}",
+    "auditRevoke": "Rola za reakcję: usunięto reakcję {{emoji}}"
+  },
   "dashboard": {
     "title": "Panel moderacji",
     "login": {

@@ -285,6 +285,10 @@
     "shadowFooter": "Shadow mode — no action was taken.",
     "noReason": "_(none)_"
   },
+  "reactionRoles": {
+    "auditGrant": "Reaction role: reacted with {{emoji}}",
+    "auditRevoke": "Reaction role: removed the {{emoji}} reaction"
+  },
   "dashboard": {
     "title": "Moderation Dashboard",
     "login": {
