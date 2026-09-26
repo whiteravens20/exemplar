@@ -22,11 +22,12 @@ COPY tsconfig.json ./
 # --ignore-scripts blocks postinstall malware vectors
 RUN npm ci --ignore-scripts
 
-# Copy source files and the build helper that copies the dashboard's static assets
+# Copy source files and the build helper that copies the dashboard assets and
+# translations
 COPY src/ ./src/
-COPY scripts/copy-dashboard-assets.mjs ./scripts/
+COPY scripts/copy-assets.mjs ./scripts/
 
-# Build TypeScript and copy the dashboard assets into dist/
+# Build TypeScript and copy the dashboard assets and translations into dist/
 RUN npm run build
 
 # Remove dev dependencies
