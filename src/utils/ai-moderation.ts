@@ -5,6 +5,7 @@ import {
   type TextChannel,
 } from 'discord.js';
 import logger from './logger.js';
+import { t } from './i18n.js';
 import configManager from '../config/config.js';
 import N8NClient from './n8n-client.js';
 import warningRepo from '../db/repositories/warning-repository.js';
@@ -35,7 +36,6 @@ import type { ModerationSeverity } from '../types/database.js';
  *             slash command — only the mod-log "Moderator" field differs.
  */
 
-const ACTOR_LABEL = 'AI moderation';
 const RECENT_WARNINGS_LIMIT = 5;
 // Discord caps audit-log reasons at 512 characters.
 const MAX_REASON_LENGTH = 512;
@@ -213,23 +213,34 @@ async function postShadowLog(
 
   const embed = new EmbedBuilder()
     .setColor(0xf1c40f)
-    .setTitle(`🤖 [SHADOW] ${verdict.action}`)
+    .setTitle(t('aiModeration.shadowTitle', { action: verdict.action }))
     .addFields(
       {
-        name: 'Użytkownik',
+        name: t('moderation.fields.user'),
         value: `${message.author.tag} (${message.author.id})`,
         inline: true,
       },
-      { name: 'Kanał', value: `<#${message.channelId}>`, inline: true },
-      { name: 'Powód', value: verdict.reason || '_(brak)_' }
+      {
+        name: t('moderation.fields.channel'),
+        value: `<#${message.channelId}>`,
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.reason'),
+        value: verdict.reason || t('aiModeration.noReason'),
+      }
     )
     .setTimestamp();
 
   if (verdict.action === 'timeout' && verdict.duration) {
-    embed.addFields({ name: 'Czas', value: verdict.duration, inline: true });
+    embed.addFields({
+      name: t('moderation.fields.duration'),
+      value: verdict.duration,
+      inline: true,
+    });
   }
-  embed.addFields({ name: 'Treść', value: preview });
-  embed.setFooter({ text: 'Tryb shadow — żadna akcja nie została wykonana.' });
+  embed.addFields({ name: t('moderation.fields.content'), value: preview });
+  embed.setFooter({ text: t('aiModeration.shadowFooter') });
 
   try {
     await (channel as TextChannel).send({ embeds: [embed] });
@@ -243,7 +254,7 @@ async function postShadowLog(
 
 function buildPreview(content: string): string {
   const trimmed = (content || '').trim();
-  if (!trimmed) return '_(pusta wiadomość)_';
+  if (!trimmed) return t('moderation.emptyMessage');
   const truncated =
     trimmed.length > 200 ? `${trimmed.slice(0, 200)}…` : trimmed;
   return `\`\`\`\n${truncated.replace(/```/g, '` ` `')}\n\`\`\``;
@@ -257,8 +268,12 @@ async function enforce(
   const botUser = message.client.user;
   if (!guild || !botUser) return;
 
-  const actor: Actor = { id: botUser.id, label: ACTOR_LABEL, type: 'ai' };
-  const reason = verdict.reason || 'Naruszenie wykryte przez moderację AI';
+  const actor: Actor = {
+    id: botUser.id,
+    label: t('moderation.aiModerator'),
+    type: 'ai',
+  };
+  const reason = verdict.reason || t('aiModeration.defaultReason');
 
   switch (verdict.action) {
     case 'warn': {
@@ -437,7 +452,7 @@ async function recordAiDecision(
     severity: verdictSeverity(verdict.action),
     actorType: 'ai',
     actorId: message.client.user?.id ?? null,
-    actorLabel: ACTOR_LABEL,
+    actorLabel: t('moderation.aiModerator'),
     targetUserId: message.author.id,
     targetUsername: message.author.tag,
     channelId: message.channelId,
