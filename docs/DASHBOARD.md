@@ -21,6 +21,9 @@ per-user history view. It is read-only and disabled by default.
   empty until that feature ships (see [Extending for #17](#extending-for-issue-17)).
 - **Config** — a read-only, secret-free view of the bot's effective settings.
 
+The dashboard speaks the bot's language (`BOT_LANGUAGE`); its texts are the
+`dashboard` group of the locale files, see [I18N.md](I18N.md).
+
 ## Data model
 
 All events are appended to the `moderation_logs` table (migration
@@ -69,6 +72,8 @@ The dashboard exposes moderation data, so it is hardened deny-by-default:
 - All query parameters are validated/clamped; all SQL is parameterized.
 - Per-IP rate limiting on the auth and API endpoints.
 - `/api/config` returns a hard allowlist of non-secret fields only.
+- The only API route open without a session, `/api/i18n`, returns the
+  interface texts and nothing else.
 
 > Run the dashboard behind HTTPS in production (set `DASHBOARD_COOKIE_SECURE=true`
 > and point `DASHBOARD_OAUTH_REDIRECT_URI` / `DASHBOARD_PUBLIC_BASE_URL` at your
