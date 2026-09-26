@@ -28,6 +28,7 @@ The bot implements **soft fallback** behavior:
 - `warnings` - Moderation warnings with expiry
 - `message_stats` - Message analytics
 - `command_usage` - Command execution tracking
+- `reaction_roles` - Reaction-role bindings (message + emoji → role)
 
 #### SQL Functions
 - `cleanup_old_conversations()` - Removes messages older than 24H
@@ -124,6 +125,7 @@ Located in `migrations/`:
 - `001_initial_schema.sql` - Core tables
 - `002_cleanup_functions.sql` - Maintenance functions
 - `003_analytics_schema.sql` - Analytics tables
+- `006_reaction_roles.sql` - Reaction-role bindings
 
 ### Creating New Migrations
 

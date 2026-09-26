@@ -23,6 +23,11 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 - Optional **AI moderation**: eligible channel messages go to a second n8n workflow that returns `allow`, `warn`, `timeout` or `delete`, executed through the same action layer as the slash commands. Roll it out in `shadow` mode first. See [docs/AI_MODERATION.md](docs/AI_MODERATION.md).
 - Escalation across all warnings, human or AI: 3 active warnings auto-mute, 100 lifetime warnings auto-ban (both configurable).
 
+### Reaction roles
+- Members self-assign roles by reacting to a message; removing the reaction revokes the role.
+- Admins bind any message + emoji + role combination with `/reactionrole`; role hierarchy is checked when binding and before every change.
+- Bindings survive restarts. Bindings of deleted messages and roles are cleaned up. See [docs/REACTION_ROLES.md](docs/REACTION_ROLES.md).
+
 ### Languages
 - Everything the bot writes to Discord (commands, replies, embeds, DMs, mod-log) is translated. English and Polish ship with the bot; `BOT_LANGUAGE` picks the server's language.
 - Another language takes one translation file in `src/locales/`, with English filling any gaps. See [docs/I18N.md](docs/I18N.md).
@@ -54,6 +59,7 @@ All commands are slash commands and run in **DMs with the bot**. Used in a serve
 | `/warnings [user]` | admins | All warnings, or one user's |
 | `/stats [days]` | admins | Usage statistics (default 7 days) |
 | `/flushdb confirm:true` | admins | Clear conversation data (bot and n8n), keeping users and warnings |
+| `/reactionrole add\|remove\|list` | Manage Roles | Bind a message + emoji to a role, remove or list bindings |
 
 ## Install
 
@@ -146,6 +152,7 @@ Logs go to the console and to `logs/combined.log` and `logs/error.log`.
 | [AI_MODERATION.md](docs/AI_MODERATION.md) | AI moderation setup and tuning |
 | [DATABASE.md](docs/DATABASE.md) | Schema, retention, migrations |
 | [DASHBOARD.md](docs/DASHBOARD.md) | Logging dashboard |
+| [REACTION_ROLES.md](docs/REACTION_ROLES.md) | Reaction roles |
 | [I18N.md](docs/I18N.md) | Bot language, adding and editing translations |
 | [DOCKER_SETUP.md](docs/DOCKER_SETUP.md) | Docker deployment |
 | [DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md) | Production checklist |

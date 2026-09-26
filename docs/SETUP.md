@@ -31,6 +31,9 @@
      - Send Messages
      - Read Message History
      - Read Messages/View Channels
+     - Add Reactions
+   - General:
+     - Manage Roles (reaction roles; see [REACTION_ROLES.md](REACTION_ROLES.md))
    - Moderation:
      - Kick Members
      - Ban Members
