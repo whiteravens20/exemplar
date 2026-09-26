@@ -32,6 +32,7 @@ function row(id: number, messageId: string, emojiKey: string, roleId: string): R
     emoji_key: emojiKey,
     emoji_display: emojiKey,
     role_id: roleId,
+    command: null,
     created_by: 'admin',
     created_at: new Date(),
   };
@@ -61,8 +62,17 @@ function setup(options: { memberRoles?: string[]; goneMessages?: string[] } = {}
 
   const held = new Set(options.memberRoles ?? []);
   const calls: string[] = [];
+  const client: any = { user: { id: 'bot' }, guilds: { cache: new Map([[GUILD, guild]]) } };
+  const rulesReply = { embeds: [{ title: 'rules' }] };
+  client.commands = new Map([
+    ['rules', { reactionReply: vi.fn(async () => rulesReply) }],
+    ['stats', {}],
+  ]);
   const member: any = {
+    id: 'user',
+    client,
     user: { bot: false },
+    send: vi.fn(async () => undefined),
     roles: {
       cache: held,
       add: vi.fn(async (role: { id: string }) => {
@@ -90,7 +100,6 @@ function setup(options: { memberRoles?: string[]; goneMessages?: string[] } = {}
       },
     })),
   };
-  const client: any = { user: { id: 'bot' }, guilds: { cache: new Map([[GUILD, guild]]) } };
 
   const react = (messageId: string, emoji: string, change: 'add' | 'remove', userId = 'user') =>
     reactionRoles.handleReaction(
@@ -103,7 +112,7 @@ function setup(options: { memberRoles?: string[]; goneMessages?: string[] } = {}
       change
     );
 
-  return { client, guild, member, held, calls, react };
+  return { client, guild, member, held, calls, react, rulesReply };
 }
 
 const bindings = [
@@ -241,6 +250,34 @@ describe('ReactionRoleManager', () => {
     expect(repo.deleteByMessages).not.toHaveBeenCalled();
     expect(repo.deleteByRoles).toHaveBeenCalledWith(['r3']);
     expect(reactionRoles.match('m2', '👍')).toEqual([]);
+  });
+
+  it('DMs the reply of a command binding on add only, once per cooldown', async () => {
+    const command = { ...row(20, 'm5', '📜', 'unused'), role_id: null, command: 'rules' };
+    repo.findAll.mockResolvedValue([command, { ...command, id: 21, emoji_key: '📊', command: 'stats' }]);
+    const { client, react, member, rulesReply } = setup();
+    await reactionRoles.load(client);
+
+    await react('m5', '📜', 'add', 'user');
+    expect(member.send).toHaveBeenCalledWith(rulesReply);
+    await react('m5', '📜', 'remove', 'user');
+    await react('m5', '📜', 'add', 'user');
+    expect(member.send).toHaveBeenCalledTimes(1);
+    expect(member.roles.add).not.toHaveBeenCalled();
+
+    // A command without reactionReply is skipped.
+    await react('m5', '📊', 'add', 'user');
+    expect(member.send).toHaveBeenCalledTimes(1);
+  });
+
+  it('survives a member who does not accept DMs', async () => {
+    const command = { ...row(22, 'm6', '📜', 'unused'), role_id: null, command: 'rules' };
+    repo.findAll.mockResolvedValue([command, row(23, 'm6', '📜', 'r1')]);
+    const { client, react, member, held } = setup();
+    await reactionRoles.load(client);
+    member.send.mockRejectedValueOnce(new Error('Cannot send messages to this user'));
+    await react('m6', '📜', 'add', 'user');
+    expect([...held]).toEqual(['r1']);
   });
 
   it('adds and removes bindings through bind and unbind', async () => {

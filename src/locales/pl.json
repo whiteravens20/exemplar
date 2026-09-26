@@ -116,16 +116,17 @@
       "invalidDuration": "❌ Nieprawidłowy format czasu. Użyj: `30s`, `10m`, `1h`, `1d`."
     },
     "reactionrole": {
-      "description": "Zarządza rolami za reakcje: reakcja na wiadomość nadaje rolę (Zarządzanie rolami)",
+      "description": "Zarządza rolami za reakcje: reakcja na wiadomość nadaje rolę lub odpowiedź (Zarządzanie rolami)",
       "subcommands": {
-        "add": "Wiąże wiadomość + emoji z rolą",
+        "add": "Wiąże wiadomość + emoji z rolą lub komendą",
         "remove": "Usuwa powiązanie po jego ID",
         "list": "Wyświetla powiązania, opcjonalnie dla jednej wiadomości"
       },
       "options": {
         "message": "Link do wiadomości (lub channelId-messageId)",
         "emoji": "Emoji Unicode lub własne emoji (<:nazwa:id>, nazwa:id albo jego ID)",
-        "role": "Rola do nadania",
+        "role": "Rola do nadania (albo wybierz komendę)",
+        "command": "Komenda, której odpowiedź trafi w DM do osoby reagującej (zamiast roli)",
         "id": "ID powiązania z /reactionrole list",
         "filter": "Tylko ta wiadomość: link lub channelId-messageId"
       },
@@ -136,6 +137,7 @@
       "messageNotFound": "❌ Nie znaleziono wiadomości albo nie mam dostępu do tego kanału.",
       "invalidEmoji": "❌ Nieprawidłowe emoji. Użyj emoji Unicode lub własnego emoji (`<:nazwa:id>`, `nazwa:id` albo jego ID).",
       "roleNotFound": "❌ Nie znaleziono roli. Wybierz ją z listy albo podaj jej ID.",
+      "targetRequired": "❌ Podaj rolę albo komendę, nie obie naraz.",
       "roleProblem": {
         "everyone": "❌ @everyone nie może być rolą za reakcję.",
         "managed": "❌ **@{{role}}** jest zarządzana przez integrację i nie można jej nadać.",
@@ -146,8 +148,9 @@
       "emojiUnusable": "❌ Nie udało się dodać reakcji tym emoji: {{error}}",
       "alreadyBound": "⚠️ To powiązanie już istnieje.",
       "added": "✅ Powiązanie **#{{id}}**: reakcja {{emoji}} nadaje **@{{role}}**.\n{{link}}",
+      "addedCommand": "✅ Powiązanie **#{{id}}**: reakcja {{emoji}} wysyła w DM odpowiedź **/{{command}}**.\n{{link}}",
       "notFound": "❌ Brak powiązania o ID **#{{id}}**.",
-      "removed": "✅ Usunięto powiązanie **#{{id}}** ({{emoji}} → **@{{role}}**).",
+      "removed": "✅ Usunięto powiązanie **#{{id}}** ({{emoji}} → **{{target}}**).",
       "listTitle": "🎭 Role za reakcje",
       "listEmpty": "Brak powiązanych ról za reakcje.",
       "listMore_one": "…i jeszcze {{count}} powiązanie. Zawęź listę do wiadomości, aby je zobaczyć.",

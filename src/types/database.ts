@@ -200,7 +200,10 @@ export interface ReactionRoleRow {
   message_id: string;
   emoji_key: string;
   emoji_display: string;
-  role_id: string;
+  /** Role granted by the reaction; null for a command binding. */
+  role_id: string | null;
+  /** Command whose reply is DMed to the reacting member; null for a role binding. */
+  command: string | null;
   created_by: string;
   created_at: Date;
 }

@@ -3,9 +3,19 @@ import type { ReactionRoleRow } from '../types/database.js';
 
 /**
  * Reaction roles (issue #24): the pure building blocks — input parsing, role
- * checks, the in-memory binding index and the per-user task queue. The runtime
- * that ties them to Discord and the database is `reaction-role-manager.ts`.
+ * checks, the in-memory binding index, the per-user task queue and the command
+ * cooldown. The runtime that ties them to Discord and the database is
+ * `reaction-role-manager.ts`.
  */
+
+/**
+ * Commands a binding may run instead of granting a role. Each implements
+ * `SlashCommand.reactionReply`; its reply is DMed to the member who reacted.
+ */
+export const REACTION_COMMANDS = ['help', 'rules'] as const;
+
+/** Minimum time between two runs of one command binding for one member. */
+export const REACTION_COMMAND_COOLDOWN_MS = 30_000;
 
 // ── Input parsing ────────────────────────────────────────────────────────────
 
@@ -189,7 +199,7 @@ export class ReactionRoleIndex {
   /** Remove the bindings granting the given roles and return them. */
   removeRoles(roleIds: string[]): ReactionRoleRow[] {
     const ids = new Set(roleIds);
-    return this.removeWhere((row) => ids.has(row.role_id));
+    return this.removeWhere((row) => row.role_id !== null && ids.has(row.role_id));
   }
 
   private removeWhere(predicate: (row: ReactionRoleRow) => boolean): ReactionRoleRow[] {
@@ -227,5 +237,30 @@ export class KeyedQueue {
       });
     this.tails.set(key, tail);
     return result;
+  }
+}
+
+// ── Cooldown ─────────────────────────────────────────────────────────────────
+
+/**
+ * Allows one run per key per window. Keeps a member toggling a reaction from
+ * making the bot DM a command reply over and over.
+ */
+export class Cooldown {
+  private until = new Map<string, number>();
+
+  constructor(private readonly windowMs: number) {}
+
+  /** True, and starts the window, when `key` is not cooling down. */
+  take(key: string, now: number = Date.now()): boolean {
+    const until = this.until.get(key);
+    if (until !== undefined && until > now) return false;
+    this.until.set(key, now + this.windowMs);
+    if (this.until.size > 1000) {
+      for (const [k, expiry] of this.until) {
+        if (expiry <= now) this.until.delete(k);
+      }
+    }
+    return true;
   }
 }

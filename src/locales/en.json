@@ -108,16 +108,17 @@
       "invalidDuration": "❌ Invalid duration format. Use: `30s`, `10m`, `1h`, `1d`."
     },
     "reactionrole": {
-      "description": "Manages reaction roles: react to a message to get a role (Manage Roles)",
+      "description": "Manages reaction roles: react to a message to get a role or a reply (Manage Roles)",
       "subcommands": {
-        "add": "Binds a message + emoji to a role",
+        "add": "Binds a message + emoji to a role or a command",
         "remove": "Removes a binding by its ID",
         "list": "Lists the bindings, optionally for one message"
       },
       "options": {
         "message": "Message link (or channelId-messageId)",
         "emoji": "Unicode emoji or custom emoji (<:name:id>, name:id or its ID)",
-        "role": "Role to grant",
+        "role": "Role to grant (or pick a command instead)",
+        "command": "Command whose reply is DMed to whoever reacts (instead of a role)",
         "id": "Binding ID from /reactionrole list",
         "filter": "Only this message: link or channelId-messageId"
       },
@@ -128,6 +129,7 @@
       "messageNotFound": "❌ Message not found, or I can't read that channel.",
       "invalidEmoji": "❌ Invalid emoji. Use a Unicode emoji or a custom emoji (`<:name:id>`, `name:id` or its ID).",
       "roleNotFound": "❌ Role not found. Pick it from the list or give its ID.",
+      "targetRequired": "❌ Give either a role or a command, not both.",
       "roleProblem": {
         "everyone": "❌ @everyone can't be a reaction role.",
         "managed": "❌ **@{{role}}** is managed by an integration and can't be assigned.",
@@ -138,8 +140,9 @@
       "emojiUnusable": "❌ I couldn't react with that emoji: {{error}}",
       "alreadyBound": "⚠️ This binding already exists.",
       "added": "✅ Binding **#{{id}}**: reacting with {{emoji}} grants **@{{role}}**.\n{{link}}",
+      "addedCommand": "✅ Binding **#{{id}}**: reacting with {{emoji}} DMs the reply of **/{{command}}**.\n{{link}}",
       "notFound": "❌ No binding with ID **#{{id}}**.",
-      "removed": "✅ Binding **#{{id}}** removed ({{emoji}} → **@{{role}}**).",
+      "removed": "✅ Binding **#{{id}}** removed ({{emoji}} → **{{target}}**).",
       "listTitle": "🎭 Reaction roles",
       "listEmpty": "No reaction roles are bound.",
       "listMore_one": "…and {{count}} more binding. Filter by message to see it.",

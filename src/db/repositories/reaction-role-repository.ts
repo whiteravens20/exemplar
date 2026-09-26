@@ -3,7 +3,7 @@ import logger from '../../utils/logger.js';
 import type { ReactionRoleInput, ReactionRoleRow } from '../../types/database.js';
 
 const COLUMNS =
-  'id, guild_id, channel_id, message_id, emoji_key, emoji_display, role_id, created_by, created_at';
+  'id, guild_id, channel_id, message_id, emoji_key, emoji_display, role_id, command, created_by, created_at';
 
 /**
  * Reaction-role bindings. Writes throw so the admin command can report the
@@ -14,9 +14,9 @@ class ReactionRoleRepository {
   async create(input: ReactionRoleInput): Promise<ReactionRoleRow | null> {
     const result = await db.query<ReactionRoleRow>(
       `INSERT INTO reaction_roles
-         (guild_id, channel_id, message_id, emoji_key, emoji_display, role_id, created_by)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT ON CONSTRAINT uq_reaction_roles_binding DO NOTHING
+         (guild_id, channel_id, message_id, emoji_key, emoji_display, role_id, command, created_by)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT DO NOTHING
        RETURNING ${COLUMNS}`,
       [
         input.guild_id,
@@ -25,6 +25,7 @@ class ReactionRoleRepository {
         input.emoji_key,
         input.emoji_display,
         input.role_id,
+        input.command,
         input.created_by,
       ]
     );

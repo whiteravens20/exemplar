@@ -3,6 +3,7 @@ import {
   RESTJSONErrorCodes,
   type Client,
   type Guild,
+  type GuildMember,
   type MessageReaction,
   type PartialMessageReaction,
   type PartialUser,
@@ -14,7 +15,9 @@ import configManager from '../config/config.js';
 import { getConfiguredGuild } from './moderation-actions.js';
 import reactionRoleRepo from '../db/repositories/reaction-role-repository.js';
 import {
+  Cooldown,
   KeyedQueue,
+  REACTION_COMMAND_COOLDOWN_MS,
   ReactionRoleIndex,
   reactionEmojiKey,
   roleProblem,
@@ -35,8 +38,8 @@ function isGone(error: unknown): boolean {
 
 /**
  * Runtime for reaction roles (issue #24). Keeps the bindings in memory, grants
- * and revokes roles on reaction events, and drops bindings whose message or
- * role has been deleted.
+ * and revokes roles (or DMs a command's reply) on reaction events, and drops
+ * bindings whose message or role has been deleted.
  *
  * Reaction events arrive as partials for uncached messages, so bindings keep
  * working after a restart without fetching every bound message first.
@@ -44,6 +47,7 @@ function isGone(error: unknown): boolean {
 class ReactionRoleManager {
   private readonly index = new ReactionRoleIndex();
   private readonly queue = new KeyedQueue();
+  private readonly cooldown = new Cooldown(REACTION_COMMAND_COOLDOWN_MS);
 
   /** Load the bindings and drop those whose message or role is gone. */
   async load(client: Client): Promise<void> {
@@ -61,7 +65,7 @@ class ReactionRoleManager {
   /** Fetch every bound message once, forgetting deleted messages and roles. */
   private async prune(guild: Guild, rows: ReactionRoleRow[]): Promise<void> {
     const goneRoles = [...new Set(rows.map((row) => row.role_id))].filter(
-      (roleId) => !guild.roles.cache.has(roleId)
+      (roleId): roleId is string => roleId !== null && !guild.roles.cache.has(roleId)
     );
     await this.forgetRoles(goneRoles, 'role deleted while offline');
 
@@ -198,50 +202,101 @@ class ReactionRoleManager {
     const bot = guild.members.me ?? (await guild.members.fetchMe());
 
     for (const binding of bindings) {
-      const context = {
-        bindingId: binding.id,
-        userId,
-        roleId: binding.role_id,
-        messageId,
-        emoji: binding.emoji_display,
-      };
-      const role = guild.roles.cache.get(binding.role_id);
-      if (!role) {
-        logger.warn('Reaction role skipped: role not found', context);
-        continue;
+      if (binding.command !== null) {
+        // A command binding acts on the reaction only; removing it does nothing.
+        if (change === 'add') await this.runCommand(member, binding, binding.command);
+      } else if (binding.role_id !== null) {
+        await this.applyRole(guild, bot, member, binding, binding.role_id, change);
       }
-      const problem = roleProblem(role, bot);
-      if (problem) {
-        logger.warn('Reaction role skipped: bot cannot manage the role', {
-          ...context,
-          problem,
-        });
-        continue;
-      }
-      const hasRole = member.roles.cache.has(role.id);
-      if (change === 'add' ? hasRole : !hasRole) continue;
+    }
+  }
 
-      try {
-        if (change === 'add') {
-          await member.roles.add(
-            role,
-            t('reactionRoles.auditGrant', { emoji: binding.emoji_display })
-          );
-          logger.info('Reaction role granted', context);
-        } else {
-          await member.roles.remove(
-            role,
-            t('reactionRoles.auditRevoke', { emoji: binding.emoji_display })
-          );
-          logger.info('Reaction role revoked', context);
-        }
-      } catch (error) {
-        logger.error('Reaction role update failed', {
-          ...context,
-          change,
-          error: (error as Error).message,
-        });
+  private async applyRole(
+    guild: Guild,
+    bot: GuildMember,
+    member: GuildMember,
+    binding: ReactionRoleRow,
+    roleId: string,
+    change: ReactionChange
+  ): Promise<void> {
+    const context = {
+      bindingId: binding.id,
+      userId: member.id,
+      roleId,
+      messageId: binding.message_id,
+      emoji: binding.emoji_display,
+    };
+    const role = guild.roles.cache.get(roleId);
+    if (!role) {
+      logger.warn('Reaction role skipped: role not found', context);
+      return;
+    }
+    const problem = roleProblem(role, bot);
+    if (problem) {
+      logger.warn('Reaction role skipped: bot cannot manage the role', {
+        ...context,
+        problem,
+      });
+      return;
+    }
+    const hasRole = member.roles.cache.has(role.id);
+    if (change === 'add' ? hasRole : !hasRole) return;
+
+    try {
+      if (change === 'add') {
+        await member.roles.add(
+          role,
+          t('reactionRoles.auditGrant', { emoji: binding.emoji_display })
+        );
+        logger.info('Reaction role granted', context);
+      } else {
+        await member.roles.remove(
+          role,
+          t('reactionRoles.auditRevoke', { emoji: binding.emoji_display })
+        );
+        logger.info('Reaction role revoked', context);
       }
+    } catch (error) {
+      logger.error('Reaction role update failed', {
+        ...context,
+        change,
+        error: (error as Error).message,
+      });
+    }
+  }
+
+  /** DM the member the reply of the bound command, at most once per cooldown. */
+  private async runCommand(
+    member: GuildMember,
+    binding: ReactionRoleRow,
+    commandName: string
+  ): Promise<void> {
+    const context = {
+      bindingId: binding.id,
+      userId: member.id,
+      command: commandName,
+      messageId: binding.message_id,
+      emoji: binding.emoji_display,
+    };
+    const command = member.client.commands.get(commandName);
+    if (!command?.reactionReply) {
+      logger.warn('Reaction command skipped: command unavailable', context);
+      return;
+    }
+    if (!this.cooldown.take(`${member.id}:${binding.id}`)) {
+      logger.debug('Reaction command skipped: cooldown', context);
+      return;
+    }
+    try {
+      const reply = await command.reactionReply({ client: member.client, user: member.user });
+      await member.send(reply);
+      logger.info('Reaction command sent', context);
+    } catch (error) {
+      // Most often the member does not accept DMs from server members.
+      logger.warn('Reaction command failed', {
+        ...context,
+        error: (error as Error).message,
+      });
     }
   }
 }

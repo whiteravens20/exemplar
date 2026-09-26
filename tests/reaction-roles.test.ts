@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
+  Cooldown,
   KeyedQueue,
+  REACTION_COMMANDS,
   ReactionRoleIndex,
   normaliseUnicodeEmoji,
   parseEmoji,
@@ -10,6 +12,8 @@ import {
   roleProblem,
 } from '../src/utils/reaction-roles.js';
 import type { ReactionRoleRow } from '../src/types/database.js';
+import helpCommand from '../src/slashcommands/help.js';
+import rulesCommand from '../src/slashcommands/rules.js';
 
 const GUILD = '111111111111111111';
 const CHANNEL = '222222222222222222';
@@ -160,6 +164,7 @@ describe('ReactionRoleIndex', () => {
     emoji_key: emojiKey,
     emoji_display: emojiKey,
     role_id: roleId,
+    command: null,
     created_by: 'admin',
     created_at: new Date(),
   });
@@ -201,6 +206,13 @@ describe('ReactionRoleIndex', () => {
     expect(index.removeMessages(['m2']).map((r) => r.id)).toEqual([3]);
     expect(index.size).toBe(0);
     expect(index.all()).toEqual([]);
+  });
+
+  it('keeps command bindings when removing roles', () => {
+    const index = new ReactionRoleIndex();
+    index.replace([{ ...row(7, 'm1', '📜', 'x'), role_id: null, command: 'rules' }]);
+    expect(index.removeRoles(['x'])).toEqual([]);
+    expect(index.match('m1', '📜')[0].command).toBe('rules');
   });
 
   it('does not duplicate a row added twice', () => {
@@ -255,5 +267,29 @@ describe('KeyedQueue', () => {
     await tick();
     expect(ran).toBe(true);
     expect(queue.pending).toBe(0);
+  });
+});
+
+describe('Cooldown', () => {
+  it('allows one run per key per window', () => {
+    const cooldown = new Cooldown(1000);
+    expect(cooldown.take('a', 0)).toBe(true);
+    expect(cooldown.take('a', 999)).toBe(false);
+    expect(cooldown.take('b', 999)).toBe(true);
+    expect(cooldown.take('a', 1000)).toBe(true);
+  });
+});
+
+describe('REACTION_COMMANDS', () => {
+  it('names only commands that implement reactionReply', () => {
+    const commands = new Map([helpCommand, rulesCommand].map((c) => [c.data.name, c]));
+    for (const name of REACTION_COMMANDS) {
+      expect(typeof commands.get(name)?.reactionReply, name).toBe('function');
+    }
+  });
+
+  it('gives /rules the same reply as a reaction', async () => {
+    const reply = await rulesCommand.reactionReply!({} as any);
+    expect(reply.embeds).toHaveLength(1);
   });
 });

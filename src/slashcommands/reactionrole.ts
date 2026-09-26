@@ -17,6 +17,7 @@ import logger from '../utils/logger.js';
 import { t } from '../utils/i18n.js';
 import reactionRoles from '../utils/reaction-role-manager.js';
 import {
+  REACTION_COMMANDS,
   parseEmoji,
   parseMessageRef,
   parseRoleRef,
@@ -63,8 +64,11 @@ function resolveRole(guild: Guild, input: string): Role | null {
   return matches.size === 1 ? (matches.first() ?? null) : null;
 }
 
-function roleLabel(guild: Guild, roleId: string): string {
-  return guild.roles.cache.get(roleId)?.name ?? t('commands.reactionrole.deletedRole');
+/** What a binding does, as shown to admins: `@role` or `/command`. */
+function targetLabel(guild: Guild, row: ReactionRoleRow): string {
+  if (row.command !== null) return `/${row.command}`;
+  const role = row.role_id === null ? undefined : guild.roles.cache.get(row.role_id);
+  return `@${role?.name ?? t('commands.reactionrole.deletedRole')}`;
 }
 
 /** Custom emoji don't render in autocomplete choices; show them as `:name:`. */
@@ -98,12 +102,14 @@ async function removeOwnReaction(guild: Guild, row: ReactionRoleRow): Promise<vo
   }
 }
 
+type Target = { role: Role; command: null } | { role: null; command: string };
+
 /** Check the `add` options; returns what they resolve to, or the error text. */
 async function validateAdd(
   interaction: ChatInputCommandInteraction,
   guild: Guild,
   invoker: GuildMember
-): Promise<string | { ref: MessageRef; emoji: ParsedEmoji; role: Role }> {
+): Promise<string | { ref: MessageRef; emoji: ParsedEmoji; target: Target }> {
   const ref = parseMessageRef(interaction.options.getString('message', true));
   if (!ref) return t('commands.reactionrole.invalidMessage');
   if (ref.guildId && ref.guildId !== guild.id) {
@@ -111,7 +117,15 @@ async function validateAdd(
   }
   const emoji = parseEmoji(interaction.options.getString('emoji', true));
   if (!emoji) return t('commands.reactionrole.invalidEmoji');
-  const role = resolveRole(guild, interaction.options.getString('role', true));
+
+  const roleInput = interaction.options.getString('role');
+  const command = interaction.options.getString('command');
+  if ((roleInput === null) === (command === null)) {
+    return t('commands.reactionrole.targetRequired');
+  }
+  if (command !== null) return { ref, emoji, target: { role: null, command } };
+
+  const role = resolveRole(guild, roleInput ?? '');
   if (!role) return t('commands.reactionrole.roleNotFound');
 
   const bot = guild.members.me ?? (await guild.members.fetchMe());
@@ -119,7 +133,7 @@ async function validateAdd(
   if (problem) {
     return t(`commands.reactionrole.roleProblem.${problem}`, { role: role.name });
   }
-  return { ref, emoji, role };
+  return { ref, emoji, target: { role, command: null } };
 }
 
 async function add(
@@ -132,7 +146,7 @@ async function add(
     await interaction.reply({ content: checked, flags: MessageFlags.Ephemeral });
     return;
   }
-  const { ref, emoji, role } = checked;
+  const { ref, emoji, target } = checked;
 
   await interaction.deferReply();
   const message = await fetchMessage(guild, ref);
@@ -159,7 +173,8 @@ async function add(
     // The key as reaction events will report it, not as it was typed.
     emoji_key: reactionEmojiKey(reaction.emoji) ?? emoji.key,
     emoji_display: reaction.emoji.toString(),
-    role_id: role.id,
+    role_id: target.role?.id ?? null,
+    command: target.command,
     created_by: interaction.user.id,
   });
   if (!row) {
@@ -167,12 +182,19 @@ async function add(
     return;
   }
   await interaction.editReply(
-    t('commands.reactionrole.added', {
-      id: row.id,
-      emoji: row.emoji_display,
-      role: role.name,
-      link: message.url,
-    })
+    target.role
+      ? t('commands.reactionrole.added', {
+          id: row.id,
+          emoji: row.emoji_display,
+          role: target.role.name,
+          link: message.url,
+        })
+      : t('commands.reactionrole.addedCommand', {
+          id: row.id,
+          emoji: row.emoji_display,
+          command: target.command,
+          link: message.url,
+        })
   );
 }
 
@@ -197,7 +219,7 @@ async function remove(
     t('commands.reactionrole.removed', {
       id: row.id,
       emoji: row.emoji_display,
-      role: roleLabel(guild, row.role_id),
+      target: targetLabel(guild, row),
     })
   );
 }
@@ -226,7 +248,7 @@ async function list(
   const blocks = new Map<string, string[]>();
   for (const row of rows) {
     const lines = blocks.get(row.message_id) ?? [messageLink(row)];
-    lines.push(`\`#${row.id}\` ${row.emoji_display} → **@${roleLabel(guild, row.role_id)}**`);
+    lines.push(`\`#${row.id}\` ${row.emoji_display} → **${targetLabel(guild, row)}**`);
     blocks.set(row.message_id, lines);
   }
 
@@ -281,7 +303,12 @@ const command: SlashCommand = {
               .setDescription(t('commands.reactionrole.options.role'))
               .setMaxLength(100)
               .setAutocomplete(true)
-              .setRequired(true)
+          )
+          .addStringOption((option) =>
+            option
+              .setName('command')
+              .setDescription(t('commands.reactionrole.options.command'))
+              .addChoices(REACTION_COMMANDS.map((name) => ({ name: `/${name}`, value: name })))
           )
       )
       .addSubcommand((sub) =>
@@ -363,7 +390,7 @@ const command: SlashCommand = {
     const choices = reactionRoles
       .bindings()
       .map((row) => ({
-        name: `#${row.id} ${plainEmoji(row.emoji_display)} → @${roleLabel(guild, row.role_id)}`.slice(0, 100),
+        name: `#${row.id} ${plainEmoji(row.emoji_display)} → ${targetLabel(guild, row)}`.slice(0, 100),
         value: row.id,
       }))
       .filter((choice) => choice.name.toLowerCase().includes(query))
