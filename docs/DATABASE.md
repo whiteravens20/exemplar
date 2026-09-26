@@ -125,6 +125,8 @@ Located in `migrations/`:
 - `001_initial_schema.sql` - Core tables
 - `002_cleanup_functions.sql` - Maintenance functions
 - `003_analytics_schema.sql` - Analytics tables
+- `004_ai_mod_mutes.sql` - Timeouts applied by the warning escalation ladder
+- `005_dashboard_logs.sql` - Moderation event log for the dashboard
 - `006_reaction_roles.sql` - Reaction-role bindings
 
 ### Creating New Migrations
