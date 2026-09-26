@@ -6,6 +6,7 @@ import {
   loadLocales,
   missingKeys,
   resolveLanguage,
+  stringsFor,
   t,
 } from '../src/utils/i18n.js';
 
@@ -182,5 +183,27 @@ describe('t', () => {
   it('inserts values verbatim', () => {
     const reason = '<b>&"x"</b> $t(commands.help.title) {{reason}}';
     expect(t('commands.warnings.reason', { reason })).toBe(`**Reason:** ${reason}`);
+  });
+});
+
+describe('stringsFor', () => {
+  it('flattens a group in the bot language, plural forms included', async () => {
+    await i18n.changeLanguage('pl');
+    const strings = stringsFor('dashboard');
+    expect(strings['nav.overview']).toBe('Przegląd');
+    expect(strings['user.activeWarnings_few']).toBe('{{count}} aktywne ostrzeżenia');
+  });
+
+  it('fills keys the language lacks from English', async () => {
+    i18n.addResourceBundle('xx', 'translation', {
+      dashboard: { nav: { overview: 'XX overview' } },
+    });
+    await i18n.changeLanguage('xx');
+    const strings = stringsFor('dashboard');
+    expect(strings['nav.overview']).toBe('XX overview');
+    expect(strings['nav.logs']).toBe(
+      i18n.getResource('en', 'translation', 'dashboard.nav.logs')
+    );
+    i18n.removeResourceBundle('xx', 'translation');
   });
 });

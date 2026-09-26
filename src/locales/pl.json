@@ -308,5 +308,150 @@
     "shadowTitle": "🤖 [SHADOW] {{action}}",
     "shadowFooter": "Tryb shadow — żadna akcja nie została wykonana.",
     "noReason": "_(brak)_"
+  },
+  "dashboard": {
+    "title": "Panel moderacji",
+    "login": {
+      "intro": "Zaloguj się przez Discorda, aby przeglądać działania moderacji.",
+      "signIn": "Zaloguj się przez Discorda"
+    },
+    "denied": {
+      "title": "Brak dostępu",
+      "body": "Twoje konto Discord jest zalogowane jako {{user}}, ale nie ma dostępu do tego panelu. Poproś administratora serwera o dostęp.",
+      "unknownUser": "nieznany"
+    },
+    "signOut": "Wyloguj się",
+    "brand": "🛡️ Moderacja",
+    "whoamiAdmin": "{{user}} (admin)",
+    "nav": {
+      "overview": "Przegląd",
+      "logs": "Logi",
+      "user": "Wyszukaj użytkownika",
+      "feedback": "Opinie użytkowników",
+      "config": "Konfiguracja"
+    },
+    "overview": {
+      "title": "Przegląd",
+      "window": "Okres",
+      "last24h": "24 h",
+      "days_one": "{{count}} dzień",
+      "days_few": "{{count}} dni",
+      "days_many": "{{count}} dni",
+      "days_other": "{{count}} dnia",
+      "byType": "Zdarzenia według typu",
+      "bySeverity": "Zdarzenia według wagi",
+      "bySource": "Zdarzenia według źródła",
+      "topTargets": "Najczęściej zgłaszani użytkownicy",
+      "daily": "Aktywność (dziennie)",
+      "totalEvents": "Wszystkie zdarzenia",
+      "aiFlags": "Flagi AI",
+      "humanActions": "Akcje moderatorów",
+      "aiActions": "Akcje AI"
+    },
+    "logs": {
+      "title": "Logi",
+      "autoRefresh": "Automatyczne odświeżanie",
+      "search": "Szukaj w powodzie / uzasadnieniu / użytkowniku…",
+      "anyType": "Dowolny typ",
+      "anySeverity": "Dowolna waga",
+      "anySource": "Dowolne źródło",
+      "userId": "ID użytkownika",
+      "channelId": "ID kanału",
+      "from": "Od",
+      "to": "Do",
+      "apply": "Zastosuj",
+      "clear": "Wyczyść",
+      "meta": "Wyświetlono: {{shown}} · pasujących: {{total}}"
+    },
+    "columns": {
+      "time": "Czas",
+      "type": "Typ",
+      "severity": "Waga",
+      "source": "Źródło",
+      "user": "Użytkownik",
+      "action": "Akcja",
+      "reason": "Powód",
+      "issued": "Wydano",
+      "expires": "Wygasa",
+      "by": "Przez"
+    },
+    "drawer": {
+      "moderator": "Moderator",
+      "target": "Cel",
+      "channel": "Kanał",
+      "aiReasoning": "Uzasadnienie AI",
+      "rule": "Naruszona zasada",
+      "metadata": "Metadane"
+    },
+    "user": {
+      "title": "Wyszukaj użytkownika",
+      "placeholder": "ID użytkownika Discord",
+      "lookUp": "Szukaj",
+      "lookupFailed": "Wyszukiwanie nie powiodło się: {{error}}",
+      "banned": "Ban aktywny",
+      "notBanned": "Bez bana",
+      "muted": "Wyciszenie aktywne",
+      "notMuted": "Bez wyciszenia",
+      "activeWarnings_one": "{{count}} aktywne ostrzeżenie",
+      "activeWarnings_few": "{{count}} aktywne ostrzeżenia",
+      "activeWarnings_many": "{{count}} aktywnych ostrzeżeń",
+      "activeWarnings_other": "{{count}} aktywnego ostrzeżenia",
+      "userId": "ID użytkownika",
+      "banReason": "Powód bana",
+      "mutedUntil": "Wyciszenie do",
+      "warningsTitle": "Aktywne ostrzeżenia",
+      "eventsTitle": "Ostatnie zdarzenia"
+    },
+    "feedback": {
+      "title": "Opinie użytkowników",
+      "empty": "Brak opinii.",
+      "emptyHint": "Zbieranie opinii pojawi się wraz z systemem opinii i ocen (issue #17). Zgłoszenia będą tu widoczne jako posty.",
+      "anonymous": "Użytkownik"
+    },
+    "config": {
+      "title": "Konfiguracja",
+      "intro": "Podgląd bieżącej konfiguracji bota, tylko do odczytu. Sekrety nigdy nie są pokazywane."
+    },
+    "noData": "Brak danych.",
+    "none": "Brak.",
+    "eventTypes": {
+      "warn": "ostrzeżenie",
+      "ban": "ban",
+      "kick": "wyrzucenie",
+      "mute": "wyciszenie",
+      "unmute": "zdjęcie wyciszenia",
+      "unban": "odbanowanie",
+      "delete": "usunięcie",
+      "ai_flag": "flaga AI",
+      "feedback": "opinia"
+    },
+    "severities": {
+      "info": "info",
+      "low": "niska",
+      "medium": "średnia",
+      "high": "wysoka",
+      "critical": "krytyczna"
+    },
+    "actorTypes": {
+      "human": "człowiek",
+      "ai": "AI",
+      "system": "system"
+    },
+    "actions": {
+      "warn": "ostrzeżenie",
+      "ban": "ban",
+      "kick": "wyrzucenie",
+      "timeout": "wyciszenie",
+      "unmute": "zdjęcie wyciszenia",
+      "unban": "odbanowanie",
+      "delete": "usunięcie"
+    },
+    "callback": {
+      "invalidState": "Nieprawidłowe lub wygasłe żądanie logowania. Spróbuj ponownie.",
+      "missingCode": "Brak kodu autoryzacji.",
+      "authFailed": "Uwierzytelnienie przez Discorda nie powiodło się.",
+      "profileFailed": "Nie udało się wczytać Twojego profilu Discord.",
+      "failed": "Logowanie nie powiodło się."
+    }
   }
 }

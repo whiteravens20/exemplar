@@ -118,3 +118,20 @@ logger.info('Bot language', { language });
 
 /** Translate a key into the bot's language. */
 export const t = i18n.t;
+
+/**
+ * One group of the locale files as a flat `key → text` map, in the bot's
+ * language with English for any key it lacks. Plural keys keep their suffix.
+ * Feeds the dashboard frontend, which does its own lookups.
+ */
+export function stringsFor(group: string): Record<string, string> {
+  const strings: Record<string, string> = {};
+  for (const code of new Set([FALLBACK_LANGUAGE, i18n.language])) {
+    const tree: unknown = i18n.getResource(code, 'translation', group);
+    if (!tree || typeof tree !== 'object') continue;
+    for (const key of flattenKeys(tree as Record<string, unknown>)) {
+      strings[key] = String(i18n.getResource(code, 'translation', `${group}.${key}`));
+    }
+  }
+  return strings;
+}
