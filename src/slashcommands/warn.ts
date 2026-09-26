@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
 import { applyWarn, canModerate } from '../utils/moderation-actions.js';
+import { t } from '../utils/i18n.js';
 import {
   withAppAvailability,
   resolveGuildInvoker,
@@ -16,17 +17,17 @@ const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('warn')
-      .setDescription('Wystawia ostrzeżenie użytkownikowi (zapisywane w bazie)')
+      .setDescription(t('commands.warn.description'))
       .addUserOption((option) =>
         option
           .setName('user')
-          .setDescription('Użytkownik do ostrzeżenia')
+          .setDescription(t('commands.warn.options.user'))
           .setRequired(true)
       )
       .addStringOption((option) =>
         option
           .setName('reason')
-          .setDescription('Powód ostrzeżenia')
+          .setDescription(t('commands.warn.options.reason'))
           .setMaxLength(512)
           .setRequired(true)
       )
@@ -41,7 +42,7 @@ const command: SlashCommand = {
 
     if (!base.invoker.permissions.has(PermissionFlagsBits.ModerateMembers)) {
       await interaction.reply({
-        content: '❌ Nie masz wymaganych uprawnień do użycia tej komendy.',
+        content: t('errors.missingPermission'),
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -56,8 +57,7 @@ const command: SlashCommand = {
       .catch(() => null);
     if (targetMember && !canModerate(base.invoker, targetMember)) {
       await interaction.reply({
-        content:
-          '❌ Nie możesz ostrzec tego użytkownika (hierarchia ról lub akcja na sobie/właścicielu).',
+        content: t('commands.warn.cannotWarn'),
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -77,7 +77,7 @@ const command: SlashCommand = {
       await interaction.reply({ embeds });
     } else {
       await interaction.reply({
-        content: result.content ?? '❌ Operacja nie powiodła się.',
+        content: result.content ?? t('errors.operationFailed'),
         flags: MessageFlags.Ephemeral,
       });
     }

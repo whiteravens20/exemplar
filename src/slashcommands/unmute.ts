@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
 import { applyUntimeout } from '../utils/moderation-actions.js';
+import { t } from '../utils/i18n.js';
 import {
   withAppAvailability,
   resolveModerationContext,
@@ -16,11 +17,11 @@ const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('unmute')
-      .setDescription('Zdejmuje wyciszenie z użytkownika na skonfigurowanym serwerze')
+      .setDescription(t('commands.unmute.description'))
       .addUserOption((option) =>
         option
           .setName('user')
-          .setDescription('Użytkownik, z którego zdjąć wyciszenie')
+          .setDescription(t('commands.unmute.options.user'))
           .setRequired(true)
       )
   ),
@@ -44,7 +45,7 @@ const command: SlashCommand = {
       await interaction.reply({ embeds: [result.embed] });
     } else {
       await interaction.reply({
-        content: result.content ?? '❌ Operacja nie powiodła się.',
+        content: result.content ?? t('errors.operationFailed'),
         flags: MessageFlags.Ephemeral,
       });
     }
