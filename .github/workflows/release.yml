@@ -73,7 +73,6 @@ jobs:
       packages: write   # Required to push to ghcr.io
       id-token: write   # Sign the provenance attestation
       attestations: write
-      artifact-metadata: write   # Storage record for the attested image
 
     outputs:
       digest: ${{ steps.build.outputs.digest }}
@@ -135,6 +134,9 @@ jobs:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
+          # No artifact storage record: it needs the artifact-metadata:write
+          # permission and only feeds the org's Linked Artifacts page.
+          create-storage-record: false
 
   # ── Job 2: GitHub Release with auto-generated changelog ─────────────────────
   # Creates (or updates) the GitHub Release for this tag.
