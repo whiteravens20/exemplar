@@ -5,6 +5,7 @@ import {
   canModerate,
   checkBasePermissions,
 } from '../src/utils/moderation-actions.js';
+import { t } from '../src/utils/i18n.js';
 
 describe('parseDuration', () => {
   it('parses seconds', () => {
@@ -136,7 +137,7 @@ describe('checkBasePermissions', () => {
     const result = checkBasePermissions(moderator as any, target as any, KICK_MEMBERS);
     expect(result).not.toBeNull();
     expect(result?.success).toBe(false);
-    expect(result?.content).toContain('Nie masz wymaganych uprawnień');
+    expect(result?.content).toBe(t('errors.missingPermission'));
   });
 
   it('returns error for self-action', () => {
@@ -152,6 +153,6 @@ describe('checkBasePermissions', () => {
       KICK_MEMBERS
     );
     expect(result).not.toBeNull();
-    expect(result?.content).toContain('sobie');
+    expect(result?.content).toBe(t('moderation.errors.selfAction'));
   });
 });

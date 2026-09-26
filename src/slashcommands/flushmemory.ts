@@ -8,13 +8,14 @@ import configManager from '../config/config.js';
 import logger from '../utils/logger.js';
 import conversationRepo from '../db/repositories/conversation-repository.js';
 import analyticsRepo from '../db/repositories/analytics-repository.js';
+import { t } from '../utils/i18n.js';
 import { withAppAvailability, getDmAccess } from './shared.js';
 
 const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('flushmemory')
-      .setDescription('Czyści Twoją historię konwersacji (bot + n8n AI Agent)')
+      .setDescription(t('commands.flushmemory.description'))
   ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -38,7 +39,7 @@ const command: SlashCommand = {
       );
 
     await interaction.reply({
-      content: `✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **${deletedCount}** wiadomości (bot + n8n AI Agent).`,
+      content: t('commands.flushmemory.done', { count: deletedCount }),
     });
 
     logger.info('User flushed their conversation memory', {

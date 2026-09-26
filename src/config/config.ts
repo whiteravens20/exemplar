@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import logger from '../utils/logger.js';
+import { t } from '../utils/i18n.js';
 import type { BotConfig, AiModerationMode } from '../types/config.js';
 
 class ConfigManager {
@@ -19,11 +20,9 @@ class ConfigManager {
       },
       bot: {
         mentionResponse:
-          process.env.HARDCODED_MENTION_RESPONSE ||
-          "Hi! I'm an AI Assistant. Send me a DM to chat with me.",
+          process.env.HARDCODED_MENTION_RESPONSE || t('bot.mentionResponse'),
         restrictedResponse:
-          process.env.RESTRICTED_RESPONSE ||
-          "You don't have permission to use this feature. Please contact the admins.",
+          process.env.RESTRICTED_RESPONSE || t('bot.restrictedResponse'),
         rulesText: process.env.RULES_TEXT || '',
       },
       moderation: {

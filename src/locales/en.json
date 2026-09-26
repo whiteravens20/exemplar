@@ -1,0 +1,429 @@
+{
+  "presence": {
+    "helpInDm": "DMs · /help for commands",
+    "discordMessages": "Discord messages",
+    "aiChatInDm": "DMs for AI chat",
+    "serverActivity": "server activity",
+    "imperium": "messages across the Imperium"
+  },
+  "bot": {
+    "mentionResponse": "Hi! I'm an AI Assistant. Send me a DM to chat with me.",
+    "restrictedResponse": "You don't have permission to use this feature. Please contact the admins."
+  },
+  "errors": {
+    "commandFailed": "❌ Something went wrong while running this command!",
+    "operationFailed": "❌ The operation failed.",
+    "missingPermission": "❌ You don't have the permissions this command requires.",
+    "adminOnly": "❌ You don't have permission to use this command. Required: Administrator or Moderator.",
+    "guildUnavailable": "❌ The configured server is currently unavailable.",
+    "notAMember": "❌ You are not a member of the configured server.",
+    "targetNotAMember": "❌ This user is not a member of the server."
+  },
+  "assistant": {
+    "rateLimited_one": "⏳ Message limit reached. Wait {{count}} second before sending another message.",
+    "rateLimited_other": "⏳ Message limit reached. Wait {{count}} seconds before sending another message.",
+    "tooLong_one": "❌ Message too long. The maximum length is {{count}} character.",
+    "tooLong_other": "❌ Message too long. The maximum length is {{count}} characters.",
+    "empty": "❌ Received an empty message.",
+    "useCommandMenu": "To use `/{{command}}`, pick it from Discord's command menu (type `/` and click it in the list) — typed as a plain message, it won't run.",
+    "errors": {
+      "processing": "❌ Error processing your message. Please try again later.",
+      "unavailable": "⚠️ The backend is currently unavailable. Please try again in a moment.",
+      "timeout": "⏱️ Request timed out. Your message took too long to process.",
+      "notFound": "⚠️ Backend workflow not found. Please check the n8n configuration.",
+      "auth": "🔒 Backend authentication failed. Please check the API key configuration.",
+      "generic": "💥 Something went wrong! Please try again or contact support.",
+      "missingResponse": "❌ The n8n workflow is misconfigured: its reply has no \"response\" field. Please check the workflow."
+    }
+  },
+  "commands": {
+    "ban": {
+      "description": "Bans a user from the configured server",
+      "options": {
+        "user": "The user to ban",
+        "reason": "Reason for the ban"
+      }
+    },
+    "code": {
+      "description": "Sends a request to the AI in coding mode",
+      "options": {
+        "message": "Your coding request"
+      },
+      "empty": "❌ Please enter a request."
+    },
+    "flushdb": {
+      "description": "Clears the database: conversations, rate limits, statistics (admin)",
+      "options": {
+        "confirm": "Set to true to confirm this irreversible operation"
+      },
+      "databaseUnavailable": "❌ Database unavailable. The operation can't be run.",
+      "confirmPrompt": "⚠️ **WARNING:** This deletes all conversations (bot + n8n AI Agent), rate limits and statistics.\n\nRun it again with `confirm: true` to confirm. Users and warnings are kept.",
+      "done_one": "✅ The database has been cleared (users and warnings were kept).\n📊 Deleted **{{count}}** conversation message (bot + n8n AI Agent).",
+      "done_other": "✅ The database has been cleared (users and warnings were kept).\n📊 Deleted **{{count}}** conversation messages (bot + n8n AI Agent)."
+    },
+    "flushmemory": {
+      "description": "Clears your conversation history (bot + n8n AI Agent)",
+      "done_one": "✅ Your conversation memory has been cleared.\n📊 Deleted **{{count}}** message (bot + n8n AI Agent).",
+      "done_other": "✅ Your conversation memory has been cleared.\n📊 Deleted **{{count}}** messages (bot + n8n AI Agent)."
+    },
+    "help": {
+      "description": "Shows the available commands and how to use the bot",
+      "title": "🤖 AI Assistant Bot - Help",
+      "intro": "Hi! I'm an AI bot. Send me a direct message to chat. All `/` commands work in DMs with the bot.",
+      "usage": {
+        "name": "💬 How does it work?",
+        "value": "Just send me a direct message — I'll answer with the help of AI. Run `/` commands in the same DM window."
+      },
+      "userCommands": {
+        "name": "📋 User commands",
+        "value": "• `/help` — this message\n• `/rules` — server rules\n• `/code <message>` — coding mode\n• `/flushmemory` — clear your conversation memory\n• `/warnings` — show your warnings"
+      },
+      "moderationCommands": {
+        "name": "👮 Moderation commands (permissions required)",
+        "value": "• `/kick`, `/ban`, `/unban`\n• `/mute`, `/unmute`\n• `/warn` — issue a warning"
+      },
+      "adminCommands": {
+        "name": "🔐 Admin commands",
+        "value": "• `/warnings [user]` — review warnings\n• `/stats [days]` — bot statistics\n• `/flushdb` — clear the database"
+      },
+      "note": {
+        "name": "⚠️ Note",
+        "value": "A command used in a server channel won't run — the bot will send you to DMs."
+      }
+    },
+    "kick": {
+      "description": "Kicks a user from the configured server",
+      "options": {
+        "user": "The user to kick",
+        "reason": "Reason for the kick"
+      }
+    },
+    "mute": {
+      "description": "Mutes (times out) a user on the configured server",
+      "options": {
+        "user": "The user to mute",
+        "duration": "Mute duration, e.g. 30s, 10m, 1h, 1d (max. 28 days)",
+        "reason": "Reason for the mute"
+      },
+      "invalidDuration": "❌ Invalid duration format. Use: `30s`, `10m`, `1h`, `1d`."
+    },
+    "rules": {
+      "description": "Shows the server rules",
+      "title": "📜 Server rules",
+      "notConfigured": "The rules haven't been set up yet. Please contact the server administrators."
+    },
+    "stats": {
+      "description": "Shows bot usage statistics (admins only)",
+      "options": {
+        "days": "Number of days to include (1-90, default 7)"
+      },
+      "databaseUnavailable": "❌ Database unavailable. Statistics can't be loaded.",
+      "fetchFailed": "❌ Failed to load statistics. Please try again later.",
+      "embed": {
+        "title": "📊 Bot Statistics",
+        "footer_one": "Statistics for the last day",
+        "footer_other": "Statistics for the last {{count}} days",
+        "overview": {
+          "name": "📈 Overview",
+          "value": "**Total Messages:** {{messages, number}}\n**Unique Users:** {{users, number}}\n**Avg Response Time:** {{avgMs, number(maximumFractionDigits: 0)}}ms"
+        },
+        "byType": "📝 By Type",
+        "topUsers": "👥 Top Users",
+        "peakHours": "⏰ Peak Hours",
+        "peakHour_one": "**{{hour}}:00** - {{count}} msg",
+        "peakHour_other": "**{{hour}}:00** - {{count}} msgs",
+        "topCommands": "🔧 Top Commands",
+        "noData": "No data"
+      }
+    },
+    "unban": {
+      "description": "Lifts a user's ban on the configured server",
+      "options": {
+        "userId": "ID of the user to unban"
+      },
+      "invalidId": "❌ Invalid user ID."
+    },
+    "unmute": {
+      "description": "Lifts a user's mute on the configured server",
+      "options": {
+        "user": "The user to unmute"
+      }
+    },
+    "warn": {
+      "description": "Issues a warning to a user (stored in the database)",
+      "options": {
+        "user": "The user to warn",
+        "reason": "Reason for the warning"
+      },
+      "cannotWarn": "❌ You can't warn this user (role hierarchy, or the target is yourself or the owner)."
+    },
+    "warnings": {
+      "description": "Shows active warnings (yours or, for admins, a chosen user's)",
+      "options": {
+        "user": "The user to check (admins only)"
+      },
+      "databaseUnavailable": "❌ Database unavailable. Warnings can't be loaded.",
+      "all": {
+        "title": "⚠️ All Active Warnings",
+        "count_one": "Found **{{count}}** active warning.",
+        "count_other": "Found **{{count}}** active warnings.",
+        "none": "There are no active warnings."
+      },
+      "user": {
+        "title": "⚠️ Warnings: {{user}}",
+        "count_one": "This user has **{{count}}** active warning.",
+        "count_other": "This user has **{{count}}** active warnings.",
+        "none": "This user has no active warnings."
+      },
+      "own": {
+        "title": "⚠️ Your Warnings",
+        "count_one": "You have **{{count}}** active warning.",
+        "count_other": "You have **{{count}}** active warnings.",
+        "none": "You have no active warnings! ✅"
+      },
+      "entryTitle": "Warning {{number}}",
+      "reason": "**Reason:** {{reason}}",
+      "issued": "**Issued:** {{date, datetime}}",
+      "expiresIn_one": "**Expires in:** {{count}} day",
+      "expiresIn_other": "**Expires in:** {{count}} days",
+      "issuedBy": "**Issued by:** {{moderator}}",
+      "footer": "Showing {{shown}} of {{total}} warnings"
+    }
+  },
+  "moderation": {
+    "noReason": "No reason given",
+    "emptyMessage": "_(empty message)_",
+    "aiModerator": "AI moderation",
+    "dmDelivered": "✅ Delivered",
+    "dmNotDelivered": "⚠️ Not delivered",
+    "fields": {
+      "user": "User",
+      "moderator": "Moderator",
+      "reason": "Reason",
+      "server": "Server",
+      "duration": "Duration",
+      "expires": "Expires",
+      "channel": "Channel",
+      "content": "Content",
+      "dm": "DM",
+      "activeWarnings": "Active warnings"
+    },
+    "errors": {
+      "selfAction": "❌ You can't do this to yourself.",
+      "ownerAction": "❌ You can't do this to the server owner.",
+      "hierarchy": "❌ You can't do this to this user (role hierarchy or permissions)."
+    },
+    "kick": {
+      "logTitle": "Kick",
+      "done": "Kicked",
+      "cannot": "❌ I can't kick this user.",
+      "failed": "❌ Failed to kick the user: {{error}}",
+      "dmTitle": "👢 You have been kicked from the server"
+    },
+    "ban": {
+      "logTitle": "Ban",
+      "done": "Banned",
+      "cannot": "❌ I can't ban this user.",
+      "failed": "❌ Failed to ban the user: {{error}}",
+      "dmTitle": "🚫 You have been banned from the server",
+      "permanent": "Permanent"
+    },
+    "unban": {
+      "logTitle": "Unban",
+      "done": "Unbanned",
+      "failed": "❌ Failed to unban the user. Make sure the ID is correct."
+    },
+    "mute": {
+      "logTitle": "Mute (Timeout)",
+      "done": "Muted",
+      "cannot": "❌ I can't mute this user.",
+      "tooLong": "❌ The maximum mute duration is 28 days.",
+      "failed": "❌ Failed to mute the user: {{error}}",
+      "dmTitle": "🔇 You have been muted on the server"
+    },
+    "unmute": {
+      "logTitle": "Unmute",
+      "done": "Mute lifted",
+      "cannot": "❌ I can't lift this user's mute.",
+      "notMuted": "❌ This user isn't muted right now.",
+      "failed": "❌ Failed to lift the mute: {{error}}",
+      "auditReason": "Mute lifted by a moderator"
+    },
+    "warn": {
+      "logTitle": "Warn",
+      "done": "Warning issued",
+      "databaseUnavailable": "❌ Database unavailable. Warnings can't be saved.",
+      "botTarget": "❌ Bots can't be warned.",
+      "saveFailed": "❌ Failed to save the warning.",
+      "dmTitle": "⚠️ You have received a warning",
+      "expiresValue": "in 30 days",
+      "dmFooter": "Continued misconduct may lead to further sanctions"
+    },
+    "autoBan": {
+      "reason_one": "Automatic ban: {{count}} lifetime warning",
+      "reason_other": "Automatic ban: {{count}} lifetime warnings",
+      "actor": "{{actor}} (auto-ban)",
+      "failed": "❌ Failed to ban the user automatically: {{error}}"
+    },
+    "autoMute": {
+      "reason_one": "Automatic mute: {{count}} active warning",
+      "reason_other": "Automatic mute: {{count}} active warnings",
+      "actor": "{{actor}} (auto-mute)"
+    },
+    "delete": {
+      "logTitle": "🗑️ Delete message",
+      "done": "Message deleted",
+      "notFromGuild": "❌ The message isn't from a server.",
+      "botMessage": "❌ Bot messages can't be deleted.",
+      "failed": "❌ Failed to delete the message: {{error}}",
+      "dmTitle": "🗑️ Your message has been deleted"
+    }
+  },
+  "aiModeration": {
+    "defaultReason": "Violation detected by AI moderation",
+    "shadowTitle": "🤖 [SHADOW] {{action}}",
+    "shadowFooter": "Shadow mode — no action was taken.",
+    "noReason": "_(none)_"
+  },
+  "dashboard": {
+    "title": "Moderation Dashboard",
+    "login": {
+      "intro": "Sign in with Discord to review moderation activity.",
+      "signIn": "Sign in with Discord"
+    },
+    "denied": {
+      "title": "Access denied",
+      "body": "Your Discord account is signed in as {{user}} but is not authorized to view this dashboard. Ask a server administrator for access.",
+      "unknownUser": "unknown"
+    },
+    "signOut": "Sign out",
+    "brand": "🛡️ Moderation",
+    "whoamiAdmin": "{{user}} (admin)",
+    "nav": {
+      "overview": "Overview",
+      "logs": "Logs",
+      "user": "User lookup",
+      "feedback": "Users feedback",
+      "config": "Config"
+    },
+    "overview": {
+      "title": "Overview",
+      "window": "Window",
+      "last24h": "24h",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days",
+      "byType": "Events by type",
+      "bySeverity": "Events by severity",
+      "bySource": "Events by source",
+      "topTargets": "Most flagged users",
+      "daily": "Activity (per day)",
+      "totalEvents": "Total events",
+      "aiFlags": "AI flags",
+      "humanActions": "Human actions",
+      "aiActions": "AI actions"
+    },
+    "logs": {
+      "title": "Logs",
+      "autoRefresh": "Auto-refresh",
+      "search": "Search reason / reasoning / user…",
+      "anyType": "Any type",
+      "anySeverity": "Any severity",
+      "anySource": "Any source",
+      "userId": "User ID",
+      "channelId": "Channel ID",
+      "from": "From",
+      "to": "To",
+      "apply": "Apply",
+      "clear": "Clear",
+      "meta": "{{shown}} shown · {{total}} total match"
+    },
+    "columns": {
+      "time": "Time",
+      "type": "Type",
+      "severity": "Severity",
+      "source": "Source",
+      "user": "User",
+      "action": "Action",
+      "reason": "Reason",
+      "issued": "Issued",
+      "expires": "Expires",
+      "by": "By"
+    },
+    "drawer": {
+      "moderator": "Moderator",
+      "target": "Target",
+      "channel": "Channel",
+      "aiReasoning": "AI reasoning",
+      "rule": "Triggered rule",
+      "metadata": "Metadata"
+    },
+    "user": {
+      "title": "User lookup",
+      "placeholder": "Discord user ID",
+      "lookUp": "Look up",
+      "lookupFailed": "Lookup failed: {{error}}",
+      "banned": "Banned",
+      "notBanned": "Not banned",
+      "muted": "Muted",
+      "notMuted": "Not muted",
+      "activeWarnings_one": "{{count}} active warning",
+      "activeWarnings_other": "{{count}} active warnings",
+      "userId": "User ID",
+      "banReason": "Ban reason",
+      "mutedUntil": "Muted until",
+      "warningsTitle": "Active warnings",
+      "eventsTitle": "Recent events"
+    },
+    "feedback": {
+      "title": "Users feedback",
+      "empty": "No feedback yet.",
+      "emptyHint": "User feedback collection ships with the Feedback & Rating System (issue #17). Submissions will appear here as posts.",
+      "anonymous": "User"
+    },
+    "config": {
+      "title": "Configuration",
+      "intro": "Read-only view of the bot's effective configuration. Secrets are never exposed."
+    },
+    "noData": "No data.",
+    "none": "None.",
+    "eventTypes": {
+      "warn": "warn",
+      "ban": "ban",
+      "kick": "kick",
+      "mute": "mute",
+      "unmute": "unmute",
+      "unban": "unban",
+      "delete": "delete",
+      "ai_flag": "AI flag",
+      "feedback": "feedback"
+    },
+    "severities": {
+      "info": "info",
+      "low": "low",
+      "medium": "medium",
+      "high": "high",
+      "critical": "critical"
+    },
+    "actorTypes": {
+      "human": "human",
+      "ai": "AI",
+      "system": "system"
+    },
+    "actions": {
+      "warn": "warn",
+      "ban": "ban",
+      "kick": "kick",
+      "timeout": "timeout",
+      "unmute": "unmute",
+      "unban": "unban",
+      "delete": "delete"
+    },
+    "callback": {
+      "invalidState": "Invalid or expired login request. Please try again.",
+      "missingCode": "Missing authorization code.",
+      "authFailed": "Discord authentication failed.",
+      "profileFailed": "Could not load your Discord profile.",
+      "failed": "Login failed."
+    }
+  }
+}

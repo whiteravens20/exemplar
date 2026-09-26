@@ -9,7 +9,7 @@ import logger from '../utils/logger.js';
 import N8NClient from '../utils/n8n-client.js';
 import { splitMessage } from '../utils/message-splitter.js';
 import { estimateTokens } from '../utils/token-estimator.js';
-import { getTemplate } from '../config/response-templates.js';
+import { t } from '../utils/i18n.js';
 import conversationRepo from '../db/repositories/conversation-repository.js';
 import analyticsRepo from '../db/repositories/analytics-repository.js';
 import { withAppAvailability, getDmAccess } from './shared.js';
@@ -23,11 +23,11 @@ const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('code')
-      .setDescription('Wysyła zapytanie do AI w trybie programistycznym')
+      .setDescription(t('commands.code.description'))
       .addStringOption((option) =>
         option
           .setName('message')
-          .setDescription('Treść zapytania programistycznego')
+          .setDescription(t('commands.code.options.message'))
           .setRequired(true)
           .setMaxLength(4000)
       )
@@ -46,7 +46,7 @@ const command: SlashCommand = {
     const message = interaction.options.getString('message', true).trim();
     if (!message) {
       await interaction.reply({
-        content: '❌ Podaj treść zapytania.',
+        content: t('commands.code.empty'),
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -75,18 +75,17 @@ const command: SlashCommand = {
       let errorMessage: string;
       // A timeout carries no status, so it has to be checked first.
       if (result.error?.includes('timeout')) {
-        errorMessage = getTemplate('error', 'timeout');
+        errorMessage = t('assistant.errors.timeout');
       } else if (!result.success && !status) {
-        errorMessage = getTemplate('error', 'n8nDown');
+        errorMessage = t('assistant.errors.unavailable');
       } else if (status === 404) {
-        errorMessage = getTemplate('error', 'notFound');
+        errorMessage = t('assistant.errors.notFound');
       } else if (status === 401 || status === 403) {
-        errorMessage =
-          '🔒 Błąd uwierzytelnienia backendu. Sprawdź konfigurację klucza API.';
+        errorMessage = t('assistant.errors.auth');
       } else if (status && status >= 500) {
-        errorMessage = getTemplate('error', 'n8nDown');
+        errorMessage = t('assistant.errors.unavailable');
       } else {
-        errorMessage = getTemplate('error', 'processing');
+        errorMessage = t('assistant.errors.processing');
       }
       logger.error('Code command n8n error', {
         userId: interaction.user.id,

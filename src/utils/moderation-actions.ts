@@ -9,6 +9,7 @@ import {
   type TextChannel,
 } from 'discord.js';
 import logger from './logger.js';
+import { t } from './i18n.js';
 import warningRepo from '../db/repositories/warning-repository.js';
 import aiModMuteRepo from '../db/repositories/ai-mod-mute-repository.js';
 import moderationLogRepo from '../db/repositories/moderation-log-repository.js';
@@ -138,29 +139,16 @@ export function checkBasePermissions(
   requiredPerm: bigint
 ): ActionResult | null {
   if (!member.permissions.has(requiredPerm)) {
-    return {
-      success: false,
-      content: '❌ Nie masz wymaganych uprawnień do użycia tej komendy.',
-    };
+    return { success: false, content: t('errors.missingPermission') };
   }
   if (!canModerate(member, target)) {
     if (target.id === member.id) {
-      return {
-        success: false,
-        content: '❌ Nie możesz wykonać tej akcji na sobie.',
-      };
+      return { success: false, content: t('moderation.errors.selfAction') };
     }
     if (target.id === member.guild.ownerId) {
-      return {
-        success: false,
-        content: '❌ Nie możesz wykonać tej akcji na właścicielu serwera.',
-      };
+      return { success: false, content: t('moderation.errors.ownerAction') };
     }
-    return {
-      success: false,
-      content:
-        '❌ Nie możesz wykonać tej akcji na tym użytkowniku (hierarchia ról lub uprawnienia).',
-    };
+    return { success: false, content: t('moderation.errors.hierarchy') };
   }
   return null;
 }
@@ -203,9 +191,13 @@ async function sendModLog(
       .setColor(0xe74c3c)
       .setTitle(`🔨 ${descriptor.title}`)
       .addFields(
-        { name: 'Użytkownik', value: `${target.tag} (${target.id})`, inline: true },
-        { name: 'Moderator', value: actor.label, inline: true },
-        { name: 'Powód', value: reason || 'Nie podano powodu' }
+        {
+          name: t('moderation.fields.user'),
+          value: `${target.tag} (${target.id})`,
+          inline: true,
+        },
+        { name: t('moderation.fields.moderator'), value: actor.label, inline: true },
+        { name: t('moderation.fields.reason'), value: reason || t('moderation.noReason') }
       )
       .setTimestamp();
 
@@ -230,8 +222,16 @@ export function buildModEmbed(
     .setColor(color)
     .setTitle(`✅ ${action}`)
     .addFields(
-      { name: 'Użytkownik', value: `${target.tag} (${target.id})`, inline: true },
-      { name: 'Powód', value: reason || 'Nie podano powodu', inline: true }
+      {
+        name: t('moderation.fields.user'),
+        value: `${target.tag} (${target.id})`,
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.reason'),
+        value: reason || t('moderation.noReason'),
+        inline: true,
+      }
     )
     .setTimestamp();
 
@@ -262,8 +262,11 @@ async function notifyTarget(
           color,
           title,
           fields: [
-            { name: 'Serwer', value: guildName },
-            { name: 'Powód', value: reason || 'Nie podano powodu' },
+            { name: t('moderation.fields.server'), value: guildName },
+            {
+              name: t('moderation.fields.reason'),
+              value: reason || t('moderation.noReason'),
+            },
             ...extraFields,
           ],
           ...(footer ? { footer: { text: footer } } : {}),
@@ -284,8 +287,8 @@ async function notifyTarget(
 /** Field shown on the moderator-facing embed reporting DM delivery. */
 function dmStatusField(dmSent: boolean): { name: string; value: string; inline: boolean } {
   return {
-    name: 'DM',
-    value: dmSent ? '✅ Doręczono' : '⚠️ Nie doręczono',
+    name: t('moderation.fields.dm'),
+    value: dmSent ? t('moderation.dmDelivered') : t('moderation.dmNotDelivered'),
     inline: true,
   };
 }
@@ -298,13 +301,13 @@ export async function applyKick(
   actor: Actor
 ): Promise<ActionResult> {
   if (!target.kickable) {
-    return { success: false, content: '❌ Nie mogę wyrzucić tego użytkownika.' };
+    return { success: false, content: t('moderation.kick.cannot') };
   }
   // DM before kicking — afterwards the bot shares no guild with the user.
   const dmSent = await notifyTarget(
     target.user,
     target.guild.name,
-    '👢 Zostałeś wyrzucony z serwera',
+    t('moderation.kick.dmTitle'),
     0xf39c12,
     reason
   );
@@ -314,19 +317,24 @@ export async function applyKick(
     logger.error('Kick failed', { targetId: target.id, error: (error as Error).message });
     return {
       success: false,
-      content: `❌ Nie udało się wyrzucić użytkownika: ${(error as Error).message}`,
+      content: t('moderation.kick.failed', { error: (error as Error).message }),
     };
   }
   await sendModLog(
     target.guild,
-    { title: 'Kick', eventType: 'kick', action: 'kick', severity: 'medium' },
+    {
+      title: t('moderation.kick.logTitle'),
+      eventType: 'kick',
+      action: 'kick',
+      severity: 'medium',
+    },
     target.user,
     reason,
     actor
   );
   return {
     success: true,
-    embed: buildModEmbed('Wyrzucono', target.user, reason, 0xf39c12, [
+    embed: buildModEmbed(t('moderation.kick.done'), target.user, reason, 0xf39c12, [
       dmStatusField(dmSent),
     ]),
   };
@@ -338,16 +346,16 @@ export async function applyBan(
   actor: Actor
 ): Promise<ActionResult> {
   if (!target.bannable) {
-    return { success: false, content: '❌ Nie mogę zbanować tego użytkownika.' };
+    return { success: false, content: t('moderation.ban.cannot') };
   }
   // DM before banning — afterwards the bot shares no guild with the user.
   const dmSent = await notifyTarget(
     target.user,
     target.guild.name,
-    '🚫 Zostałeś zbanowany na serwerze',
+    t('moderation.ban.dmTitle'),
     0xe74c3c,
     reason,
-    [{ name: 'Czas trwania', value: 'Permanentny' }]
+    [{ name: t('moderation.fields.duration'), value: t('moderation.ban.permanent') }]
   );
   try {
     await target.ban({ reason });
@@ -355,19 +363,24 @@ export async function applyBan(
     logger.error('Ban failed', { targetId: target.id, error: (error as Error).message });
     return {
       success: false,
-      content: `❌ Nie udało się zbanować użytkownika: ${(error as Error).message}`,
+      content: t('moderation.ban.failed', { error: (error as Error).message }),
     };
   }
   await sendModLog(
     target.guild,
-    { title: 'Ban', eventType: 'ban', action: 'ban', severity: 'high' },
+    {
+      title: t('moderation.ban.logTitle'),
+      eventType: 'ban',
+      action: 'ban',
+      severity: 'high',
+    },
     target.user,
     reason,
     actor
   );
   return {
     success: true,
-    embed: buildModEmbed('Zbanowano', target.user, reason, 0xe74c3c, [
+    embed: buildModEmbed(t('moderation.ban.done'), target.user, reason, 0xe74c3c, [
       dmStatusField(dmSent),
     ]),
   };
@@ -381,23 +394,28 @@ export async function applyUnban(
   try {
     await guild.bans.remove(userId);
     const user = await guild.client.users.fetch(userId);
+    const done = t('moderation.unban.done');
     await sendModLog(
       guild,
-      { title: 'Unban', eventType: 'unban', action: 'unban', severity: 'info' },
+      {
+        title: t('moderation.unban.logTitle'),
+        eventType: 'unban',
+        action: 'unban',
+        severity: 'info',
+      },
       user,
-      'Odbanowano',
+      done,
       actor
     );
     return {
       success: true,
-      embed: buildModEmbed('Odbanowano', user, 'Odbanowano', 0x2ecc71),
+      embed: buildModEmbed(done, user, done, 0x2ecc71),
     };
   } catch (error) {
     logger.warn('Unban failed', { userId, error: (error as Error).message });
     return {
       success: false,
-      content:
-        '❌ Nie udało się odbanować użytkownika. Upewnij się, że ID jest prawidłowe.',
+      content: t('moderation.unban.failed'),
     };
   }
 }
@@ -409,21 +427,21 @@ export async function applyTimeout(
   actor: Actor
 ): Promise<ActionResult> {
   if (!target.moderatable) {
-    return { success: false, content: '❌ Nie mogę wyciszyć tego użytkownika.' };
+    return { success: false, content: t('moderation.mute.cannot') };
   }
   if (durationMs <= 0 || durationMs > MAX_TIMEOUT_MS) {
-    return { success: false, content: '❌ Maksymalny czas wyciszenia to 28 dni.' };
+    return { success: false, content: t('moderation.mute.tooLong') };
   }
   const expiresUnix = Math.floor((Date.now() + durationMs) / 1000);
   const dmSent = await notifyTarget(
     target.user,
     target.guild.name,
-    '🔇 Zostałeś wyciszony na serwerze',
+    t('moderation.mute.dmTitle'),
     0x9b59b6,
     reason,
     [
-      { name: 'Czas trwania', value: formatDuration(durationMs) },
-      { name: 'Wygasa', value: `<t:${expiresUnix}:R>` },
+      { name: t('moderation.fields.duration'), value: formatDuration(durationMs) },
+      { name: t('moderation.fields.expires'), value: `<t:${expiresUnix}:R>` },
     ]
   );
   try {
@@ -432,12 +450,17 @@ export async function applyTimeout(
     logger.error('Timeout failed', { targetId: target.id, error: (error as Error).message });
     return {
       success: false,
-      content: `❌ Nie udało się wyciszyć użytkownika: ${(error as Error).message}`,
+      content: t('moderation.mute.failed', { error: (error as Error).message }),
     };
   }
   await sendModLog(
     target.guild,
-    { title: 'Mute (Timeout)', eventType: 'mute', action: 'timeout', severity: 'medium' },
+    {
+      title: t('moderation.mute.logTitle'),
+      eventType: 'mute',
+      action: 'timeout',
+      severity: 'medium',
+    },
     target.user,
     reason,
     actor,
@@ -445,9 +468,17 @@ export async function applyTimeout(
   );
   return {
     success: true,
-    embed: buildModEmbed('Wyciszono', target.user, reason, 0x9b59b6, [
-      { name: 'Czas', value: formatDuration(durationMs), inline: true },
-      { name: 'Wygasa', value: `<t:${expiresUnix}:R>`, inline: true },
+    embed: buildModEmbed(t('moderation.mute.done'), target.user, reason, 0x9b59b6, [
+      {
+        name: t('moderation.fields.duration'),
+        value: formatDuration(durationMs),
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.expires'),
+        value: `<t:${expiresUnix}:R>`,
+        inline: true,
+      },
       dmStatusField(dmSent),
     ]),
   };
@@ -458,33 +489,36 @@ export async function applyUntimeout(
   actor: Actor
 ): Promise<ActionResult> {
   if (!target.moderatable) {
-    return {
-      success: false,
-      content: '❌ Nie mogę wyłączyć wyciszenia tego użytkownika.',
-    };
+    return { success: false, content: t('moderation.unmute.cannot') };
   }
   if (!target.communicationDisabledUntil) {
-    return { success: false, content: '❌ Ten użytkownik nie jest obecnie wyciszony.' };
+    return { success: false, content: t('moderation.unmute.notMuted') };
   }
   try {
-    await target.timeout(null, 'Wyciszenie zdjęte przez moderatora');
+    await target.timeout(null, t('moderation.unmute.auditReason'));
   } catch (error) {
     logger.error('Untimeout failed', { targetId: target.id, error: (error as Error).message });
     return {
       success: false,
-      content: `❌ Nie udało się zdjąć wyciszenia: ${(error as Error).message}`,
+      content: t('moderation.unmute.failed', { error: (error as Error).message }),
     };
   }
+  const done = t('moderation.unmute.done');
   await sendModLog(
     target.guild,
-    { title: 'Unmute', eventType: 'unmute', action: 'unmute', severity: 'info' },
+    {
+      title: t('moderation.unmute.logTitle'),
+      eventType: 'unmute',
+      action: 'unmute',
+      severity: 'info',
+    },
     target.user,
-    'Wyciszenie zdjęte',
+    done,
     actor
   );
   return {
     success: true,
-    embed: buildModEmbed('Wyciszenie zdjęte', target.user, 'Wyciszenie zdjęte', 0x2ecc71),
+    embed: buildModEmbed(done, target.user, done, 0x2ecc71),
   };
 }
 
@@ -497,11 +531,11 @@ export async function applyWarn(
   if (!db.isAvailable()) {
     return {
       success: false,
-      content: '❌ Baza danych niedostępna. Ostrzeżenia nie mogą być zapisane.',
+      content: t('moderation.warn.databaseUnavailable'),
     };
   }
   if (target.bot) {
-    return { success: false, content: '❌ Nie można ostrzec bota.' };
+    return { success: false, content: t('moderation.warn.botTarget') };
   }
 
   // Persist first: a warning that failed to save must not be announced.
@@ -512,22 +546,27 @@ export async function applyWarn(
     actor.id
   );
   if (activeWarnings === 0) {
-    return { success: false, content: '❌ Nie udało się zapisać ostrzeżenia.' };
+    return { success: false, content: t('moderation.warn.saveFailed') };
   }
 
   const dmSent = await notifyTarget(
     target,
     guild.name,
-    '⚠️ Otrzymałeś ostrzeżenie',
+    t('moderation.warn.dmTitle'),
     0xffaa00,
     reason,
-    [{ name: 'Wygasa', value: 'za 30 dni' }],
-    'Kontynuowanie niewłaściwego zachowania może skutkować dalszymi sankcjami'
+    [{ name: t('moderation.fields.expires'), value: t('moderation.warn.expiresValue') }],
+    t('moderation.warn.dmFooter')
   );
 
   await sendModLog(
     guild,
-    { title: 'Warn', eventType: 'warn', action: 'warn', severity: 'low' },
+    {
+      title: t('moderation.warn.logTitle'),
+      eventType: 'warn',
+      action: 'warn',
+      severity: 'low',
+    },
     target,
     reason,
     actor
@@ -535,9 +574,13 @@ export async function applyWarn(
 
   const result: ActionResult = {
     success: true,
-    embed: buildModEmbed('Ostrzeżenie wydane', target, reason, 0xffaa00, [
-      { name: 'Aktywne ostrzeżenia', value: `${activeWarnings}`, inline: true },
-      { name: 'DM', value: dmSent ? '✅ Doręczono' : '⚠️ Nie doręczono', inline: true },
+    embed: buildModEmbed(t('moderation.warn.done'), target, reason, 0xffaa00, [
+      {
+        name: t('moderation.fields.activeWarnings'),
+        value: `${activeWarnings}`,
+        inline: true,
+      },
+      dmStatusField(dmSent),
     ]),
   };
 
@@ -599,10 +642,10 @@ async function autoBanForThreshold(
   actor: Actor,
   historical: number
 ): Promise<ActionResult> {
-  const reason = `Automatyczny ban: ${historical} ostrzeżeń historycznie`;
+  const reason = t('moderation.autoBan.reason', { count: historical });
   const escalatedActor: Actor = {
     id: actor.id,
-    label: `${actor.label} (auto-ban)`,
+    label: t('moderation.autoBan.actor', { actor: actor.label }),
   };
 
   const member = await resolveInvokingMember(guild, target.id);
@@ -616,24 +659,29 @@ async function autoBanForThreshold(
   await notifyTarget(
     target,
     guild.name,
-    '🚫 Zostałeś zbanowany na serwerze',
+    t('moderation.ban.dmTitle'),
     0xe74c3c,
     reason,
-    [{ name: 'Czas trwania', value: 'Permanentny' }]
+    [{ name: t('moderation.fields.duration'), value: t('moderation.ban.permanent') }]
   ).catch(() => undefined);
 
   try {
     await guild.bans.create(target.id, { reason });
     await sendModLog(
       guild,
-      { title: 'Ban', eventType: 'ban', action: 'ban', severity: 'high' },
+      {
+        title: t('moderation.ban.logTitle'),
+        eventType: 'ban',
+        action: 'ban',
+        severity: 'high',
+      },
       target,
       reason,
       escalatedActor
     );
     return {
       success: true,
-      embed: buildModEmbed('Zbanowano', target, reason, 0xe74c3c),
+      embed: buildModEmbed(t('moderation.ban.done'), target, reason, 0xe74c3c),
     };
   } catch (error) {
     logger.error('Auto-ban failed', {
@@ -642,7 +690,7 @@ async function autoBanForThreshold(
     });
     return {
       success: false,
-      content: `❌ Nie udało się automatycznie zbanować użytkownika: ${(error as Error).message}`,
+      content: t('moderation.autoBan.failed', { error: (error as Error).message }),
     };
   }
 }
@@ -680,10 +728,10 @@ export async function reconcileMuteForUser(
   const member = await resolveInvokingMember(guild, target.id);
   if (!member) return null;
 
-  const reason = `Automatyczne wyciszenie: ${activeCount} aktywnych ostrzeżeń`;
+  const reason = t('moderation.autoMute.reason', { count: activeCount });
   const escalatedActor: Actor = {
     id: actor.id,
-    label: `${actor.label} (auto-mute)`,
+    label: t('moderation.autoMute.actor', { actor: actor.label }),
   };
 
   const result = await applyTimeout(
@@ -713,10 +761,10 @@ export async function applyDeleteMessage(
   actor: Actor
 ): Promise<ActionResult> {
   if (!message.guild) {
-    return { success: false, content: '❌ Wiadomość nie pochodzi z serwera.' };
+    return { success: false, content: t('moderation.delete.notFromGuild') };
   }
   if (message.author.bot) {
-    return { success: false, content: '❌ Nie można usunąć wiadomości bota.' };
+    return { success: false, content: t('moderation.delete.botMessage') };
   }
 
   const channelRef = `<#${message.channelId}>`;
@@ -733,19 +781,19 @@ export async function applyDeleteMessage(
     });
     return {
       success: false,
-      content: `❌ Nie udało się usunąć wiadomości: ${(error as Error).message}`,
+      content: t('moderation.delete.failed', { error: (error as Error).message }),
     };
   }
 
   const dmSent = await notifyTarget(
     target,
     guild.name,
-    '🗑️ Twoja wiadomość została usunięta',
+    t('moderation.delete.dmTitle'),
     0x95a5a6,
     reason,
     [
-      { name: 'Kanał', value: channelRef },
-      { name: 'Treść', value: preview },
+      { name: t('moderation.fields.channel'), value: channelRef },
+      { name: t('moderation.fields.content'), value: preview },
     ]
   );
 
@@ -761,8 +809,8 @@ export async function applyDeleteMessage(
 
   return {
     success: true,
-    embed: buildModEmbed('Wiadomość usunięta', target, reason, 0x95a5a6, [
-      { name: 'Kanał', value: channelRef, inline: true },
+    embed: buildModEmbed(t('moderation.delete.done'), target, reason, 0x95a5a6, [
+      { name: t('moderation.fields.channel'), value: channelRef, inline: true },
       dmStatusField(dmSent),
     ]),
   };
@@ -770,7 +818,7 @@ export async function applyDeleteMessage(
 
 function buildContentPreview(content: string): string {
   const trimmed = (content || '').trim();
-  if (!trimmed) return '_(pusta wiadomość)_';
+  if (!trimmed) return t('moderation.emptyMessage');
   const truncated =
     trimmed.length > 200 ? `${trimmed.slice(0, 200)}…` : trimmed;
   // Code-block fence so Discord renders the preview verbatim and doesn't try
@@ -810,13 +858,17 @@ async function sendDeleteModLog(
 
     const embed = new EmbedBuilder()
       .setColor(0x95a5a6)
-      .setTitle('🗑️ Delete message')
+      .setTitle(t('moderation.delete.logTitle'))
       .addFields(
-        { name: 'Użytkownik', value: `${target.tag} (${target.id})`, inline: true },
-        { name: 'Moderator', value: actor.label, inline: true },
-        { name: 'Kanał', value: channelRef, inline: true },
-        { name: 'Powód', value: reason || 'Nie podano powodu' },
-        { name: 'Treść', value: preview }
+        {
+          name: t('moderation.fields.user'),
+          value: `${target.tag} (${target.id})`,
+          inline: true,
+        },
+        { name: t('moderation.fields.moderator'), value: actor.label, inline: true },
+        { name: t('moderation.fields.channel'), value: channelRef, inline: true },
+        { name: t('moderation.fields.reason'), value: reason || t('moderation.noReason') },
+        { name: t('moderation.fields.content'), value: preview }
       )
       .setTimestamp();
 

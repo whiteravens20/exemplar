@@ -4,46 +4,44 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="referrer" content="no-referrer" />
-    <title>Moderation Dashboard</title>
+    <title></title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <!-- Texts come from the locale files: app.js fills every data-i18n element. -->
+
     <!-- Login -->
     <section id="login-view" class="centered hidden">
       <div class="card login-card">
-        <h1>Moderation Dashboard</h1>
-        <p class="muted">Sign in with Discord to review moderation activity.</p>
-        <a class="btn btn-primary" href="/login">Sign in with Discord</a>
+        <h1 data-i18n="title"></h1>
+        <p class="muted" data-i18n="login.intro"></p>
+        <a class="btn btn-primary" href="/login" data-i18n="login.signIn"></a>
       </div>
     </section>
 
     <!-- Access denied -->
     <section id="denied-view" class="centered hidden">
       <div class="card login-card">
-        <h1>Access denied</h1>
-        <p class="muted">
-          Your Discord account is signed in as <span id="denied-user"></span> but
-          is not authorized to view this dashboard. Ask a server administrator
-          for access.
-        </p>
-        <button class="btn" id="denied-logout">Sign out</button>
+        <h1 data-i18n="denied.title"></h1>
+        <p class="muted" id="denied-text"></p>
+        <button class="btn" id="denied-logout" data-i18n="signOut"></button>
       </div>
     </section>
 
     <!-- App shell -->
     <div id="app-view" class="app hidden">
       <aside class="sidebar">
-        <div class="brand">🛡️ Moderation</div>
+        <div class="brand" data-i18n="brand"></div>
         <nav id="nav">
-          <button class="nav-item active" data-tab="overview">Overview</button>
-          <button class="nav-item" data-tab="logs">Logs</button>
-          <button class="nav-item" data-tab="user">User lookup</button>
-          <button class="nav-item" data-tab="feedback">Users feedback</button>
-          <button class="nav-item" data-tab="config">Config</button>
+          <button class="nav-item active" data-tab="overview" data-i18n="nav.overview"></button>
+          <button class="nav-item" data-tab="logs" data-i18n="nav.logs"></button>
+          <button class="nav-item" data-tab="user" data-i18n="nav.user"></button>
+          <button class="nav-item" data-tab="feedback" data-i18n="nav.feedback"></button>
+          <button class="nav-item" data-tab="config" data-i18n="nav.config"></button>
         </nav>
         <div class="sidebar-footer">
           <span id="whoami" class="muted"></span>
-          <button class="btn btn-small" id="logout">Sign out</button>
+          <button class="btn btn-small" id="logout" data-i18n="signOut"></button>
         </div>
       </aside>
 
@@ -51,73 +49,81 @@
         <!-- Overview -->
         <section id="tab-overview" class="tab">
           <header class="tab-header">
-            <h2>Overview</h2>
-            <label class="inline">Window
+            <h2 data-i18n="overview.title"></h2>
+            <label class="inline"><span data-i18n="overview.window"></span>
               <select id="stats-days">
-                <option value="1">24h</option>
-                <option value="7" selected>7 days</option>
-                <option value="30">30 days</option>
-                <option value="90">90 days</option>
+                <option value="1" data-i18n="overview.last24h"></option>
+                <option value="7" data-i18n="overview.days" data-i18n-count="7" selected></option>
+                <option value="30" data-i18n="overview.days" data-i18n-count="30"></option>
+                <option value="90" data-i18n="overview.days" data-i18n-count="90"></option>
               </select>
             </label>
           </header>
           <div id="stat-cards" class="cards"></div>
           <div class="grid-2">
-            <div class="card"><h3>Events by type</h3><div id="chart-type" class="chart"></div></div>
-            <div class="card"><h3>Events by severity</h3><div id="chart-severity" class="chart"></div></div>
-            <div class="card"><h3>Events by source</h3><div id="chart-actor" class="chart"></div></div>
-            <div class="card"><h3>Most flagged users</h3><div id="top-targets"></div></div>
+            <div class="card"><h3 data-i18n="overview.byType"></h3><div id="chart-type" class="chart"></div></div>
+            <div class="card"><h3 data-i18n="overview.bySeverity"></h3><div id="chart-severity" class="chart"></div></div>
+            <div class="card"><h3 data-i18n="overview.bySource"></h3><div id="chart-actor" class="chart"></div></div>
+            <div class="card"><h3 data-i18n="overview.topTargets"></h3><div id="top-targets"></div></div>
           </div>
-          <div class="card"><h3>Activity (per day)</h3><div id="chart-daily" class="chart"></div></div>
+          <div class="card"><h3 data-i18n="overview.daily"></h3><div id="chart-daily" class="chart"></div></div>
         </section>
 
         <!-- Logs -->
         <section id="tab-logs" class="tab hidden">
-          <header class="tab-header"><h2>Logs</h2>
+          <header class="tab-header"><h2 data-i18n="logs.title"></h2>
             <label class="inline auto-refresh">
-              <input type="checkbox" id="auto-refresh" checked /> Auto-refresh
+              <input type="checkbox" id="auto-refresh" checked /> <span data-i18n="logs.autoRefresh"></span>
             </label>
           </header>
           <form id="filters" class="filters">
-            <input type="search" id="f-search" placeholder="Search reason / reasoning / user…" />
+            <input type="search" id="f-search" data-i18n-placeholder="logs.search" />
             <select id="f-eventType">
-              <option value="">Any type</option>
-              <option value="warn">warn</option>
-              <option value="ban">ban</option>
-              <option value="kick">kick</option>
-              <option value="mute">mute</option>
-              <option value="unmute">unmute</option>
-              <option value="unban">unban</option>
-              <option value="delete">delete</option>
-              <option value="ai_flag">ai_flag</option>
-              <option value="feedback">feedback</option>
+              <option value="" data-i18n="logs.anyType"></option>
+              <option value="warn" data-i18n="eventTypes.warn"></option>
+              <option value="ban" data-i18n="eventTypes.ban"></option>
+              <option value="kick" data-i18n="eventTypes.kick"></option>
+              <option value="mute" data-i18n="eventTypes.mute"></option>
+              <option value="unmute" data-i18n="eventTypes.unmute"></option>
+              <option value="unban" data-i18n="eventTypes.unban"></option>
+              <option value="delete" data-i18n="eventTypes.delete"></option>
+              <option value="ai_flag" data-i18n="eventTypes.ai_flag"></option>
+              <option value="feedback" data-i18n="eventTypes.feedback"></option>
             </select>
             <select id="f-severity">
-              <option value="">Any severity</option>
-              <option value="info">info</option>
-              <option value="low">low</option>
-              <option value="medium">medium</option>
-              <option value="high">high</option>
-              <option value="critical">critical</option>
+              <option value="" data-i18n="logs.anySeverity"></option>
+              <option value="info" data-i18n="severities.info"></option>
+              <option value="low" data-i18n="severities.low"></option>
+              <option value="medium" data-i18n="severities.medium"></option>
+              <option value="high" data-i18n="severities.high"></option>
+              <option value="critical" data-i18n="severities.critical"></option>
             </select>
             <select id="f-actorType">
-              <option value="">Any source</option>
-              <option value="human">human</option>
-              <option value="ai">ai</option>
-              <option value="system">system</option>
+              <option value="" data-i18n="logs.anySource"></option>
+              <option value="human" data-i18n="actorTypes.human"></option>
+              <option value="ai" data-i18n="actorTypes.ai"></option>
+              <option value="system" data-i18n="actorTypes.system"></option>
             </select>
-            <input type="text" id="f-userId" placeholder="User ID" inputmode="numeric" />
-            <input type="text" id="f-channelId" placeholder="Channel ID" inputmode="numeric" />
-            <label class="inline">From <input type="datetime-local" id="f-from" /></label>
-            <label class="inline">To <input type="datetime-local" id="f-to" /></label>
-            <button class="btn btn-primary" type="submit">Apply</button>
-            <button class="btn" type="reset">Clear</button>
+            <input type="text" id="f-userId" data-i18n-placeholder="logs.userId" inputmode="numeric" />
+            <input type="text" id="f-channelId" data-i18n-placeholder="logs.channelId" inputmode="numeric" />
+            <label class="inline"><span data-i18n="logs.from"></span> <input type="datetime-local" id="f-from" /></label>
+            <label class="inline"><span data-i18n="logs.to"></span> <input type="datetime-local" id="f-to" /></label>
+            <button class="btn btn-primary" type="submit" data-i18n="logs.apply"></button>
+            <button class="btn" type="reset" data-i18n="logs.clear"></button>
           </form>
           <div id="logs-meta" class="muted"></div>
           <div class="table-wrap">
             <table id="logs-table">
               <thead>
-                <tr><th>Time</th><th>Type</th><th>Severity</th><th>Source</th><th>User</th><th>Action</th><th>Reason</th></tr>
+                <tr>
+                  <th data-i18n="columns.time"></th>
+                  <th data-i18n="columns.type"></th>
+                  <th data-i18n="columns.severity"></th>
+                  <th data-i18n="columns.source"></th>
+                  <th data-i18n="columns.user"></th>
+                  <th data-i18n="columns.action"></th>
+                  <th data-i18n="columns.reason"></th>
+                </tr>
               </thead>
               <tbody></tbody>
             </table>
@@ -126,24 +132,24 @@
 
         <!-- User lookup -->
         <section id="tab-user" class="tab hidden">
-          <header class="tab-header"><h2>User lookup</h2></header>
+          <header class="tab-header"><h2 data-i18n="user.title"></h2></header>
           <form id="user-form" class="filters">
-            <input type="text" id="user-id" placeholder="Discord user ID" inputmode="numeric" />
-            <button class="btn btn-primary" type="submit">Look up</button>
+            <input type="text" id="user-id" data-i18n-placeholder="user.placeholder" inputmode="numeric" />
+            <button class="btn btn-primary" type="submit" data-i18n="user.lookUp"></button>
           </form>
           <div id="user-result"></div>
         </section>
 
         <!-- Feedback -->
         <section id="tab-feedback" class="tab hidden">
-          <header class="tab-header"><h2>Users feedback</h2></header>
+          <header class="tab-header"><h2 data-i18n="feedback.title"></h2></header>
           <div id="feedback-feed" class="feed"></div>
         </section>
 
         <!-- Config -->
         <section id="tab-config" class="tab hidden">
-          <header class="tab-header"><h2>Configuration</h2></header>
-          <p class="muted">Read-only view of the bot's effective configuration. Secrets are never exposed.</p>
+          <header class="tab-header"><h2 data-i18n="config.title"></h2></header>
+          <p class="muted" data-i18n="config.intro"></p>
           <div id="config-body"></div>
         </section>
       </main>

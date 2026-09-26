@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
 import { applyKick } from '../utils/moderation-actions.js';
+import { t } from '../utils/i18n.js';
 import {
   withAppAvailability,
   resolveModerationContext,
@@ -16,15 +17,18 @@ const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('kick')
-      .setDescription('Wyrzuca użytkownika ze skonfigurowanego serwera')
+      .setDescription(t('commands.kick.description'))
       .addUserOption((option) =>
         option
           .setName('user')
-          .setDescription('Użytkownik do wyrzucenia')
+          .setDescription(t('commands.kick.options.user'))
           .setRequired(true)
       )
       .addStringOption((option) =>
-        option.setName('reason').setDescription('Powód wyrzucenia').setMaxLength(512)
+        option
+          .setName('reason')
+          .setDescription(t('commands.kick.options.reason'))
+          .setMaxLength(512)
       )
   ),
 
@@ -38,7 +42,7 @@ const command: SlashCommand = {
       return;
     }
 
-    const reason = interaction.options.getString('reason') ?? 'Nie podano powodu';
+    const reason = interaction.options.getString('reason') ?? t('moderation.noReason');
     const result = await applyKick(
       ctx.targetMember,
       reason,
@@ -49,7 +53,7 @@ const command: SlashCommand = {
       await interaction.reply({ embeds: [result.embed] });
     } else {
       await interaction.reply({
-        content: result.content ?? '❌ Operacja nie powiodła się.',
+        content: result.content ?? t('errors.operationFailed'),
         flags: MessageFlags.Ephemeral,
       });
     }

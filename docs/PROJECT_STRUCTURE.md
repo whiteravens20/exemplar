@@ -22,6 +22,7 @@ discord-ai-bot/
 │   ├── QUICKSTART.md             # Quick start guide
 │   ├── DATABASE.md               # Database documentation
 │   ├── N8N_INTEGRATION.md        # n8n workflow guide
+│   ├── I18N.md                   # Bot language and translations
 │   ├── assistant-workflow.n8n.json  # Importable n8n assistant workflow
 │   ├── moderation-workflow.n8n.json # Importable n8n moderation workflow
 │   ├── DOCKER_SETUP.md           # Docker deployment
@@ -92,6 +93,7 @@ discord-ai-bot/
 │   │
 │   ├── 📁 utils/                 # Utilities
 │   │   ├── logger.ts             # Winston logger
+│   │   ├── i18n.ts               # Translations (i18next, BOT_LANGUAGE)
 │   │   ├── n8n-client.ts         # n8n integration
 │   │   ├── permissions.ts        # Role checking
 │   │   ├── rate-limiter.ts       # Rate limiting logic
@@ -102,8 +104,11 @@ discord-ai-bot/
 │   │
 │   ├── 📁 config/                # Configuration
 │   │   ├── config.ts             # Config manager
-│   │   ├── bot-statuses.ts       # Bot activity statuses
-│   │   └── response-templates.ts # Response templates
+│   │   └── bot-statuses.ts       # Bot activity statuses
+│   │
+│   ├── 📁 locales/               # User-facing texts, one file per language
+│   │   ├── en.json               # English (fallback)
+│   │   └── pl.json               # Polish
 
 ```
 
@@ -113,7 +118,7 @@ discord-ai-bot/
 - **File:** `src/events/messageCreate.ts`
 - **Integration:** `src/utils/n8n-client.ts`
 - **Config:** `src/config/config.ts`
-- **Response:** Customizable via `.env` HARDCODED_MENTION_RESPONSE
+- **Response:** Texts in `src/locales/`; `HARDCODED_MENTION_RESPONSE` overrides the mention reply
 - **Conversation Memory:** Last 20 messages stored in database, passed to n8n
 
 ### 💾 Database Integration
@@ -245,8 +250,9 @@ npm run release-package # Create release package
 ### Optional
 - `N8N_API_KEY` - n8n authentication
 - `PORT` - Health check server port (default: 3000)
-- `HARDCODED_MENTION_RESPONSE` - Mention response
-- `RESTRICTED_RESPONSE` - Access denied message
+- `BOT_LANGUAGE` - Language of the bot and dashboard (default: en)
+- `HARDCODED_MENTION_RESPONSE` - Overrides the mention response
+- `RESTRICTED_RESPONSE` - Overrides the access denied message
 - `ALLOWED_ROLES_FOR_AI` - Authorized roles
 - `MOD_LOG_CHANNEL_ID` - Channel for moderation action logs
 - `LOG_LEVEL` - Logging level (default: info)
@@ -257,7 +263,8 @@ npm run release-package # Create release package
 ### Adding a Command
 1. Create file in `src/slashcommands/` (TypeScript)
 2. Implement SlashCommand interface from `src/types/discord.ts`
-3. Import and register in `src/index.ts`
+3. Add its texts to every file in `src/locales/` and read them with `t()`
+4. Import and register in `src/index.ts`
 
 ### Adding an Event
 1. Create file in `src/events/` (TypeScript)
@@ -265,9 +272,8 @@ npm run release-package # Create release package
 3. Import and register in `src/index.ts`
 
 ### Custom Responses
-1. Edit `src/config/response-templates.ts`
-2. Update `.env` for basic responses
-1. Create typed helper functions in `src/utils/`
+1. Edit the texts in `src/locales/<language>.json` (see `I18N.md`)
+2. Set `HARDCODED_MENTION_RESPONSE` / `RESTRICTED_RESPONSE` in `.env` to override those two replies
 
 ### n8n Integration
 1. See `N8N_INTEGRATION.md`

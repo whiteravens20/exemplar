@@ -6,6 +6,7 @@ import {
 } from 'discord.js';
 import type { SlashCommand } from '../types/discord.js';
 import { applyUnban } from '../utils/moderation-actions.js';
+import { t } from '../utils/i18n.js';
 import {
   withAppAvailability,
   resolveGuildInvoker,
@@ -16,11 +17,11 @@ const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('unban')
-      .setDescription('Zdejmuje bana z użytkownika na skonfigurowanym serwerze')
+      .setDescription(t('commands.unban.description'))
       .addStringOption((option) =>
         option
           .setName('user_id')
-          .setDescription('ID użytkownika do odbanowania')
+          .setDescription(t('commands.unban.options.userId'))
           .setRequired(true)
       )
   ),
@@ -34,7 +35,7 @@ const command: SlashCommand = {
 
     if (!base.invoker.permissions.has(PermissionFlagsBits.BanMembers)) {
       await interaction.reply({
-        content: '❌ Nie masz wymaganych uprawnień do użycia tej komendy.',
+        content: t('errors.missingPermission'),
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -43,7 +44,7 @@ const command: SlashCommand = {
     const userId = interaction.options.getString('user_id', true).trim();
     if (!/^\d{17,20}$/.test(userId)) {
       await interaction.reply({
-        content: '❌ Nieprawidłowe ID użytkownika.',
+        content: t('commands.unban.invalidId'),
         flags: MessageFlags.Ephemeral,
       });
       return;
@@ -55,7 +56,7 @@ const command: SlashCommand = {
       await interaction.reply({ embeds: [result.embed] });
     } else {
       await interaction.reply({
-        content: result.content ?? '❌ Operacja nie powiodła się.',
+        content: result.content ?? t('errors.operationFailed'),
         flags: MessageFlags.Ephemeral,
       });
     }

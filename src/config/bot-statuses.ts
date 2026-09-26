@@ -1,35 +1,23 @@
 import { ActivityType } from 'discord.js';
+import { t } from '../utils/i18n.js';
 
 interface BotStatus {
   name: string;
   type: ActivityType;
 }
 
-const statuses: BotStatus[] = [
-  {
-    name: 'DM /help dla komend',
-    type: ActivityType.Listening,
-  },
-  {
-    name: 'obserwuję wiadomości Discord',
-    type: ActivityType.Watching,
-  },
-  {
-    name: 'DM dla czatu z AI',
-    type: ActivityType.Listening,
-  },
-  {
-    name: 'sprawdzam aktywność serwera',
-    type: ActivityType.Watching,
-  },
-  {
-    name: 'monitoruję wiadomości w Imperium',
-    type: ActivityType.Watching,
-  },
-];
+// Discord shows each name after its activity verb ("Listening to", "Watching").
+const statuses = [
+  { key: 'presence.helpInDm', type: ActivityType.Listening },
+  { key: 'presence.discordMessages', type: ActivityType.Watching },
+  { key: 'presence.aiChatInDm', type: ActivityType.Listening },
+  { key: 'presence.serverActivity', type: ActivityType.Watching },
+  { key: 'presence.imperium', type: ActivityType.Watching },
+] as const;
 
 function getRandomStatus(): BotStatus {
-  return statuses[Math.floor(Math.random() * statuses.length)];
+  const status = statuses[Math.floor(Math.random() * statuses.length)];
+  return { name: t(status.key), type: status.type };
 }
 
 export { statuses, getRandomStatus };

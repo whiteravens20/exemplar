@@ -9,6 +9,7 @@ import rateLimit from 'express-rate-limit';
 import type { Server } from 'node:http';
 import type { Client } from 'discord.js';
 import logger from '../../utils/logger.js';
+import { i18n, stringsFor, t } from '../../utils/i18n.js';
 import configManager from '../../config/config.js';
 import moderationLogRepo from '../../db/repositories/moderation-log-repository.js';
 import warningRepo from '../../db/repositories/warning-repository.js';
@@ -61,6 +62,11 @@ class DashboardServer {
   private readonly publicDir: string;
   /** Short-lived cache of live RBAC decisions, keyed by user id. */
   private readonly accessCache = new Map<string, { result: AccessResult; exp: number }>();
+  /** The frontend's texts, in the bot's language. */
+  private readonly uiStrings = {
+    language: i18n.language,
+    strings: stringsFor('dashboard'),
+  };
 
   constructor(client: Client) {
     this.client = client;
@@ -208,11 +214,11 @@ class DashboardServer {
         );
 
         if (!verifyState(state, nonce, dash.sessionSecret)) {
-          res.status(400).send('Invalid or expired login request. Please try again.');
+          res.status(400).type('text/plain').send(t('dashboard.callback.invalidState'));
           return;
         }
         if (!code) {
-          res.status(400).send('Missing authorization code.');
+          res.status(400).type('text/plain').send(t('dashboard.callback.missingCode'));
           return;
         }
 
@@ -223,13 +229,13 @@ class DashboardServer {
           redirectUri: dash.oauthRedirectUri,
         });
         if (!accessToken) {
-          res.status(401).send('Discord authentication failed.');
+          res.status(401).type('text/plain').send(t('dashboard.callback.authFailed'));
           return;
         }
 
         const user = await fetchUser(accessToken);
         if (!user) {
-          res.status(401).send('Could not load your Discord profile.');
+          res.status(401).type('text/plain').send(t('dashboard.callback.profileFailed'));
           return;
         }
 
@@ -262,7 +268,7 @@ class DashboardServer {
         logger.error('Dashboard callback error', {
           error: (error as Error).message,
         });
-        res.status(500).send('Login failed.');
+        res.status(500).type('text/plain').send(t('dashboard.callback.failed'));
       }
     });
 
@@ -279,6 +285,11 @@ class DashboardServer {
 
     // Rate-limit the whole API surface (including /api/me) before any handler.
     this.app.use('/api', apiLimiter);
+
+    // The frontend's texts. Public: the login page needs them too.
+    this.app.get('/api/i18n', (_req, res) => {
+      res.json(this.uiStrings);
+    });
 
     // Current session — drives the login/denied/authorized UI states.
     this.app.get('/api/me', this.requireAuth, (req: DashRequest, res) => {

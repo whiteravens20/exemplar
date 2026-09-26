@@ -23,7 +23,8 @@
 - [ ] `DISCORD_SERVER_ID` set
 - [ ] `N8N_WORKFLOW_URL` set
 - [ ] `ALLOWED_ROLES_FOR_AI` configured (if needed)
-- [ ] `HARDCODED_MENTION_RESPONSE` customized
+- [ ] `BOT_LANGUAGE` set to the server's language
+- [ ] `HARDCODED_MENTION_RESPONSE` / `RESTRICTED_RESPONSE` customized (optional)
 
 ### 4. Role Configuration
 - [ ] Discord roles identified
@@ -179,7 +180,7 @@ n8n should return response
 ### 4. DM Denied Test (without authorization - if set)
 ```
 Send PM from unauthorized account: test
-Bot should return RESTRICTED_RESPONSE
+Bot should reply that you have no permission (RESTRICTED_RESPONSE, if set)
 ```
 
 ### 5. Slash Commands Test

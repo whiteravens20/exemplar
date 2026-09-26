@@ -101,7 +101,7 @@ Test calls are stored in the chat memory under their `userId`. Use a throwaway I
 
 ## Troubleshooting
 
-The bot classifies n8n failures and shows the user a matching message (texts in `src/config/response-templates.ts`):
+The bot classifies n8n failures and shows the user a matching message (the `assistant.errors` texts in `src/locales/<language>.json`):
 
 | Error the user sees | Likely cause |
 |---|---|

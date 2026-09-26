@@ -9,13 +9,14 @@ import {
 import type { SlashCommand } from '../types/discord.js';
 import configManager from '../config/config.js';
 import logger from '../utils/logger.js';
+import { t } from '../utils/i18n.js';
 import { withAppAvailability, getDmAccess } from './shared.js';
 
 const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('help')
-      .setDescription('Pokazuje dostępne komendy i sposób korzystania z bota')
+      .setDescription(t('commands.help.description'))
   ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -44,45 +45,38 @@ const command: SlashCommand = {
 
     const fields: APIEmbedField[] = [
       {
-        name: '💬 Jak korzystać?',
-        value:
-          'Po prostu wyślij mi wiadomość prywatną — odpowiem z pomocą AI. Komendy `/` uruchamiasz w tym samym oknie DM.',
+        name: t('commands.help.usage.name'),
+        value: t('commands.help.usage.value'),
       },
       {
-        name: '📋 Komendy użytkownika',
-        value:
-          '• `/help` — ta wiadomość\n• `/rules` — regulamin serwera\n• `/code <wiadomość>` — tryb programistyczny\n• `/flushmemory` — wyczyść pamięć konwersacji\n• `/warnings` — pokaż swoje ostrzeżenia',
+        name: t('commands.help.userCommands.name'),
+        value: t('commands.help.userCommands.value'),
       },
     ];
 
     if (canModerate) {
       fields.push({
-        name: '👮 Komendy moderacji (wymagane uprawnienia)',
-        value:
-          '• `/kick`, `/ban`, `/unban`\n• `/mute`, `/unmute`\n• `/warn` — wystaw ostrzeżenie',
+        name: t('commands.help.moderationCommands.name'),
+        value: t('commands.help.moderationCommands.value'),
       });
     }
 
     if (access.isAdmin) {
       fields.push({
-        name: '🔐 Komendy administratora',
-        value:
-          '• `/warnings [user]` — przegląd ostrzeżeń\n• `/stats [days]` — statystyki bota\n• `/flushdb` — wyczyść bazę danych',
+        name: t('commands.help.adminCommands.name'),
+        value: t('commands.help.adminCommands.value'),
       });
     }
 
     fields.push({
-      name: '⚠️ Uwaga',
-      value:
-        'Komenda użyta na kanale serwera nie zostanie wykonana — bot odeśle Cię do DM.',
+      name: t('commands.help.note.name'),
+      value: t('commands.help.note.value'),
     });
 
     const embed = new EmbedBuilder()
       .setColor(0x0099ff)
-      .setTitle('🤖 AI Assistant Bot - Pomoc')
-      .setDescription(
-        'Witaj! Jestem botem AI. Napisz do mnie w wiadomości prywatnej, aby porozmawiać. Wszystkie komendy `/` działają w DM z botem.'
-      )
+      .setTitle(t('commands.help.title'))
+      .setDescription(t('commands.help.intro'))
       .addFields(fields)
       .setTimestamp();
 

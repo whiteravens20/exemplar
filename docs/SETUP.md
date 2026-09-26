@@ -112,8 +112,11 @@ AI_MOD_USER_COOLDOWN_MS=5000
 MOD_RULES_TEXT=
 
 # Bot Configuration - OPTIONAL
-HARDCODED_MENTION_RESPONSE=Hi! I'm an AI Assistant. Send me a DM to chat with me.
-RESTRICTED_RESPONSE=You don't have permission to use this feature. Please contact the admins.
+# Language of the bot and dashboard (en, pl). See docs/I18N.md.
+BOT_LANGUAGE=en
+# Override the translated mention / no-permission replies. Empty = translated default.
+HARDCODED_MENTION_RESPONSE=
+RESTRICTED_RESPONSE=
 
 # Role with access to AI Assistant - OPTIONAL
 # If empty - everyone can use it
@@ -160,7 +163,7 @@ The bot should be online on Discord. Check:
    ```
    @BotName
    ```
-   Bot should respond with `HARDCODED_MENTION_RESPONSE`
+   Bot should reply that you can DM it (or with `HARDCODED_MENTION_RESPONSE`, if set)
 
 2. **Private message** (if you're in an authorized role):
    ```

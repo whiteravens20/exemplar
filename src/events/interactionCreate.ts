@@ -1,6 +1,7 @@
 import { Events, MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
 import logger from '../utils/logger.js';
 import configManager from '../config/config.js';
+import { t } from '../utils/i18n.js';
 import type { BotEvent, SlashCommand } from '../types/discord.js';
 
 const event: BotEvent = {
@@ -44,7 +45,7 @@ const event: BotEvent = {
         error: (error as Error).message,
       });
 
-      const errorContent = '❌ Wystąpił błąd podczas wykonywania tej komendy!';
+      const errorContent = t('errors.commandFailed');
 
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({

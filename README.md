@@ -12,8 +12,8 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 
 ### AI assistant (DMs)
 - Plain DMs go to an n8n workflow in `chat` mode; `/code <message>` goes in `code` mode, routed to a coding model.
-- Access is limited to members holding one of `ALLOWED_ROLES_FOR_AI`; everyone else gets `RESTRICTED_RESPONSE`.
-- Mentioning the bot in a channel returns `HARDCODED_MENTION_RESPONSE` and points the user to DMs.
+- Access is limited to members holding one of `ALLOWED_ROLES_FOR_AI`; everyone else gets a "no permission" reply (`RESTRICTED_RESPONSE` overrides it).
+- Mentioning the bot in a channel points the user to DMs (`HARDCODED_MENTION_RESPONSE` overrides the reply).
 - The bundled workflow gives the chat model **web search** (SearXNG) and **Wikipedia** tools, and per-user memory in Postgres.
 - Conversation memory: the last 20 messages per user, kept for 24 hours; `/flushmemory` clears it on both the bot and the n8n side.
 
@@ -22,6 +22,10 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 - Each command checks the invoker's server permissions and role hierarchy; the target is DMed the reason and duration before the action.
 - Optional **AI moderation**: eligible channel messages go to a second n8n workflow that returns `allow`, `warn`, `timeout` or `delete`, executed through the same action layer as the slash commands. Roll it out in `shadow` mode first. See [docs/AI_MODERATION.md](docs/AI_MODERATION.md).
 - Escalation across all warnings, human or AI: 3 active warnings auto-mute, 100 lifetime warnings auto-ban (both configurable).
+
+### Languages
+- Everything the bot writes to Discord (commands, replies, embeds, DMs, mod-log) is translated. English and Polish ship with the bot; `BOT_LANGUAGE` picks the server's language.
+- Another language takes one translation file in `src/locales/`, with English filling any gaps. See [docs/I18N.md](docs/I18N.md).
 
 ### Storage and operations
 - PostgreSQL for conversation history, rate limits, warnings (30-day expiry), usage analytics (90 days) and the moderation log.
@@ -84,7 +88,7 @@ Fill in `.env`. The minimum is:
 | `ALLOWED_ROLES_FOR_AI` | Comma-separated role IDs allowed to use the assistant |
 | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | PostgreSQL connection |
 
-Every other option (AI moderation, dashboard, response texts, mod-log channel, limits) is documented inline in [`.env.example`](.env.example). Full walkthrough: [docs/SETUP.md](docs/SETUP.md).
+Every other option (language, AI moderation, dashboard, response texts, mod-log channel, limits) is documented inline in [`.env.example`](.env.example). Full walkthrough: [docs/SETUP.md](docs/SETUP.md).
 
 ### 2. Set up n8n
 
@@ -142,6 +146,7 @@ Logs go to the console and to `logs/combined.log` and `logs/error.log`.
 | [AI_MODERATION.md](docs/AI_MODERATION.md) | AI moderation setup and tuning |
 | [DATABASE.md](docs/DATABASE.md) | Schema, retention, migrations |
 | [DASHBOARD.md](docs/DASHBOARD.md) | Logging dashboard |
+| [I18N.md](docs/I18N.md) | Bot language, adding and editing translations |
 | [DOCKER_SETUP.md](docs/DOCKER_SETUP.md) | Docker deployment |
 | [DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md) | Production checklist |
 | [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) | Code layout |

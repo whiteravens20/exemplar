@@ -6,13 +6,14 @@ import {
 import type { SlashCommand } from '../types/discord.js';
 import configManager from '../config/config.js';
 import logger from '../utils/logger.js';
+import { t } from '../utils/i18n.js';
 import { withAppAvailability } from './shared.js';
 
 const command: SlashCommand = {
   data: withAppAvailability(
     new SlashCommandBuilder()
       .setName('rules')
-      .setDescription('Pokazuje regulamin serwera')
+      .setDescription(t('commands.rules.description'))
   ),
 
   async execute(interaction: ChatInputCommandInteraction): Promise<void> {
@@ -22,11 +23,8 @@ const command: SlashCommand = {
     const rulesText = configManager.config.bot.rulesText.trim();
     const embed = new EmbedBuilder()
       .setColor(0x0099ff)
-      .setTitle('📜 Regulamin serwera')
-      .setDescription(
-        rulesText ||
-          'Regulamin nie został jeszcze skonfigurowany. Skontaktuj się z administracją serwera.'
-      )
+      .setTitle(t('commands.rules.title'))
+      .setDescription(rulesText || t('commands.rules.notConfigured'))
       .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

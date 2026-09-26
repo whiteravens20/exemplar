@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import configManager from '../config/config.js';
 import { hasPermission, isModeratorOrAdmin } from '../utils/permissions.js';
+import { t } from '../utils/i18n.js';
 import {
   getConfiguredGuild,
   resolveInvokingMember,
@@ -49,14 +50,11 @@ export async function resolveGuildInvoker(
 ): Promise<GuildInvoker> {
   const guild = getConfiguredGuild(interaction.client);
   if (!guild) {
-    return { ok: false, error: '❌ Skonfigurowany serwer jest obecnie niedostępny.' };
+    return { ok: false, error: t('errors.guildUnavailable') };
   }
   const invoker = await resolveInvokingMember(guild, interaction.user.id);
   if (!invoker) {
-    return {
-      ok: false,
-      error: '❌ Nie jesteś członkiem skonfigurowanego serwera.',
-    };
+    return { ok: false, error: t('errors.notAMember') };
   }
   return { ok: true, guild, invoker };
 }
@@ -88,12 +86,12 @@ export async function resolveModerationContext(
     .fetch(targetUser.id)
     .catch(() => null);
   if (!targetMember) {
-    return { ok: false, error: '❌ Ten użytkownik nie jest członkiem serwera.' };
+    return { ok: false, error: t('errors.targetNotAMember') };
   }
 
   const permCheck = checkBasePermissions(base.invoker, targetMember, requiredPerm);
   if (permCheck) {
-    return { ok: false, error: permCheck.content ?? '❌ Brak uprawnień.' };
+    return { ok: false, error: permCheck.content ?? t('errors.missingPermission') };
   }
 
   return {

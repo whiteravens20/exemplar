@@ -298,20 +298,21 @@ Want to add a new slash command? Here's the template! 🚀
 // src/slashcommands/mycommand.ts
 import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import logger from '../utils/logger.js';
+import { t } from '../utils/i18n.js';
 import type { SlashCommand } from '../types/discord.js';
 
 const command: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName('mycommand')
-    .setDescription('🎉 Description of your awesome command')
+    .setDescription(t('commands.mycommand.description'))
     .addStringOption(option =>
       option.setName('text')
-        .setDescription('Some helpful text input')
+        .setDescription(t('commands.mycommand.options.text'))
         .setRequired(true)
     )
     .addIntegerOption(option =>
       option.setName('amount')
-        .setDescription('An optional number')
+        .setDescription(t('commands.mycommand.options.amount'))
         .setRequired(false)
     ),
   
@@ -333,7 +334,7 @@ const command: SlashCommand = {
       
       // Reply to user
       await interaction.reply({
-        content: `✨ ${result}`,
+        content: t('commands.mycommand.done', { result }),
         ephemeral: false // Set to true for private replies
       });
       
@@ -344,7 +345,7 @@ const command: SlashCommand = {
       });
       
       await interaction.reply({
-        content: '❌ Oops! Something went wrong. Please try again.',
+        content: t('errors.commandFailed'),
         ephemeral: true
       });
     }
@@ -355,6 +356,8 @@ export default command;
 ```
 
 **Don't forget:** add the command to the `slashCommands` list in `src/index.ts` — the bot registers that list with Discord on every start. 🔄
+
+**Texts:** everything the command shows people comes from the locale files, never a string in the code. Add the `commands.mycommand` keys to every file in `src/locales/`; `npm test` fails when a language misses one. See [docs/I18N.md](docs/I18N.md). 🌍
 
 ### 🎯 Adding an Event Handler
 

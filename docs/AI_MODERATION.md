@@ -59,7 +59,8 @@ workflow (`N8N_API_KEY`).
     { "reason": "spam links in #general", "issuedAt": "2026-05-20T14:01:00Z" },
     { "reason": "insult", "issuedAt": "2026-05-22T09:33:00Z" }
   ],
-  "serverRules": "1. No slurs. 2. No NSFW outside #adult. 3. ..."
+  "serverRules": "1. No slurs. 2. No NSFW outside #adult. 3. ...",
+  "language": "en"
 }
 ```
 
@@ -67,7 +68,9 @@ workflow (`N8N_API_KEY`).
 LLM can judge "repeated rule-breaking" with evidence instead of guessing.
 `serverRules` is whatever the operator set in `MOD_RULES_TEXT`; empty string
 when unset — the LLM should then fall back to the generic baseline in its
-system prompt.
+system prompt. `language` is the bot's `BOT_LANGUAGE` code (see
+[I18N.md](I18N.md)); the warned user and the moderators read the verdict's
+`reason`, so the workflow should have the LLM write it in that language.
 
 ### Response (n8n → bot)
 
@@ -187,6 +190,8 @@ Context the bot will give you in each request:
   ISO timestamp. Use these to judge "repeated" rule-breaking objectively:
   a clean user gets the benefit of the doubt; a user with 3 recent warns
   for similar behaviour should escalate to "timeout".
+- "language": the code of the language (e.g. "en", "pl") to write "reason"
+  in. The warned user and the moderators read it.
 
 Generic community baseline (apply when serverRules is empty):
 
@@ -198,7 +203,7 @@ Generic community baseline (apply when serverRules is empty):
 
 Return ONLY valid JSON, no markdown fences, no commentary. Shape:
 
-  {"action": "<action>", "reason": "<short Polish-language reason>", "duration": "<only if action is timeout>"}
+  {"action": "<action>", "reason": "<short reason in the Reason language>", "duration": "<only if action is timeout>"}
 
 Be conservative: prefer "allow" over false positives. The bot will fail
 open on malformed JSON, so partial outputs are worse than "allow".
@@ -211,6 +216,7 @@ Channel: {{$json.channelName}}
 User:    {{$json.userName}}
 Server rules: {{$json.serverRules}}
 Recent warnings: {{JSON.stringify($json.recentWarnings)}}
+Reason language: {{$json.language}}
 Message: {{$json.message}}
 ```
 
@@ -371,7 +377,8 @@ Post a few test messages on the server — including some you'd expect to be
 - Embeds tagged `🤖 [SHADOW]` appear with the right action, reason, channel
   and content preview.
 - No actual mutes or deletes happen.
-- The footer reads "Tryb shadow — żadna akcja nie została wykonana."
+- The footer says that no action was taken ("Shadow mode — no action was
+  taken." in English).
 
 Tune the system prompt or model until you're happy with the verdict
 distribution. Watch for: too many false positives (model is over-eager),
