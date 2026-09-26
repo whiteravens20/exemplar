@@ -1,5 +1,6 @@
 import type { Client } from 'discord.js';
 import logger from '../utils/logger.js';
+import { t } from '../utils/i18n.js';
 import db from '../db/connection.js';
 import configManager from '../config/config.js';
 import warningRepo from '../db/repositories/warning-repository.js';
@@ -28,8 +29,6 @@ const RECONCILE_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 // so the user is never temporarily unmuted between Discord's natural expiry
 // and the next reconcile tick.
 const EXPIRY_REFRESH_WINDOW_MS = 60 * 60 * 1000;
-
-const RECONCILE_ACTOR_LABEL = 'AI moderation';
 
 class MuteReconciliationJob {
   private intervalId: ReturnType<typeof setInterval> | null = null;
@@ -98,7 +97,7 @@ class MuteReconciliationJob {
 
       const actor: Actor = {
         id: this.client.user?.id ?? '0',
-        label: RECONCILE_ACTOR_LABEL,
+        label: t('moderation.aiModerator'),
       };
 
       const { warnMuteThreshold } = configManager.config.moderation;
