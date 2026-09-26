@@ -26,6 +26,7 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 ### Reaction roles
 - Members self-assign roles by reacting to a message; removing the reaction revokes the role.
 - Admins bind any message + emoji + role combination with `/reactionrole`; role hierarchy is checked when binding and before every change.
+- A binding can instead DM the member the reply of `/rules` or `/help`.
 - Bindings survive restarts. Bindings of deleted messages and roles are cleaned up. See [docs/REACTION_ROLES.md](docs/REACTION_ROLES.md).
 
 ### Languages
@@ -59,7 +60,7 @@ All commands are slash commands and run in **DMs with the bot**. Used in a serve
 | `/warnings [user]` | admins | All warnings, or one user's |
 | `/stats [days]` | admins | Usage statistics (default 7 days) |
 | `/flushdb confirm:true` | admins | Clear conversation data (bot and n8n), keeping users and warnings |
-| `/reactionrole add\|remove\|list` | Manage Roles | Bind a message + emoji to a role, remove or list bindings |
+| `/reactionrole add\|remove\|list` | Manage Roles | Bind a message + emoji to a role or a command, remove or list bindings |
 
 ## Install
 

@@ -2,7 +2,8 @@
 
 Members pick their own roles by reacting to a message. An admin binds
 **message + emoji → role**; reacting grants the role, removing the reaction
-revokes it.
+revokes it. A binding can run a bot command instead: reacting then gets the
+member the command's reply in DM (see [Command bindings](#command-bindings)).
 
 > Implements [issue #24](https://github.com/whiteravens20/exemplar/issues/24).
 
@@ -27,6 +28,7 @@ on `DISCORD_SERVER_ID`. It needs **Manage Roles** on that server.
 | Command | What it does |
 |---|---|
 | `/reactionrole add <message> <emoji> <role>` | Bind a reaction on a message to a role |
+| `/reactionrole add <message> <emoji> command:<command>` | Bind a reaction to a command whose reply is DMed |
 | `/reactionrole list [message]` | Show the bindings, all or for one message |
 | `/reactionrole remove <id>` | Delete a binding by the ID `list` shows |
 
@@ -39,6 +41,8 @@ on `DISCORD_SERVER_ID`. It needs **Manage Roles** on that server.
   `name:id` or its ID. Custom emoji have to come from a server the bot is in.
 - **role**: start typing and pick from the list. The list only offers roles
   you may bind. A role ID, a `<@&id>` mention or the exact role name also work.
+- **command**: instead of a role, a command from the list. Give either `role`
+  or `command`, not both.
 
 The bot then reacts to the message with the emoji. This checks that the emoji
 can be used there, and gives members a reaction to click. If the reaction fails,
@@ -46,7 +50,7 @@ for example because of an unknown emoji, missing Add Reactions, or a message
 that already has 20 different reactions, no binding is created and the reply
 gives Discord's error.
 
-A binding is refused when the role is `@everyone`, is managed by an integration
+A role binding is refused when the role is `@everyone`, is managed by an integration
 (bot roles, booster role), or is at or above the bot's highest role or the
 admin's own. The server owner is exempt from the last check.
 
@@ -67,9 +71,32 @@ Every binding is a separate `(message, emoji, role)` triple, so any mix works:
 | Same emoji on different messages, different roles | 🇵🇱 on *language* → @Polish, 🇵🇱 on *events* → @PL-events |
 | Same role from several messages or emoji | ✅ on *rules* → @Member, 👋 on *welcome* → @Member |
 | One reaction, several roles | Bind the same message + emoji twice with different roles |
+| Role and command on one message | `#welcome`: ✅ → @Member, 📜 → `/rules` |
 
 Unicode emoji match with or without the variation selector, so `❤` and `❤️`
 are the same binding.
+
+## Command bindings
+
+A command binding makes the bot DM the reply of a command to whoever adds the
+reaction, as if they had run it in their DMs with the bot. The reply follows
+that member's own access: `/help` lists the commands they can use, and members
+outside `ALLOWED_ROLES_FOR_AI` get the no-permission reply.
+
+| Command | Reply |
+|---|---|
+| `/help` | The command list |
+| `/rules` | The server rules (`RULES_TEXT`) |
+
+- Removing the reaction does nothing.
+- One member gets one reply per binding every 30 seconds. Removing and re-adding
+  the reaction within that time does not send another.
+- Members who do not accept DMs from server members get nothing. The bot logs a
+  warning.
+
+Only commands without options can be bound. A command is added to the list by
+implementing `reactionReply` in its module and naming it in
+`REACTION_COMMANDS` (`src/utils/reaction-roles.ts`).
 
 ## Behaviour
 
@@ -104,8 +131,8 @@ While running, deleting a bound message or role deletes its bindings.
 
 ## Logs
 
-Each grant, revoke, bind and unbind is logged at `info` with the binding ID,
-user, role, message and emoji:
+Each grant, revoke, command reply, bind and unbind is logged at `info` with the
+binding ID, user, role or command, message and emoji:
 
 ```
 info: Reaction role granted {"bindingId":3,"userId":"...","roleId":"...","messageId":"...","emoji":"🎮"}
@@ -120,3 +147,4 @@ warn: Reaction role skipped: bot cannot manage the role {"bindingId":5,...,"prob
 | Reacting does nothing, no log line | No binding for that message + emoji. Check `/reactionrole list` |
 | `add` replies *I couldn't react with that emoji* | The bot lacks Add Reactions or Read Message History there, the emoji is from a server the bot is not in, or the message has 20 different reactions |
 | `add` replies *Message not found* | Wrong link, or the bot cannot view that channel |
+| A command binding sends nothing, the log shows `Reaction command failed` | The member does not accept DMs from server members |
