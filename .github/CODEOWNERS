@@ -27,7 +27,6 @@
 /.trivyignore @pavlojs
 
 # ── Supply-chain-sensitive code paths ─────────────────────────────────────────
-# Database migrations and command deployment touch persistent state and Discord
-# API permissions — both have higher blast-radius than ordinary feature code.
-/src/deploy-commands.ts @pavlojs
+# Database migrations touch persistent state and have a higher blast-radius than
+# ordinary feature code.
 /migrations/ @pavlojs
