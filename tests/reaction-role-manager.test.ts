@@ -60,6 +60,8 @@ function setup(options: { memberRoles?: string[]; goneMessages?: string[] } = {}
   ].map((role) => ({ ...role, guild, managed: false }));
   guild.roles = { cache: new Map(roles.map((role) => [role.id, role])) };
 
+  // The member's roles on Discord. As in discord.js, roles.add and roles.remove
+  // change them without touching the cached member; a forced fetch reads them.
   const held = new Set(options.memberRoles ?? []);
   const calls: string[] = [];
   const client: any = { user: { id: 'bot' }, guilds: { cache: new Map([[GUILD, guild]]) } };
@@ -74,7 +76,7 @@ function setup(options: { memberRoles?: string[]; goneMessages?: string[] } = {}
     user: { bot: false },
     send: vi.fn(async () => undefined),
     roles: {
-      cache: held,
+      cache: new Set(held),
       add: vi.fn(async (role: { id: string }) => {
         await new Promise((resolve) => setTimeout(resolve, 5));
         held.add(role.id);
@@ -88,7 +90,13 @@ function setup(options: { memberRoles?: string[]; goneMessages?: string[] } = {}
   };
   const bot = { permissions: { has: () => true }, roles: { highest: { position: 10 } } };
   const gone = new Set(options.goneMessages ?? []);
-  guild.members = { fetch: vi.fn(async () => member), me: bot };
+  guild.members = {
+    fetch: vi.fn(async (input: string | { user: string; force?: boolean }) => {
+      if (typeof input === 'object' && input.force) member.roles.cache = new Set(held);
+      return member;
+    }),
+    me: bot,
+  };
   guild.channels = {
     fetch: vi.fn(async () => ({
       isTextBased: () => true,
