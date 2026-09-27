@@ -197,7 +197,12 @@ class ReactionRoleManager {
     const guild = getConfiguredGuild(client);
     if (bindings.length === 0 || !guild) return;
 
-    const member = await guild.members.fetch(userId).catch(() => null);
+    // Fetched fresh, not from the cache: discord.js updates the cached member
+    // only when the gateway reports a role change, which a quick add → remove
+    // can outrun.
+    const member = await guild.members
+      .fetch({ user: userId, force: true })
+      .catch(() => null);
     if (!member || member.user.bot) return;
     const bot = guild.members.me ?? (await guild.members.fetchMe());
 
