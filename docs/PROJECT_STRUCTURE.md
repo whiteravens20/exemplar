@@ -23,6 +23,7 @@ discord-ai-bot/
 │   ├── DATABASE.md               # Database documentation
 │   ├── N8N_INTEGRATION.md        # n8n workflow guide
 │   ├── I18N.md                   # Bot language and translations
+│   ├── REACTION_ROLES.md         # Reaction roles
 │   ├── assistant-workflow.n8n.json  # Importable n8n assistant workflow
 │   ├── moderation-workflow.n8n.json # Importable n8n moderation workflow
 │   ├── DOCKER_SETUP.md           # Docker deployment
@@ -83,12 +84,15 @@ discord-ai-bot/
 │   │   ├── kick.ts ban.ts unban.ts          # Moderation
 │   │   ├── mute.ts unmute.ts warn.ts        # Moderation
 │   │   ├── help.ts code.ts flushmemory.ts   # User
-│   │   └── warnings.ts stats.ts flushdb.ts  # User/admin
+│   │   ├── warnings.ts stats.ts flushdb.ts  # User/admin
+│   │   └── reactionrole.ts       # Reaction-role bindings (Manage Roles)
 │   │
 │   ├── 📁 events/                # Event handlers
 │   │   ├── ready.ts              # Bot startup
 │   │   ├── messageCreate.ts      # Message & DM handling
-│   │   ├── interactionCreate.ts  # Slash command handling
+│   │   ├── interactionCreate.ts  # Slash command + autocomplete handling
+│   │   ├── messageReactionAdd.ts messageReactionRemove.ts  # Reaction roles
+│   │   ├── messageDelete.ts guildRoleDelete.ts  # Reaction-role cleanup
 │   │   └── error.ts              # Error handling
 │   │
 │   ├── 📁 utils/                 # Utilities
@@ -100,6 +104,8 @@ discord-ai-bot/
 │   │   ├── message-splitter.ts   # Discord 2000 char splitting
 │   │   ├── token-estimator.ts    # Token counting
 │   │   ├── moderation-actions.ts # Shared moderation action layer
+│   │   ├── reaction-roles.ts     # Reaction-role parsing, checks, index
+│   │   ├── reaction-role-manager.ts # Reaction-role runtime
 │   │   └── stats-embed.ts        # Statistics embed formatting
 │   │
 │   ├── 📁 config/                # Configuration
@@ -129,6 +135,7 @@ discord-ai-bot/
   - `src/db/repositories/rate-limit-repository.ts` - Rate limiting data
   - `src/db/repositories/warning-repository.ts` - User warnings
   - `src/db/repositories/analytics-repository.ts` - Usage statistics
+  - `src/db/repositories/reaction-role-repository.ts` - Reaction-role bindings
 - **Migrations:** `migrations/` - Schema versioning
 - **Cleanup:** `src/jobs/database-cleanup.ts` - Hourly maintenance
 
@@ -349,10 +356,3 @@ For issues:
 6. Check n8n workflow logs
 7. Review Discord permissions
 8. See [DATABASE.md](DATABASE.md) for database troubleshooting
-
----
-
-**Created:** 2024-02-02  
-**Last Updated:** 2026-02-16  
-**Version:** 3.0.0  
-**License:** MIT

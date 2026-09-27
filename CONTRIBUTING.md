@@ -148,7 +148,7 @@ git checkout -b fix/annoying-bug
 
 ### 📦 Committing Changes
 
-We use **conventional commits** - they help generate changelogs automatically! 🎉
+We use **conventional commits**. PR titles follow the same format and become the release notes.
 
 **Format:** `type: brief description`
 

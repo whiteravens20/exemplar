@@ -84,7 +84,7 @@
       },
       "adminCommands": {
         "name": "🔐 Admin commands",
-        "value": "• `/warnings [user]` — review warnings\n• `/stats [days]` — bot statistics\n• `/flushdb` — clear the database"
+        "value": "• `/warnings [user]` — review warnings\n• `/stats [days]` — bot statistics\n• `/flushdb` — clear the database\n• `/reactionrole add|remove|list` — reaction roles (Manage Roles)"
       },
       "note": {
         "name": "⚠️ Note",
@@ -106,6 +106,48 @@
         "reason": "Reason for the mute"
       },
       "invalidDuration": "❌ Invalid duration format. Use: `30s`, `10m`, `1h`, `1d`."
+    },
+    "reactionrole": {
+      "description": "Manages reaction roles: react to a message to get a role or a reply (Manage Roles)",
+      "subcommands": {
+        "add": "Binds a message + emoji to a role or a command",
+        "remove": "Removes a binding by its ID",
+        "list": "Lists the bindings, optionally for one message"
+      },
+      "options": {
+        "message": "Message link (or channelId-messageId)",
+        "emoji": "Unicode emoji or custom emoji (<:name:id>, name:id or its ID)",
+        "role": "Role to grant (or pick a command instead)",
+        "command": "Command whose reply is DMed to whoever reacts (instead of a role)",
+        "id": "Binding ID from /reactionrole list",
+        "filter": "Only this message: link or channelId-messageId"
+      },
+      "missingPermission": "❌ Managing reaction roles requires the Manage Roles permission.",
+      "databaseUnavailable": "❌ Database unavailable. Reaction roles can't be managed.",
+      "invalidMessage": "❌ Invalid message. Paste its link (right-click the message → Copy Message Link).",
+      "wrongServer": "❌ That message is not on the configured server.",
+      "messageNotFound": "❌ Message not found, or I can't read that channel.",
+      "invalidEmoji": "❌ Invalid emoji. Use a Unicode emoji or a custom emoji (`<:name:id>`, `name:id` or its ID).",
+      "roleNotFound": "❌ Role not found. Pick it from the list or give its ID.",
+      "targetRequired": "❌ Give either a role or a command, not both.",
+      "roleProblem": {
+        "everyone": "❌ @everyone can't be a reaction role.",
+        "managed": "❌ **@{{role}}** is managed by an integration and can't be assigned.",
+        "botPermission": "❌ I need the Manage Roles permission to hand out roles.",
+        "botHierarchy": "❌ **@{{role}}** is at or above my highest role. Move my role above it first.",
+        "invokerHierarchy": "❌ **@{{role}}** is at or above your highest role."
+      },
+      "emojiUnusable": "❌ I couldn't react with that emoji: {{error}}",
+      "alreadyBound": "⚠️ This binding already exists.",
+      "added": "✅ Binding **#{{id}}**: reacting with {{emoji}} grants **@{{role}}**.\n{{link}}",
+      "addedCommand": "✅ Binding **#{{id}}**: reacting with {{emoji}} DMs the reply of **/{{command}}**.\n{{link}}",
+      "notFound": "❌ No binding with ID **#{{id}}**.",
+      "removed": "✅ Binding **#{{id}}** removed ({{emoji}} → **{{target}}**).",
+      "listTitle": "🎭 Reaction roles",
+      "listEmpty": "No reaction roles are bound.",
+      "listMore_one": "…and {{count}} more binding. Filter by message to see it.",
+      "listMore_other": "…and {{count}} more bindings. Filter by message to see them.",
+      "deletedRole": "deleted role"
     },
     "rules": {
       "description": "Shows the server rules",
@@ -284,6 +326,10 @@
     "shadowTitle": "🤖 [SHADOW] {{action}}",
     "shadowFooter": "Shadow mode — no action was taken.",
     "noReason": "_(none)_"
+  },
+  "reactionRoles": {
+    "auditGrant": "Reaction role: reacted with {{emoji}}",
+    "auditRevoke": "Reaction role: removed the {{emoji}} reaction"
   },
   "dashboard": {
     "title": "Moderation Dashboard",

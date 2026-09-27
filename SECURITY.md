@@ -409,11 +409,6 @@ We thank the following security researchers and contributors who have helped mak
 
 ---
 
-**Last Updated:** August 17, 2026  
-**Policy Version:** 1.1.0
-
----
-
 ## 🌟 Stay Secure!
 
 Remember: **Security is everyone's responsibility.** By following these guidelines and reporting issues responsibly, you help keep our community safe. Thank you! 🙏

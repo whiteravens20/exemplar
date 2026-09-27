@@ -141,7 +141,7 @@ jobs:
           # permission and only feeds the org's Linked Artifacts page.
           create-storage-record: false
 
-  # ── Job 2: GitHub Release with auto-generated changelog ─────────────────────
+  # ── Job 2: GitHub Release with auto-generated release notes ─────────────────
   # Creates (or updates) the GitHub Release for this tag.
   # GitHub's built-in release notes generator groups merged PRs by label,
   # lists direct commits, and credits every contributor automatically.
