@@ -4,7 +4,7 @@
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| `test.yml` | Push to `main`/`dev`, any PR (skipped for docs-only changes) | Lint, tests, `npm audit`, typecheck, build, required-file and env checks |
+| `test.yml` | Push to `main`/`dev`, any PR (skipped for docs-only changes) | Lint, tests, typecheck, build, required-file and env checks |
 | `codeql.yml` | Push/PR to `main`/`dev` (skipped for docs-only changes); weekly | CodeQL analysis (`javascript-typescript`) |
 | `security.yml` | PR to `main`/`dev`; push to `main`/`dev` touching `package*.json`; weekly | `npm audit`, dependency review, Trivy filesystem scan |
 | `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges patch updates once required checks pass; labels major updates |
