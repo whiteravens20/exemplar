@@ -55,7 +55,7 @@
     "minimatch": "10.2.6",
     "follow-redirects": "1.16.0",
     "postcss": "8.5.26",
-    "ip-address": "10.4.0",
+    "ip-address": "10.7.1",
     "discord.js": {
       "undici": "6.28.1"
     }
