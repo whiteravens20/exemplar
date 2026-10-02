@@ -341,7 +341,7 @@ Activate the workflow.
 | `AI_MOD_EXEMPT_ROLES`         | no                 | _empty_ | CSV of role IDs whose holders are skipped (mods, trusted bots, etc.) |
 | `AI_MOD_MUTE_THRESHOLD`       | no                 | `3`     | Active warnings that trigger auto-mute |
 | `AI_MOD_BAN_THRESHOLD`        | no                 | `100`   | Historical warnings that trigger auto-ban |
-| `AI_MOD_USER_COOLDOWN_MS`     | no                 | `5000`  | Per-user cooldown (ms) between n8n calls. Stops one chatty user from triggering unbounded concurrent webhook requests. `0` disables the gate. |
+| `AI_MOD_MAX_CONCURRENT`       | no                 | `2`     | Messages with the moderation workflow at once. The rest wait their turn; none is skipped. |
 | `MOD_RULES_TEXT`              | no                 | _empty_ | Server-specific rules as a plain string (use `\n` for line breaks). Passed to the LLM as `serverRules` in the payload. Empty = LLM uses generic baseline. |
 | `DISCORD_SERVER_ID`           | yes (bot-wide)     | _empty_ | The single configured server |
 
@@ -439,10 +439,16 @@ yourself or a real member:
   functionality is unaffected.
 - **Rate limits**: the existing `N8NClient` retries 5xx / 429 with
   exponential backoff and bails after 3 attempts. If your LLM provider
-  rate-limits you, you'll see those errors in the bot log. The orchestrator
-  also enforces a per-user cooldown (`AI_MOD_USER_COOLDOWN_MS`, default 5 s)
-  so a single user's burst can't fan out into concurrent n8n calls — raise
-  it for chat-heavy servers, set to `0` to disable.
+  rate-limits you, you'll see those errors in the bot log.
+- **Bursts**: every eligible message is analysed. At most
+  `AI_MOD_MAX_CONCURRENT` (default 2) are with n8n at once and the rest wait
+  in memory, so during a burst a verdict arrives later instead of not at all.
+  A local model works through messages one after another whatever the
+  setting; a hosted model that answers in parallel clears a burst faster with
+  a higher value. The `waitedMs` field of the `AI moderation verdict` log
+  line shows how long a message waited. The queue holds 1000 messages; past
+  that a message is not analysed and the bot logs
+  `AI moderation queue is full`.
 - **Restart resilience**: when the bot restarts with an existing
   `ai_mod_active_mutes` row, the reconciliation job runs once after the
   client is `ready` and re-evaluates each row — extending the Discord

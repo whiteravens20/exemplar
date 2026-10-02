@@ -436,7 +436,7 @@ class DashboardServer {
         aiModerationConfigured: c.moderation.aiModerationUrl.length > 0,
         warnMuteThreshold: c.moderation.warnMuteThreshold,
         warnBanThreshold: c.moderation.warnBanThreshold,
-        userCooldownMs: c.moderation.userCooldownMs,
+        maxConcurrent: c.moderation.maxConcurrent,
         includeChannels: c.moderation.includeChannels,
         exemptRoles: c.moderation.exemptRoles,
         allowedRoles: c.moderation.allowedRoles,

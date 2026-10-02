@@ -8,6 +8,7 @@ import logger from './logger.js';
 import { i18n, t } from './i18n.js';
 import configManager from '../config/config.js';
 import N8NClient from './n8n-client.js';
+import { ConcurrencyLimiter } from './concurrency-limiter.js';
 import warningRepo from '../db/repositories/warning-repository.js';
 import moderationLogRepo from '../db/repositories/moderation-log-repository.js';
 import {
@@ -44,10 +45,9 @@ const MAX_REASON_LENGTH = 512;
 // guard (and self-documenting intent) against any future path that bypasses
 // Discord's limit — not a constraint operators are expected to hit.
 const MAX_CONTENT_LENGTH = 4000;
-// Cap the in-memory cooldown map so a long-running bot in a noisy guild can't
-// leak unbounded entries. Eviction policy is "drop oldest"; entries older than
-// the configured cooldown are also evicted lazily on each check.
-const COOLDOWN_MAX_ENTRIES = 10_000;
+// Messages waiting for their turn at the moderation workflow. Only a flood
+// reaches this; past it a message is not analysed, and that is logged.
+const MAX_QUEUED_MESSAGES = 1000;
 
 export type ModerationAction = 'allow' | 'warn' | 'timeout' | 'delete';
 
@@ -65,36 +65,17 @@ export interface ModerationVerdict {
 
 let cachedClient: N8NClient | null = null;
 let startupWarningLogged = false;
-const lastAnalysisAt = new Map<string, number>();
 
 /**
- * Per-user cooldown gate. Prevents a single user from triggering unbounded
- * concurrent n8n calls during a burst of messages in an enrolled channel.
- * Returns true when this call is allowed (and records the timestamp); false
- * when the user is still within their cooldown window. Cooldown of 0 disables
- * the gate.
- *
- * Exported for tests.
+ * Every eligible message is analysed. At most AI_MOD_MAX_CONCURRENT requests
+ * are with the moderation workflow at a time and the rest wait their turn, so
+ * a burst reaches the model as a steady stream instead of piling up until
+ * requests time out. A verdict that arrives late still gets acted on.
  */
-export function checkCooldown(userId: string, now: number = Date.now()): boolean {
-  const cooldownMs = configManager.config.moderation.userCooldownMs;
-  if (cooldownMs <= 0) return true;
-
-  const last = lastAnalysisAt.get(userId);
-  if (last !== undefined && now - last < cooldownMs) return false;
-
-  if (lastAnalysisAt.size >= COOLDOWN_MAX_ENTRIES) {
-    const oldestKey = lastAnalysisAt.keys().next().value;
-    if (oldestKey !== undefined) lastAnalysisAt.delete(oldestKey);
-  }
-  lastAnalysisAt.set(userId, now);
-  return true;
-}
-
-/** Test hook — wipes the in-memory cooldown map. */
-export function _resetCooldownForTests(): void {
-  lastAnalysisAt.clear();
-}
+const queue = new ConcurrencyLimiter(
+  () => configManager.config.moderation.maxConcurrent,
+  MAX_QUEUED_MESSAGES
+);
 
 function getClient(): N8NClient | null {
   const { aiModerationUrl } = configManager.config.moderation;
@@ -328,17 +309,30 @@ async function enforce(
 export async function analyzeAndAct(message: Message): Promise<void> {
   if (!shouldAnalyze(message)) return;
 
-  // Per-user cooldown — guards the n8n workflow against bursts. Checked after
-  // shouldAnalyze so an exempt/ignored message doesn't burn the user's slot.
-  if (!checkCooldown(message.author.id)) {
-    logger.debug('AI moderation: user within cooldown — skipping', {
+  const client = getClient();
+  if (!client) return;
+
+  const queuedAt = Date.now();
+  if (!(await queue.acquire())) {
+    logger.error('AI moderation queue is full — message not analysed', {
       userId: message.author.id,
+      channelId: message.channelId,
+      waiting: queue.waitingCount,
     });
     return;
   }
+  try {
+    await analyze(message, client, Date.now() - queuedAt);
+  } finally {
+    queue.release();
+  }
+}
 
-  const client = getClient();
-  if (!client) return;
+async function analyze(
+  message: Message,
+  client: N8NClient,
+  waitedMs: number
+): Promise<void> {
 
   // Fetch the user's recent warning history so the LLM can ground "repeated
   // rule-breaking" verdicts in actual evidence rather than guessing. Cheap —
@@ -410,6 +404,7 @@ export async function analyzeAndAct(message: Message): Promise<void> {
     mode,
     userId: message.author.id,
     channelId: message.channelId,
+    waitedMs,
   });
 
   if (verdict.action === 'allow') return;
