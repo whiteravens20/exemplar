@@ -10,18 +10,18 @@ git clone https://github.com/whiteravens20/exemplar.git
 cd exemplar
 ```
 
-### 2️⃣ Get Discord Token
+### 2️⃣ Create the Discord application
 1. Go to https://discord.com/developers/applications
-2. Click "New Application"
-3. Name: "AI Assistant" (or any name)
-4. Go to "Bot" → "Add Bot"
-5. Copy token to notepad
+2. Click "New Application" and name it
+3. Go to "Bot" → "Reset Token" and copy the token (it is shown once)
+4. On the same page enable **Server Members Intent** and **Message Content Intent**
+5. Copy the Application ID from "General Information"
+6. Invite the bot to your server with the `bot` and `applications.commands` scopes; the permissions it needs are listed in [SETUP.md](SETUP.md)
 
 ### 3️⃣ Configure n8n
-1. Open https://n8n.io (cloud or self-hosted)
-2. Create new workflow
-3. Add "Webhook" trigger
-4. Copy webhook URL
+1. In your n8n, import [`assistant-workflow.n8n.json`](assistant-workflow.n8n.json) (Workflows → Import from File)
+2. Set its credentials as described in [N8N_INTEGRATION.md](N8N_INTEGRATION.md)
+3. Activate the workflow and copy the webhook's Production URL
 
 ### 4️⃣ Setup .env
 ```bash
@@ -32,15 +32,15 @@ nano .env
 Fill in:
 ```env
 DISCORD_TOKEN=your_token_here
-DISCORD_CLIENT_ID=your_client_id
+DISCORD_CLIENT_ID=your_application_id
 DISCORD_SERVER_ID=your_server_id
 N8N_WORKFLOW_URL=https://your-n8n.com/webhook/...
+# The secret the webhook's Header Auth credential holds (openssl rand -hex 32)
+N8N_API_KEY=your_shared_secret
+# Role IDs allowed to use the assistant; empty = everyone
+ALLOWED_ROLES_FOR_AI=
 
-# Database (already configured in docker-compose.yml)
-DB_HOST=postgres
-DB_PORT=5432
-DB_NAME=discord_bot
-DB_USER=bot_user
+# Database: Docker Compose only needs a password, the rest has defaults
 DB_PASSWORD=change_me_in_production
 ```
 
@@ -60,15 +60,18 @@ curl http://localhost:3000/health
 Should return:
 ```json
 {
-  "status": "healthy",
-  "database": "connected",
-  "timestamp": "2026-02-16T..."
+  "status": "ok",
+  "uptime": 12.3,
+  "timestamp": "2026-02-16T...",
+  "database": "connected"
 }
 ```
 
 ---
 
 ## Manual Setup (Without Docker)
+
+Needs Node.js 22+, npm 11+ and PostgreSQL 14+.
 
 ### 1️⃣ Install PostgreSQL
 ```bash
@@ -88,6 +91,7 @@ createdb discord_bot
 git clone https://github.com/whiteravens20/exemplar.git
 cd exemplar
 npm install
+npm run build
 ```
 
 ### 3️⃣ Configure .env
@@ -96,7 +100,7 @@ cp .env.example .env
 nano .env
 ```
 
-Update database connection:
+Fill in the Discord and n8n values as above, and the database connection:
 ```env
 DB_HOST=localhost
 DB_PORT=5432
@@ -122,23 +126,25 @@ npm start
 ### Public Mention (1-2 seconds)
 ```
 @BotName
-→ Bot responds with hardcoded message
+→ Bot replies that it answers in DMs
 ```
 
 ### Direct Message (5+ seconds)
 ```
 Send DM to bot: hello
 → Bot sends to n8n
-→ n8n processes with conversation context
+→ n8n answers, with the conversation so far as memory
 → Bot returns response
 ```
 
 ### Slash Commands (run in DMs with the bot)
 ```
-/stats days:7        → View 7-day usage statistics (admin)
-/warn user:@user     → Issue warning (admin/moderator)
-/warnings            → View your warnings (all users)
+/help                → Commands you can use
+/code message:...    → Ask the coding model
 /flushmemory         → Clear conversation history
+/warnings            → View your warnings
+/warn user:@user reason:...  → Issue warning (moderator)
+/stats days:7        → View 7-day usage statistics (admin)
 ```
 
 ---
@@ -147,15 +153,14 @@ Send DM to bot: hello
 
 ### Bot not online?
 ```bash
-# Check configuration
-npm run test-config
-
 # Docker: Check container logs
-docker compose logs bot
+docker compose logs discord-bot
 
 # Docker: Check all services
 docker compose ps
 ```
+A missing required setting stops the bot at startup with
+`Missing required configuration: <name>` in the log.
 
 ### Database connection issues?
 ```bash
@@ -175,15 +180,14 @@ docker compose restart
 tail -f logs/combined.log
 
 # Docker: Stream logs
-docker compose logs -f bot
+docker compose logs -f discord-bot
 ```
 
 ### Slash commands not working?
-```bash
-# Commands are registered with Discord on every start
-npm start
-```
-Wait 5 minutes for Discord synchronization.
+Commands are registered with Discord on every start, so restart the bot
+(`docker compose restart discord-bot` or `npm start`) and give Discord a few
+minutes to show them. They run in DMs with the bot; in a server channel the
+bot only points you to DMs.
 
 ### Health check failing?
 ```bash

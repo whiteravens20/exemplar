@@ -17,8 +17,8 @@
 
 #### B. Creating Bot
 1. On the left side, go to "Bot"
-2. Click "Add Bot"
-3. Under "TOKEN" click "Copy" and save the token somewhere safe (this is your `DISCORD_TOKEN`)
+2. Under "TOKEN" click "Reset Token", then copy the token and save it somewhere safe (this is your `DISCORD_TOKEN`; it is shown only once)
+3. Under "Privileged Gateway Intents" enable **Server Members Intent** and **Message Content Intent**. Without them the bot cannot check roles or read messages.
 
 #### C. Configuring Permissions
 1. Go to "OAuth2" > "URL Generator"
@@ -38,8 +38,10 @@
      - Kick Members
      - Ban Members
      - Timeout Members
+     - Manage Messages (only for AI moderation, to delete messages; see [AI_MODERATION.md](AI_MODERATION.md))
 
 4. Copy the generated URL and open it in your browser to add the bot to your server
+5. In Server Settings > Roles, keep the bot's role above the roles of the members it should moderate and above the roles it hands out
 
 #### D. Retrieving Application ID and Server ID
 - Application ID (Client ID): Located in "General Information" at the top
@@ -47,13 +49,8 @@
 
 ### 2. Configuring n8n
 
-#### A. Creating Webhook Trigger
-1. In n8n create a new workflow
-2. Add "Webhook" trigger
-3. Configure:
-   - **HTTP Method**: POST
-   - **Path**: `/discord` (or another path)
-4. In "Webhook URL Details" copy the full URL
+#### A. Importing the workflow
+The repository ships a ready workflow. In n8n use **Workflows → Import from File** with [`assistant-workflow.n8n.json`](assistant-workflow.n8n.json), set its credentials, activate it and copy the webhook's **Production URL**. [N8N_INTEGRATION.md](N8N_INTEGRATION.md) walks through each step. To build your own instead, add a "Webhook" trigger (POST) and end with a "Respond to Webhook" node.
 
 #### B. Message Handling
 n8n will receive:
@@ -63,10 +60,14 @@ n8n will receive:
   "userName": "username",
   "message": "hello",
   "serverId": "987654321",
+  "mode": "chat",
   "timestamp": "2024-02-02T10:30:00.000Z",
-  "platform": "discord"
+  "platform": "discord",
+  "conversationContext": []
 }
 ```
+
+`mode` is `chat` for a plain DM and `code` for the `/code` command. `conversationContext` holds the user's recent exchanges with the bot.
 
 #### C. Returning Response
 Your workflow should return a response in the format:
@@ -75,8 +76,6 @@ Your workflow should return a response in the format:
   "response": "Your response to the user"
 }
 ```
-
-Or simply - if the last node returns a `response` field, the bot will execute it.
 
 ### 3. Configuring Environment Variables
 
@@ -96,9 +95,12 @@ DISCORD_SERVER_ID=your_server_id_here
 # n8n - REQUIRED
 N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/discord
 
-# n8n - OPTIONAL
+# n8n - OPTIONAL in the bot, needed by the bundled workflows
 # Random secret (openssl rand -hex 32), same value as the webhooks' Header Auth
 N8N_API_KEY=replace_with_a_random_secret
+
+# Database - REQUIRED (the other DB_* values have defaults)
+DB_PASSWORD=your_secure_password_here
 
 # AI moderation (issue #16) - OPTIONAL
 # Off by default. To enable, see docs/AI_MODERATION.md for the full step-by-step
@@ -111,7 +113,7 @@ AI_MOD_INCLUDE_CHANNELS=
 AI_MOD_EXEMPT_ROLES=
 AI_MOD_MUTE_THRESHOLD=3
 AI_MOD_BAN_THRESHOLD=100
-AI_MOD_USER_COOLDOWN_MS=5000
+AI_MOD_MAX_CONCURRENT=2
 MOD_RULES_TEXT=
 
 # Bot Configuration - OPTIONAL
@@ -141,15 +143,23 @@ If `ALLOWED_ROLES_FOR_AI` is empty, everyone can send messages to the AI Assista
 
 ### 5. Installation and Running
 
+With Docker Compose, which also starts PostgreSQL and applies the migrations (see [DOCKER_SETUP.md](DOCKER_SETUP.md)):
+
+```bash
+docker compose up -d
+```
+
+Without Docker, with PostgreSQL already running:
+
 ```bash
 # Install dependencies
 npm install
 
-# Test configuration (optional)
-npm run typecheck
-
 # Build the project
 npm run build
+
+# Create the database tables
+npm run migrate:up
 
 # Run the bot
 npm start
@@ -170,11 +180,13 @@ The bot should be online on Discord. Check:
 
 2. **Private message** (if you're in an authorized role):
    ```
-   /help
+   hello
    ```
    Bot should send to n8n and return a response
 
-3. **Checking logs** - check `combined.log` to see details
+3. **Slash command** in the same DM: `/help` lists the commands you can use
+
+4. **Checking logs** - `docker compose logs discord-bot`, or `logs/combined.log` without Docker
 
 ## 🔐 Security
 
@@ -188,17 +200,18 @@ The bot should be online on Discord. Check:
 ### Bot won't connect
 - ✅ Check if `DISCORD_TOKEN` is correct
 - ✅ Check if bot has permissions on the server
-- ✅ Check logs: `tail -f combined.log`
+- ✅ Check logs: `docker compose logs -f discord-bot`, or `tail -f logs/combined.log` without Docker
 
 ### Commands don't work
-- ✅ Make sure bot has permissions for `/` commands
+- ✅ Run them in a DM with the bot; in a server channel the bot only points you to DMs
+- ✅ Make sure the bot was invited with the `applications.commands` scope
 - ✅ Wait a few minutes - Discord needs to synchronize them
-- ✅ Check if Intents are enabled
 
 ### DM doesn't send to n8n
 - ✅ Check `N8N_WORKFLOW_URL`
 - ✅ Check if user has the allowed role (if `ALLOWED_ROLES_FOR_AI` is set)
-- ✅ Sprawdź n8n logi czy workflow się wykonuje
+- ✅ Check in n8n's Executions view whether the workflow ran
+- ✅ Check that the Message Content intent is enabled
 
 ### User without access
 - ✅ Check if they have the role from `ALLOWED_ROLES_FOR_AI`

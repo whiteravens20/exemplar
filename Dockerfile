@@ -63,9 +63,12 @@ RUN chmod +x ./scripts/docker-entrypoint.sh
 # Remove npm (not needed in runtime; eliminates npm's own CVEs)
 RUN npm uninstall -g npm && rm -rf /usr/local/lib/node_modules/npm
 
-# Create non-root user for security
+# Create non-root user for security. /app/logs exists in the image so that a
+# named volume mounted there starts out owned by that user; the root filesystem
+# is read-only under docker-compose.yml, so the bot could not create it itself.
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \
+    mkdir -p /app/logs && \
     chown -R nodejs:nodejs /app
 
 USER nodejs

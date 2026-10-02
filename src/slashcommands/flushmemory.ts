@@ -31,6 +31,13 @@ const command: SlashCommand = {
     const deletedCount = await conversationRepo.flushUserConversations(
       interaction.user.id
     );
+    if (deletedCount === null) {
+      await interaction.reply({
+        content: t('commands.flushmemory.failed'),
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
 
     await analyticsRepo
       .logCommand(interaction.user.id, interaction.user.username, 'flushmemory', false, true)

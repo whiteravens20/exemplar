@@ -123,8 +123,10 @@ const RATE_LIMIT_WINDOW = 60000; // 1 minute
 
 **Protected Secrets:**
 - `DISCORD_TOKEN` - Discord bot token
-- `N8N_WEBHOOK_URL` - n8n webhook endpoint
-- API keys and credentials
+- `N8N_WORKFLOW_URL`, `N8N_MODERATION_WORKFLOW_URL` - n8n webhook endpoints
+- `N8N_API_KEY` - secret shared with the n8n webhooks
+- `DB_PASSWORD` - database password
+- `DISCORD_CLIENT_SECRET`, `DASHBOARD_SESSION_SECRET` - dashboard sign-in and sessions
 
 ### 🛡️ Input Validation & Sanitization
 
@@ -144,8 +146,8 @@ const RATE_LIMIT_WINDOW = 60000; // 1 minute
 
 **What we DON'T log:**
 - Discord tokens
-- n8n webhook URLs (logged as `[REDACTED]`)
-- User message content in production
+- n8n webhook URLs (the host is logged, the path as `[REDACTED]`)
+- User message content (the log has its length; the first 100 characters of the assistant's reply are logged)
 - API keys or credentials
 
 ---
@@ -164,7 +166,7 @@ const RATE_LIMIT_WINDOW = 60000; // 1 minute
 - Webhook URL is treated as a secret
 - HTTPS-only communication (recommended)
 - Retry logic with exponential backoff prevents DoS
-- Timeout protection (5 seconds default)
+- Timeout protection (2 minutes for the assistant, 5 minutes for AI moderation)
 
 ### 🔒 Dependency Security
 
@@ -204,7 +206,7 @@ All package managers are configured with minimum release age to block compromise
 - ✅ Input validation on all user inputs
 - ✅ Proper error handling with user-friendly messages
 - ✅ No eval() or dangerous dynamic code execution
-- ✅ TypeScript-style JSDoc annotations for type safety
+- ✅ TypeScript in strict mode
 
 ### 🐳 Docker Security
 
@@ -230,39 +232,39 @@ DISCORD_TOKEN=your_discord_bot_token_here
 # Discord Client ID (REQUIRED)
 DISCORD_CLIENT_ID=your_discord_client_id_here
 
-# Discord Guild ID (REQUIRED)
-DISCORD_GUILD_ID=your_discord_guild_id_here
+# Discord server ID (REQUIRED)
+DISCORD_SERVER_ID=your_discord_server_id_here
 
 # n8n Webhook URL (REQUIRED)
-N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/your-path
+N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/your-path
 
-# Rate Limiting
-RATE_LIMIT_MESSAGES=5        # Messages per window
-RATE_LIMIT_WINDOW=60000      # Window in milliseconds (60s)
+# Secret the bot sends to the webhook as X-API-Key (openssl rand -hex 32)
+N8N_API_KEY=replace_with_a_random_secret
 
-# Timeouts
-N8N_REQUEST_TIMEOUT=5000     # n8n timeout (5s)
+# Roles allowed to use the assistant; empty = everyone
+ALLOWED_ROLES_FOR_AI=role_id_1,role_id_2
+
+# Database password
+DB_PASSWORD=your_secure_password_here
 ```
+
+The rate limit (5 messages per minute per user) and the n8n timeouts are fixed
+in the code. [`.env.example`](.env.example) lists every variable.
 
 ### 🔐 Discord Bot Permissions
 
-**Minimum Required Permissions:**
-- `ReadMessages` / `ViewChannel` - To read DMs
-- `SendMessages` - To respond to users
-- `EmbedLinks` - For rich message formatting (optional)
+**Required Permissions:**
+- `ViewChannel`, `SendMessages`, `ReadMessageHistory`, `AddReactions` - To read, answer and react
+- `KickMembers`, `BanMembers`, `ModerateMembers` - For the moderation commands and the warning escalation
+- `ManageRoles` - For reaction roles
+- `ManageMessages` - Only with AI moderation, to delete messages
 
 **NOT Required:**
 - ❌ Administrator
 - ❌ Manage Server
 - ❌ Manage Channels
-- ❌ Ban Members (reserved for future automated moderation)
-- ❌ Kick Members (reserved for future automated moderation)
 
-**Permission Setup:**
-```
-Bot Permissions Integer: 2048
-OAuth2 URL: https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=2048&scope=bot%20applications.commands
-```
+**Permission Setup:** invite the bot with the `bot` and `applications.commands` scopes and the permissions above; [docs/SETUP.md](docs/SETUP.md) has the steps. Leave out what you do not use, for example the moderation permissions on a server that only wants the assistant.
 
 ### 🛡️ Network Security
 

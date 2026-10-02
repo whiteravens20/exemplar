@@ -91,6 +91,26 @@ const command: SlashCommand = {
       .setDescription(description)
       .setTimestamp();
 
+    // The users table only knows moderators who have chatted with the bot or
+    // run a logged command; everyone else is looked up on Discord.
+    const issuerNames = new Map<string, string | null>();
+    const issuerName = async (warning: Warning): Promise<string | null> => {
+      if (warning.issued_by_username) return warning.issued_by_username;
+      const id = warning.issued_by;
+      if (!issuerNames.has(id)) {
+        issuerNames.set(
+          id,
+          id === interaction.client.user.id
+            ? t('moderation.aiModerator')
+            : await interaction.client.users.fetch(id).then(
+                (user) => user.username,
+                () => null
+              )
+        );
+      }
+      return issuerNames.get(id) ?? null;
+    };
+
     for (const [index, warning] of warnings.slice(0, 25).entries()) {
       const expiresAt = new Date(warning.expires_at);
       const issuedAt = new Date(warning.issued_at);
@@ -108,10 +128,9 @@ const command: SlashCommand = {
         t('commands.warnings.issued', { date: issuedAt }),
         t('commands.warnings.expiresIn', { count: daysLeft }),
       ];
-      if (access.isAdmin && warning.issued_by_username) {
-        lines.push(
-          t('commands.warnings.issuedBy', { moderator: warning.issued_by_username })
-        );
+      const moderator = access.isAdmin ? await issuerName(warning) : null;
+      if (moderator) {
+        lines.push(t('commands.warnings.issuedBy', { moderator }));
       }
       const fieldValue = lines.join('\n');
 

@@ -67,6 +67,8 @@ Swap the models freely. The General agent's model must support tool calling. For
 2. **Discord Webhook**: select a **Header Auth** credential with header name `X-API-Key` and your `N8N_API_KEY` as the value. The import ships a placeholder credential ID, so create or pick your own.
 3. **Qwen2.5 Coder 7B** and **Ministral3 8B**: select your **Ollama** credential.
 4. **Postgres Chat Memory**: select a **Postgres** credential for the **bot's database** (the same `DB_*` values as in `.env`). n8n creates its `n8n_chat_histories` table there, and the bot's `/flushmemory` and `/flushdb` clear it. With a different database, those commands only clear the bot's side.
+   - In the credential, set **SSL** to *Disable* and leave **Ignore SSL Issues** off unless your database has TLS. That switch does not turn SSL off; it makes n8n ask for it, and the bundled PostgreSQL then refuses with `The server does not support SSL connections`.
+   - Under Docker Compose the database listens on `127.0.0.1` only. With n8n on another host, publish the port first; see [Letting n8n reach the database](DOCKER_SETUP.md#letting-n8n-reach-the-database).
 5. **web_search**: replace `https://searxng.example.com/search` with your SearXNG instance (see below), or delete the node to run without web search.
 6. **Activate** the workflow and copy the webhook's **Production URL** into `.env` as `N8N_WORKFLOW_URL`.
 

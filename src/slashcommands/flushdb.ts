@@ -51,6 +51,13 @@ const command: SlashCommand = {
     }
 
     const deletedCount = await conversationRepo.flushAllConversations();
+    if (deletedCount === null) {
+      await interaction.reply({
+        content: t('errors.operationFailed'),
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
     await db.query('TRUNCATE rate_limits, message_stats, command_usage');
 
     await analyticsRepo

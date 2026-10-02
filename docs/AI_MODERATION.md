@@ -341,13 +341,20 @@ Activate the workflow.
 | `AI_MOD_EXEMPT_ROLES`         | no                 | _empty_ | CSV of role IDs whose holders are skipped (mods, trusted bots, etc.) |
 | `AI_MOD_MUTE_THRESHOLD`       | no                 | `3`     | Active warnings that trigger auto-mute |
 | `AI_MOD_BAN_THRESHOLD`        | no                 | `100`   | Historical warnings that trigger auto-ban |
-| `AI_MOD_USER_COOLDOWN_MS`     | no                 | `5000`  | Per-user cooldown (ms) between n8n calls. Stops one chatty user from triggering unbounded concurrent webhook requests. `0` disables the gate. |
+| `AI_MOD_MAX_CONCURRENT`       | no                 | `2`     | Messages with the moderation workflow at once. The rest wait their turn; none is skipped. |
 | `MOD_RULES_TEXT`              | no                 | _empty_ | Server-specific rules as a plain string (use `\n` for line breaks). Passed to the LLM as `serverRules` in the payload. Empty = LLM uses generic baseline. |
 | `DISCORD_SERVER_ID`           | yes (bot-wide)     | _empty_ | The single configured server |
 
 Other relevant Discord settings (already enabled if you have chat working):
 **Message Content** privileged intent, **Server Members** intent. No new
 intent is required for AI moderation.
+
+**Permissions.** A `timeout` verdict and the auto-mute need **Timeout
+Members**, the auto-ban needs **Ban Members**, and a `delete` verdict needs
+**Manage Messages** — the one permission the rest of the bot does not use, so
+add it to the bot's role when you turn AI moderation on. The bot's role also
+has to sit above the members it acts on. When an action fails, the bot posts a
+"could not carry out" entry in the mod-log channel with the reason.
 
 ---
 
@@ -400,7 +407,8 @@ Restart the bot. Verify with controlled tests:
   `Warn` entry in mod-log with `Moderator: AI moderation`, row in `warnings`.
 - A `timeout` verdict → user is muted, DM'd with duration, mod-log entry.
 - A `delete` verdict → message vanishes, user gets a DM with channel ref +
-  content preview, mod-log entry.
+  content preview, mod-log entry. If the message stays and the mod-log shows
+  "could not carry out: delete", the bot lacks **Manage Messages**.
 
 ### 3. Escalation ladder
 
@@ -434,15 +442,28 @@ yourself or a real member:
   hardware. The bot fires moderation requests fire-and-forget so chat
   latency is unaffected, but deletes / timeouts may land a second or two
   after the offending message.
-- **When n8n is unreachable**: the bot logs `AI moderation: n8n returned
-  failure` and continues. No action is taken on that message. Chat
-  functionality is unaffected.
-- **Rate limits**: the existing `N8NClient` retries 5xx / 429 with
-  exponential backoff and bails after 3 attempts. If your LLM provider
-  rate-limits you, you'll see those errors in the bot log. The orchestrator
-  also enforces a per-user cooldown (`AI_MOD_USER_COOLDOWN_MS`, default 5 s)
-  so a single user's burst can't fan out into concurrent n8n calls — raise
-  it for chat-heavy servers, set to `0` to disable.
+- **When the workflow does not answer**: the bot waits up to five minutes for
+  a verdict, since nobody is waiting on it and a model that has to be loaded
+  first is slow to start. A request that fails (n8n down or restarting, a
+  timeout, an HTTP error) puts the message back at the end of the queue: a
+  second attempt after 30 s and a third after another 60 s, as long as the
+  message is less than ten minutes old. Within one attempt the `N8NClient`
+  already retries network errors, 5xx and 429 three times with exponential
+  backoff.
+- **Messages that could not be checked**: when the attempts are used up, the
+  bot logs `AI moderation: message not analysed` and posts a "could not check
+  some messages" notice in the mod-log channel with the count, the channels
+  and the last error. The first one is reported at once, later ones together,
+  at most every ten minutes. Chat functionality is unaffected.
+- **Bursts**: every eligible message is analysed. At most
+  `AI_MOD_MAX_CONCURRENT` (default 2) are with n8n at once and the rest wait
+  in memory, so during a burst a verdict arrives later instead of not at all.
+  A local model works through messages one after another whatever the
+  setting; a hosted model that answers in parallel clears a burst faster with
+  a higher value. The `waitedMs` field of the `AI moderation verdict` log
+  line shows how long a message waited. The queue holds 1000 messages; past
+  that a message is not analysed and is reported like any other message
+  that could not be checked.
 - **Restart resilience**: when the bot restarts with an existing
   `ai_mod_active_mutes` row, the reconciliation job runs once after the
   client is `ready` and re-evaluates each row — extending the Discord

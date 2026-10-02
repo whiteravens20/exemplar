@@ -64,19 +64,22 @@
     "flushmemory": {
       "description": "Clears your conversation history (bot + n8n AI Agent)",
       "done_one": "✅ Your conversation memory has been cleared.\n📊 Deleted **{{count}}** message (bot + n8n AI Agent).",
-      "done_other": "✅ Your conversation memory has been cleared.\n📊 Deleted **{{count}}** messages (bot + n8n AI Agent)."
+      "done_other": "✅ Your conversation memory has been cleared.\n📊 Deleted **{{count}}** messages (bot + n8n AI Agent).",
+      "failed": "❌ Your conversation memory couldn't be cleared. Please try again later."
     },
     "help": {
       "description": "Shows the available commands and how to use the bot",
       "title": "🤖 AI Assistant Bot - Help",
       "intro": "Hi! I'm an AI bot. Send me a direct message to chat. All `/` commands work in DMs with the bot.",
+      "staffIntro": "All `/` commands work in DMs with the bot.",
       "usage": {
         "name": "💬 How does it work?",
         "value": "Just send me a direct message — I'll answer with the help of AI. Run `/` commands in the same DM window."
       },
       "userCommands": {
         "name": "📋 User commands",
-        "value": "• `/help` — this message\n• `/rules` — server rules\n• `/code <message>` — coding mode\n• `/flushmemory` — clear your conversation memory\n• `/warnings` — show your warnings"
+        "value": "• `/help` — this message\n• `/rules` — server rules\n• `/code <message>` — coding mode\n• `/flushmemory` — clear your conversation memory\n• `/warnings` — show your warnings",
+        "staffValue": "• `/help` — this message\n• `/rules` — server rules\n• `/warnings` — show your warnings"
       },
       "moderationCommands": {
         "name": "👮 Moderation commands (permissions required)",
@@ -248,7 +251,8 @@
       "channel": "Channel",
       "content": "Content",
       "dm": "DM",
-      "activeWarnings": "Active warnings"
+      "activeWarnings": "Active warnings",
+      "problem": "Problem"
     },
     "errors": {
       "selfAction": "❌ You can't do this to yourself.",
@@ -325,7 +329,12 @@
     "defaultReason": "Violation detected by AI moderation",
     "shadowTitle": "🤖 [SHADOW] {{action}}",
     "shadowFooter": "Shadow mode — no action was taken.",
-    "noReason": "_(none)_"
+    "noReason": "_(none)_",
+    "failedTitle": "⚠️ AI moderation could not carry out: {{action}}",
+    "failedFooter": "No action was taken. Check the bot's permissions and role position.",
+    "uncheckedTitle": "⚠️ AI moderation could not check some messages",
+    "uncheckedCount": "Messages not checked",
+    "uncheckedFooter": "The moderation workflow did not answer. Check that n8n and the model are reachable."
   },
   "reactionRoles": {
     "auditGrant": "Reaction role: reacted with {{emoji}}",
