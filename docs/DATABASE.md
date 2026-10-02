@@ -128,6 +128,7 @@ Located in `migrations/`:
 - `004_ai_mod_mutes.sql` - Timeouts applied by the warning escalation ladder
 - `005_dashboard_logs.sql` - Moderation event log for the dashboard
 - `006_reaction_roles.sql` - Reaction-role bindings
+- `007_atomic_get_or_create_user.sql` - `get_or_create_user()` safe under concurrent calls
 
 ### Creating New Migrations
 
