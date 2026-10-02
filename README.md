@@ -110,7 +110,7 @@ After importing, fill in what every fork has to supply itself; each node's note 
 
 1. **Header Auth** credential on each webhook: header `X-API-Key`, value = your `N8N_API_KEY`.
 2. **Ollama** credential on the model nodes, or swap them for another provider's chat-model node.
-3. **Postgres** credential on *Postgres Chat Memory*, pointing at the **bot's own database**, so `/flushmemory` and `/flushdb` can clear the n8n memory.
+3. **Postgres** credential on *Postgres Chat Memory*, pointing at the **bot's own database**, so `/flushmemory` and `/flushdb` can clear the n8n memory. With n8n on another host, publish the database port first; see [Letting n8n reach the database](docs/DOCKER_SETUP.md#letting-n8n-reach-the-database).
 4. The **SearXNG URL** in *web_search*. The instance must allow `format=json` and must not rate-limit n8n: list n8n's IP in `pass_ip` in `limiter.toml`, or run the instance with the limiter off. Without SearXNG, delete the node and the assistant keeps Wikipedia.
 5. **Activate** the workflow and copy the webhook's production URL into `.env`.
 

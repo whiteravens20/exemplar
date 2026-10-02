@@ -275,8 +275,8 @@ AI Agent Node → Memory Settings:
 ```bash
 Host: localhost (or postgres in docker-compose)
 Port: 5432
-Database: exemplar
-User: dbot_user
+Database: discord_bot
+User: bot_user
 Password: [from .env]
 ```
 

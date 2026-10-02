@@ -200,6 +200,33 @@ Then update your `.env` to use the service name as hostname:
 N8N_WORKFLOW_URL=http://n8n:5678/webhook/workflow
 ```
 
+### Letting n8n reach the database
+
+The assistant workflow keeps its chat memory in the bot's database, so n8n has
+to connect to it. `docker-compose.yml` publishes PostgreSQL on `127.0.0.1`
+only, which is enough when n8n runs on the same host outside Docker, or in the
+`bot-network` above (host `postgres`).
+
+With n8n on another host, publish the port on an address that host can reach.
+Put it in a `docker-compose.override.yml` next to the Compose file, so the
+shipped file stays as it is:
+
+```yaml
+services:
+  postgres:
+    ports:
+      - "192.0.2.10:5432:5432"  # an address of this host that n8n can reach
+```
+
+The port then accepts connections from that network, protected by
+`DB_PASSWORD` alone. Limit it to n8n's address in your firewall. Docker
+bypasses `ufw` for published ports, so the rule belongs in the `DOCKER-USER`
+chain:
+
+```bash
+iptables -I DOCKER-USER -i eth0 -p tcp --dport 5432 ! -s <n8n-address> -j DROP
+```
+
 ## Common Commands
 
 ```bash
