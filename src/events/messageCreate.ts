@@ -1,6 +1,6 @@
 import { Events, ChannelType, type Message } from 'discord.js';
 import logger from '../utils/logger.js';
-import N8NClient from '../utils/n8n-client.js';
+import N8NClient, { redactWebhookUrl } from '../utils/n8n-client.js';
 import RateLimiter from '../utils/rate-limiter.js';
 import { hasPermission } from '../utils/permissions.js';
 import * as aiModeration from '../utils/ai-moderation.js';
@@ -353,13 +353,13 @@ const event: BotEvent = {
             logger.error('❌ n8n unreachable (network error)', {
               userId: message.author.id,
               error: result.error,
-              url: configManager.config.n8n.workflowUrl,
+              url: redactWebhookUrl(configManager.config.n8n.workflowUrl),
             });
           } else if (status === 404) {
             errorMessage = t('assistant.errors.notFound');
             logger.error('❌ n8n workflow not found (404)', {
               userId: message.author.id,
-              url: configManager.config.n8n.workflowUrl,
+              url: redactWebhookUrl(configManager.config.n8n.workflowUrl),
             });
           } else if (status === 401 || status === 403) {
             errorMessage = t('assistant.errors.auth');

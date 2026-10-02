@@ -7,6 +7,19 @@ import type {
   ConversationContextRow,
 } from '../types/n8n.js';
 
+/**
+ * A webhook URL as it may appear in a log: scheme and host only. The path names
+ * the workflow, and for a webhook without authentication it is all that
+ * protects it.
+ */
+export function redactWebhookUrl(url: string): string {
+  try {
+    return `${new URL(url).origin}/[REDACTED]`;
+  } catch {
+    return '[REDACTED]';
+  }
+}
+
 class N8NClient {
   private workflowUrl: string;
   private apiKey: string;
@@ -93,7 +106,7 @@ class N8NClient {
         error: axiosError.message,
         status: axiosError.response?.status,
         statusText: axiosError.response?.statusText,
-        url: this.workflowUrl,
+        url: redactWebhookUrl(this.workflowUrl),
         attempt: retryCount + 1,
         isRetryable,
         willRetry: canRetry,
