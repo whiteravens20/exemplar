@@ -124,6 +124,9 @@ export async function resolveInvokingMember(
 export function canModerate(moderator: GuildMember, target: GuildMember): boolean {
   if (target.id === moderator.guild.ownerId) return false;
   if (target.id === moderator.id) return false;
+  // The owner outranks every role, as on Discord itself — including when they
+  // hold no role at all.
+  if (moderator.id === moderator.guild.ownerId) return true;
   if (target.roles.highest.position >= moderator.roles.highest.position)
     return false;
   return true;
