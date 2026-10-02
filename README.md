@@ -35,7 +35,7 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 
 ### Storage and operations
 - PostgreSQL for conversation history, rate limits, warnings (30-day expiry), usage analytics (90 days) and the moderation log.
-- The Docker image runs pending migrations on start; the bot falls back to in-memory state if the database is unavailable.
+- The Docker image runs pending migrations on start; the bot falls back to in-memory state if the database is unavailable and picks it up again, without a restart, once it is back.
 - `/health` endpoint on `HEALTH_CHECK_PORT` for orchestration.
 - Optional read-only **logging dashboard** behind Discord OAuth2. See [docs/DASHBOARD.md](docs/DASHBOARD.md).
 - n8n errors are classified (offline, timeout, 404, auth) and retried with exponential backoff.

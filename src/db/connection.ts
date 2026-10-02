@@ -4,12 +4,17 @@ import config from '../config/config.js';
 
 const { Pool } = pg;
 
+/** How often a bot that started without a database looks for it again. */
+const RECONNECT_INTERVAL_MS = 30 * 1000;
+
 class DatabaseConnection {
   private pool: pg.Pool | null = null;
   private isConnected: boolean = false;
   private retryCount: number = 0;
   private maxRetries: number = 3;
   private retryDelay: number = 5000;
+  private reconnectTimer: NodeJS.Timeout | null = null;
+  private readonly reconnectListeners: Array<() => void> = [];
 
   async initialize(): Promise<void> {
     const dbConfig = config.config.database;
@@ -93,7 +98,70 @@ class DatabaseConnection {
         }
       );
 
+      this.scheduleReconnect();
       return false;
+    }
+  }
+
+  /**
+   * Run `listener` when the database becomes available after a start without
+   * one. For state that is read once at startup and would otherwise stay empty
+   * until the next restart.
+   */
+  onReconnect(listener: () => void): void {
+    this.reconnectListeners.push(listener);
+  }
+
+  /**
+   * Keep looking for the database in the background after a failed start, so
+   * one that comes up later is used without restarting the bot. A database lost
+   * while the bot runs needs none of this: the pool reconnects on demand.
+   */
+  private scheduleReconnect(): void {
+    if (this.reconnectTimer) return;
+    this.reconnectTimer = setInterval(() => {
+      void this.tryReconnect();
+    }, RECONNECT_INTERVAL_MS);
+    this.reconnectTimer.unref();
+  }
+
+  private stopReconnect(): void {
+    if (!this.reconnectTimer) return;
+    clearInterval(this.reconnectTimer);
+    this.reconnectTimer = null;
+  }
+
+  private async tryReconnect(): Promise<void> {
+    if (!this.pool || this.isConnected) return;
+    try {
+      const client = await this.pool.connect();
+      try {
+        await client.query('SELECT 1');
+      } finally {
+        client.release();
+      }
+    } catch (error) {
+      logger.debug('Database still unavailable', {
+        error: (error as Error).message,
+      });
+      return;
+    }
+
+    this.isConnected = true;
+    this.retryCount = 0;
+    this.stopReconnect();
+    logger.info('Database connection established after a start without one', {
+      host: config.config.database.host,
+      database: config.config.database.name,
+    });
+    for (const listener of this.reconnectListeners) {
+      try {
+        listener();
+      } catch (error) {
+        logger.error('Database reconnect listener failed', {
+          error: (error as Error).message,
+        });
+      }
     }
   }
 
@@ -132,6 +200,7 @@ class DatabaseConnection {
   }
 
   async close(): Promise<void> {
+    this.stopReconnect();
     if (this.pool) {
       await this.pool.end();
       this.isConnected = false;
