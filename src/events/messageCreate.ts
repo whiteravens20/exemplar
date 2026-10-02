@@ -98,11 +98,16 @@ const event: BotEvent = {
     if (!botUser) return;
     const botMention = `<@${botUser.id}>`;
     const botNicknameMention = `<@!${botUser.id}>`;
+    // The bot's own role carries the bot's name and Discord's mention
+    // autocomplete lists it next to the bot user, so members pick it by mistake.
+    const botRoleId = message.guild?.members.me?.roles.botRole?.id;
+    const botRoleMention = botRoleId ? `<@&${botRoleId}>` : null;
 
     // Handle bot mentions in public channels
     if (
       message.content.includes(botMention) ||
-      message.content.includes(botNicknameMention)
+      message.content.includes(botNicknameMention) ||
+      (botRoleMention !== null && message.content.includes(botRoleMention))
     ) {
       if (message.channel.type !== ChannelType.DM) {
         try {
