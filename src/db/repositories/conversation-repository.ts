@@ -65,12 +65,27 @@ class ConversationRepository {
   }
 
   /**
-   * Flush conversation history for a specific user
+   * Whether n8n keeps its chat memory in this database. The table is created by
+   * n8n's Postgres Chat Memory node on first use, and only when its credential
+   * points here, so it is absent on a fresh install and when n8n uses another
+   * database.
    */
-  async flushUserConversations(discordId: string): Promise<number> {
+  private async hasN8nMemory(): Promise<boolean> {
+    const result = await db.query<{ present: boolean }>(
+      "SELECT to_regclass('n8n_chat_histories') IS NOT NULL AS present"
+    );
+    return result.rows[0]?.present === true;
+  }
+
+  /**
+   * Flush conversation history for a specific user: the bot's own rows and,
+   * when n8n keeps it in this database, the n8n memory. Returns the number of
+   * rows deleted, or null when nothing could be flushed.
+   */
+  async flushUserConversations(discordId: string): Promise<number | null> {
     if (!db.isAvailable()) {
       logger.warn('Database unavailable, cannot flush user conversations');
-      return 0;
+      return null;
     }
 
     try {
@@ -79,20 +94,24 @@ class ConversationRepository {
          WHERE user_id = (SELECT id FROM users WHERE discord_id = $1)`,
         [discordId]
       );
+      const botConversations = conversationsResult.rowCount ?? 0;
 
-      const n8nResult = await db.query(
-        `DELETE FROM n8n_chat_histories
-         WHERE session_id = $1`,
-        [discordId]
-      );
+      let n8nMemory = 0;
+      if (await this.hasN8nMemory()) {
+        const n8nResult = await db.query(
+          `DELETE FROM n8n_chat_histories
+           WHERE session_id = $1`,
+          [discordId]
+        );
+        n8nMemory = n8nResult.rowCount ?? 0;
+      }
 
-      const totalDeleted =
-        (conversationsResult.rowCount ?? 0) + (n8nResult.rowCount ?? 0);
+      const totalDeleted = botConversations + n8nMemory;
 
       logger.info('User conversations and n8n memory flushed', {
         discordId,
-        botConversations: conversationsResult.rowCount,
-        n8nMemory: n8nResult.rowCount,
+        botConversations,
+        n8nMemory,
         totalDeleted,
       });
 
@@ -102,30 +121,34 @@ class ConversationRepository {
         error: (error as Error).message,
         discordId,
       });
-      return 0;
+      return null;
     }
   }
 
   /**
-   * Flush all conversations (admin operation)
+   * Flush all conversations (admin operation). Returns the number of rows
+   * deleted, or null when nothing could be flushed.
    */
-  async flushAllConversations(): Promise<number> {
+  async flushAllConversations(): Promise<number | null> {
     if (!db.isAvailable()) {
       logger.warn('Database unavailable, cannot flush all conversations');
-      return 0;
+      return null;
     }
 
     try {
+      const hasN8nMemory = await this.hasN8nMemory();
       const countResult = await db.query<{
         bot_count: string;
         n8n_count: string;
       }>(
-        'SELECT (SELECT COUNT(*) FROM conversations) as bot_count, (SELECT COUNT(*) FROM n8n_chat_histories) as n8n_count'
+        hasN8nMemory
+          ? 'SELECT (SELECT COUNT(*) FROM conversations) as bot_count, (SELECT COUNT(*) FROM n8n_chat_histories) as n8n_count'
+          : 'SELECT COUNT(*) as bot_count, 0::bigint as n8n_count FROM conversations'
       );
       const counts = countResult.rows[0];
 
       await db.query('TRUNCATE conversations');
-      await db.query('TRUNCATE n8n_chat_histories');
+      if (hasN8nMemory) await db.query('TRUNCATE n8n_chat_histories');
 
       const totalDeleted =
         parseInt(counts.bot_count) + parseInt(counts.n8n_count);
@@ -142,7 +165,7 @@ class ConversationRepository {
       logger.error('Failed to flush all conversations', {
         error: (error as Error).message,
       });
-      return 0;
+      return null;
     }
   }
 

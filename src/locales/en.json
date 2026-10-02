@@ -64,7 +64,8 @@
     "flushmemory": {
       "description": "Clears your conversation history (bot + n8n AI Agent)",
       "done_one": "✅ Your conversation memory has been cleared.\n📊 Deleted **{{count}}** message (bot + n8n AI Agent).",
-      "done_other": "✅ Your conversation memory has been cleared.\n📊 Deleted **{{count}}** messages (bot + n8n AI Agent)."
+      "done_other": "✅ Your conversation memory has been cleared.\n📊 Deleted **{{count}}** messages (bot + n8n AI Agent).",
+      "failed": "❌ Your conversation memory couldn't be cleared. Please try again later."
     },
     "help": {
       "description": "Shows the available commands and how to use the bot",

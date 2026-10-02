@@ -72,7 +72,8 @@
       "done_one": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomość (bot + n8n AI Agent).",
       "done_few": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent).",
       "done_many": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent).",
-      "done_other": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent)."
+      "done_other": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent).",
+      "failed": "❌ Nie udało się wyczyścić pamięci konwersacji. Spróbuj ponownie później."
     },
     "help": {
       "description": "Pokazuje dostępne komendy i sposób korzystania z bota",
