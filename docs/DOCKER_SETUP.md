@@ -29,6 +29,8 @@ N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/workflow
 N8N_API_KEY=replace_with_a_random_secret
 BOT_LANGUAGE=en
 ALLOWED_ROLES_FOR_AI=role_id_1,role_id_2,role_id_3
+# Compose refuses to start without a database password
+DB_PASSWORD=your_secure_password_here
 NODE_ENV=production
 ```
 
@@ -66,6 +68,10 @@ docker compose down
 - **Restart**: Skips migrations if schema is up-to-date
 
 ### 3. Build Manually (without Docker Compose)
+
+These commands start the bot alone. Point the `DB_*` variables at a PostgreSQL
+the container can reach; without a database the bot runs with in-memory
+fallbacks and keeps no history, warnings or statistics.
 
 #### Option 1: Using .env file (Recommended)
 ```bash
@@ -175,8 +181,8 @@ console only.
 To access logs from the container:
 
 ```bash
-docker-compose exec discord-bot ls -la logs/
-docker-compose exec discord-bot tail -f logs/combined.log
+docker compose exec discord-bot ls -la logs/
+docker compose exec discord-bot tail -f logs/combined.log
 ```
 
 ## Network Configuration
@@ -231,34 +237,34 @@ iptables -I DOCKER-USER -i eth0 -p tcp --dport 5432 ! -s <n8n-address> -j DROP
 
 ```bash
 # View running containers
-docker-compose ps
+docker compose ps
 
 # View container logs (last 100 lines, follow output)
-docker-compose logs -f --tail=100 discord-bot
+docker compose logs -f --tail=100 discord-bot
 
 # Restart the bot
-docker-compose restart discord-bot
+docker compose restart discord-bot
 
 # Stop the bot
-docker-compose stop discord-bot
+docker compose stop discord-bot
 
 # Start the bot
-docker-compose start discord-bot
+docker compose start discord-bot
 
 # Execute command in running container
-docker-compose exec discord-bot node -e "import('http').then(h => h.get('http://localhost:3000/health', r => { if(r.statusCode!==200) process.exit(1) }))"
+docker compose exec discord-bot node -e "import('http').then(h => h.get('http://localhost:3000/health', r => { if(r.statusCode!==200) process.exit(1) }))"
 
 # Remove containers, networks (keeps volumes)
-docker-compose down
+docker compose down
 
 # Remove everything including volumes
-docker-compose down -v
+docker compose down -v
 
 # Rebuild without cache
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Pull latest image and rebuild
-docker-compose pull && docker-compose up -d --build
+docker compose pull && docker compose up -d --build
 ```
 
 ## Troubleshooting
@@ -268,7 +274,7 @@ docker-compose pull && docker-compose up -d --build
 Check the logs:
 
 ```bash
-docker-compose logs discord-bot
+docker compose logs discord-bot
 ```
 
 Common issues:
@@ -295,15 +301,15 @@ deploy:
 
 ### Bot not responding to messages
 
-1. Verify Discord token is correct:
+1. Verify the Discord token reached the container (this prints whether it is set, not the token):
    ```bash
-   docker-compose exec discord-bot node -e "console.log(process.env.DISCORD_TOKEN)"
+   docker compose exec discord-bot node -e "console.log(process.env.DISCORD_TOKEN ? 'set' : 'missing')"
    ```
 
 2. Check bot permissions in Discord server
 3. Verify bot is running:
    ```bash
-   docker-compose ps
+   docker compose ps
    ```
 
 ### n8n webhook is unreachable
@@ -311,8 +317,8 @@ deploy:
 If using Docker Compose with n8n service on same network:
 
 ```bash
-# Test connectivity
-docker-compose exec discord-bot curl -v http://n8n:5678/webhook/workflow
+# Test connectivity (the image has wget, not curl)
+docker compose exec discord-bot wget -qO- http://n8n:5678/healthz
 ```
 
 ## Production Deployment
@@ -381,19 +387,11 @@ Deploy with:
 kubectl apply -f kubernetes.yaml
 ```
 
-## Image Size Optimization
+## Image Size
 
-Current image size: ~200MB (with Node.js 22-alpine and dependencies)
-
-To further reduce size:
-
-```dockerfile
-# Remove optional dependencies
-RUN npm ci --only=production --no-optional
-
-# Use node:22-alpine3.18 (smallest available)
-FROM node:22-alpine3.18
-```
+The image is about 350 MB (Node.js 22 on Alpine plus the production
+dependencies). The build stage already drops the dev dependencies; the runtime
+stage holds only `dist/`, the production `node_modules` and the migrations.
 
 ## Updating the Bot
 
@@ -402,10 +400,10 @@ FROM node:22-alpine3.18
 git pull origin main
 
 # Rebuild image
-docker-compose build --no-cache
+docker compose build --no-cache
 
 # Restart service
-docker-compose up -d
+docker compose up -d
 ```
 
 ## Environment-Specific Configurations
@@ -414,17 +412,15 @@ Create separate compose files for different environments:
 
 ```bash
 # Development
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 # Production
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up
 ```
 
 In `docker-compose.prod.yml`:
 
 ```yaml
-version: '3.8'
-
 services:
   discord-bot:
     restart: always
@@ -441,5 +437,5 @@ For issues or questions:
 
 1. Check [FAQ.md](FAQ.md)
 2. Review [N8N_INTEGRATION.md](N8N_INTEGRATION.md)
-3. Check logs: `docker-compose logs discord-bot`
+3. Check logs: `docker compose logs discord-bot`
 4. See [CONTRIBUTING.md](../CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) for support options
