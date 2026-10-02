@@ -6,15 +6,16 @@
 - [ ] Application created on Discord Developer Portal
 - [ ] Bot token copied and secure
 - [ ] Client ID registered
-- [ ] Bot added to server with appropriate permissions
-- [ ] Slash commands can be created (required permissions)
+- [ ] **Server Members Intent** and **Message Content Intent** enabled on the Bot page
+- [ ] Bot invited with the `bot` and `applications.commands` scopes and the permissions listed in [SETUP.md](SETUP.md)
+- [ ] Bot's role placed above the roles of the members it moderates and the roles it hands out
 
 ### 2. n8n Setup
 - [ ] n8n instance available (cloud or self-hosted)
-- [ ] Webhook trigger configured
-- [ ] Workflow tested with curl
+- [ ] Assistant workflow imported and its credentials set (see [N8N_INTEGRATION.md](N8N_INTEGRATION.md))
+- [ ] Workflow active and tested with curl
 - [ ] Response format correct: `{ response: "..." }`
-- [ ] Workflow URL copied
+- [ ] Production webhook URL copied
 
 ### 3. Environment Variables
 - [ ] `.env` file created (copied from `.env.example`)
@@ -22,7 +23,10 @@
 - [ ] `DISCORD_CLIENT_ID` set
 - [ ] `DISCORD_SERVER_ID` set
 - [ ] `N8N_WORKFLOW_URL` set
+- [ ] `N8N_API_KEY` set to the secret in the webhook's Header Auth credential
+- [ ] `DB_PASSWORD` set
 - [ ] `ALLOWED_ROLES_FOR_AI` configured (if needed)
+- [ ] `MOD_LOG_CHANNEL_ID` set (if moderation actions should be logged to a channel)
 - [ ] `BOT_LANGUAGE` set to the server's language
 - [ ] `HARDCODED_MENTION_RESPONSE` / `RESTRICTED_RESPONSE` customized (optional)
 
@@ -32,16 +36,16 @@
 - [ ] Users assigned to proper roles
 - [ ] Admins can execute moderation commands
 
-### 5. Node.js & Dependencies
-- [ ] Node.js 22+ installed
+### 5. Node.js & Dependencies (without Docker)
+- [ ] Node.js 22+ and npm 11+ installed
 - [ ] Dependencies installed: `npm install`
-- [ ] Configuration test passed: `npm run test-config`
-- [ ] All required variables loaded
+- [ ] Project built: `npm run build`
+- [ ] Migrations applied: `npm run migrate:up`
 
 ### 6. Logging & Monitoring
-- [ ] `logs/` folder will be created automatically
-- [ ] Ensure application has write access
-- [ ] Configure log rotation (if needed)
+- [ ] `logs/` folder will be created automatically; under Docker Compose the files are in the `bot_logs` volume
+- [ ] Ensure application has write access (otherwise the bot logs to the console only and says so at startup)
+- [ ] Log files rotate on their own: 10 MB each, five kept
 - [ ] Log backups (for production)
 
 ## 🚀 Deployment Steps
@@ -49,8 +53,8 @@
 ### Local Development
 ```bash
 # 1. Clone repo
-git clone <repo>
-cd discord-ai-bot
+git clone https://github.com/whiteravens20/exemplar.git
+cd exemplar
 
 # 2. Installation
 npm install
@@ -59,17 +63,31 @@ npm install
 cp .env.example .env
 # Edit .env
 
-# 4. Test
-npm run test-config
+# 4. Database
+npm run build
+npm run migrate:up
 
-# 5. Run
+# 5. Run (rebuilds and restarts on changes)
 npm run dev
 ```
 
 ### Production (Linux Server)
 
-#### Option 1: PM2 (Recommended)
+#### Option 1: Docker Compose (Recommended)
 ```bash
+docker compose up -d
+docker compose logs -f discord-bot
+```
+
+Starts PostgreSQL, applies the migrations and starts the bot. See [DOCKER_SETUP.md](DOCKER_SETUP.md).
+
+#### Option 2: PM2
+```bash
+# Build and prepare the database
+npm install
+npm run build
+npm run migrate:up
+
 # Install PM2
 npm install -g pm2
 
@@ -85,7 +103,9 @@ pm2 monit
 pm2 logs discord-bot
 ```
 
-#### Option 2: Systemd Service
+#### Option 3: Systemd Service
+Build the project (`npm install && npm run build && npm run migrate:up`) in the working directory first.
+
 ```bash
 # Create service file
 sudo nano /etc/systemd/system/discord-bot.service
@@ -99,7 +119,7 @@ After=network.target
 [Service]
 Type=simple
 User=your-user
-WorkingDirectory=/path/to/discord-ai-bot
+WorkingDirectory=/path/to/exemplar
 ExecStart=/usr/bin/node dist/index.js
 Restart=on-failure
 RestartSec=10
@@ -118,35 +138,6 @@ sudo systemctl status discord-bot
 sudo journalctl -u discord-bot -f
 ```
 
-#### Option 3: Docker
-
-```dockerfile
-FROM node:22-alpine AS builder
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci
-
-COPY tsconfig.json ./
-COPY src ./src
-RUN npx tsc
-
-FROM node:22-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/dist ./dist
-COPY .env .
-
-CMD ["node", "dist/index.js"]
-```
-
-```bash
-docker build -t discord-bot .
-docker run -d --name discord-bot discord-bot
-```
-
 ### Cloud Deployment (Heroku/Railway/etc)
 
 1. Add `Procfile`:
@@ -155,14 +146,16 @@ worker: node dist/index.js
 ```
 
 2. Configure environment variables in panel
-3. Deploy application
+3. Provide a PostgreSQL database and run `npm run build` and `npm run migrate:up` in the build step
+4. Deploy application
 
 ## ✔️ Post-Deployment Verification
 
 ### 1. Bot Connectivity
 - [ ] Bot appears online on Discord
-- [ ] Bot status changes every 30 seconds
+- [ ] Bot status changes every 5 minutes
 - [ ] No errors in startup logs
+- [ ] `curl http://localhost:3000/health` answers 200 with `"database":"connected"`
 
 ### 2. Mention Response Test
 ```
@@ -172,7 +165,7 @@ Bot should respond in 1-2 seconds
 
 ### 3. DM Response Test (with authorized role)
 ```
-Send PM: /help
+Send DM: hello
 Bot should send query to n8n
 n8n should return response
 ```
@@ -184,29 +177,33 @@ Bot should reply that you have no permission (RESTRICTED_RESPONSE, if set)
 ```
 
 ### 5. Slash Commands Test
+Run them in a DM with the bot, against a test account:
 ```
-/kick @user reason
-/ban @user reason
-/mute @user 60 reason
-/warn @user reason
 /help
+/warn user:<user> reason:<text>
+/mute user:<user> duration:10m reason:<text>
+/unmute user:<user>
+/kick user:<user> reason:<text>
+/ban user:<user> reason:<text>
+/unban user_id:<id>
 ```
 
 ### 6. Log Inspection
 ```bash
-# Check if logs are created
-ls -lah logs/
-ls -lah *.log
+# Docker Compose
+docker compose logs --tail 20 discord-bot
+docker compose exec discord-bot ls -la logs/
 
-# Check recent logs
-tail -20 combined.log
+# Without Docker
+ls -lah logs/
+tail -20 logs/combined.log
 ```
 
 ## 📊 Monitoring Checklist
 
 ### Daily
-- [ ] Check `combined.log` for warnings
-- [ ] Check `error.log` for errors
+- [ ] Check `logs/combined.log` for warnings
+- [ ] Check `logs/error.log` for errors
 - [ ] Ensure bot is online
 - [ ] n8n workflow has no issues
 
@@ -230,12 +227,12 @@ tail -20 combined.log
 echo $DISCORD_TOKEN | head -c 20
 
 # 2. Check logs
-tail -20 error.log
+docker compose logs --tail 20 discord-bot   # or: tail -20 logs/error.log
 
-# 3. Type check the project
-npm run typecheck
+# 3. Check the installation (Node.js version, dependencies, type check)
+bash scripts/test-bot.sh
 
-# 4. Ensure bot has Intent permissions
+# 4. Ensure the Server Members and Message Content intents are enabled
 ```
 
 ### n8n workflow doesn't respond
@@ -243,7 +240,8 @@ npm run typecheck
 # 1. Test curl
 curl -X POST $N8N_WORKFLOW_URL \
   -H "Content-Type: application/json" \
-  -d '{"message":"test"}'
+  -H "X-API-Key: $N8N_API_KEY" \
+  -d '{"userId":"test-user","userName":"tester","message":"test","serverId":"0","mode":"chat","timestamp":"2026-01-01T00:00:00Z","platform":"discord"}'
 
 # 2. Check n8n logs
 # 3. Ensure webhook trigger is active
@@ -253,11 +251,14 @@ curl -X POST $N8N_WORKFLOW_URL \
 ### Commands don't work
 ```bash
 # 1. Restart bot (slash commands are registered with Discord on every start)
-pkill -f "node dist/index.js"
-npm start
+docker compose restart discord-bot   # or restart the PM2 / systemd service
 
-# 2. Check permissions
-# Bot must have Administrator or specific moderation perms
+# 2. Run the command in a DM with the bot: in a server channel it only
+#    points you to DMs
+
+# 3. Check permissions
+# The bot needs the permissions listed in SETUP.md and a role above the
+# member it acts on; the moderator needs the matching Discord permission
 ```
 
 ### Memory leak
@@ -267,7 +268,7 @@ watch -n 1 ps aux | grep node
 
 # If problem - restart bot
 systemctl restart discord-bot
-# lub
+# or
 pm2 restart discord-bot
 ```
 
