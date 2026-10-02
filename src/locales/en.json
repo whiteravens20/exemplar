@@ -71,13 +71,15 @@
       "description": "Shows the available commands and how to use the bot",
       "title": "🤖 AI Assistant Bot - Help",
       "intro": "Hi! I'm an AI bot. Send me a direct message to chat. All `/` commands work in DMs with the bot.",
+      "staffIntro": "All `/` commands work in DMs with the bot.",
       "usage": {
         "name": "💬 How does it work?",
         "value": "Just send me a direct message — I'll answer with the help of AI. Run `/` commands in the same DM window."
       },
       "userCommands": {
         "name": "📋 User commands",
-        "value": "• `/help` — this message\n• `/rules` — server rules\n• `/code <message>` — coding mode\n• `/flushmemory` — clear your conversation memory\n• `/warnings` — show your warnings"
+        "value": "• `/help` — this message\n• `/rules` — server rules\n• `/code <message>` — coding mode\n• `/flushmemory` — clear your conversation memory\n• `/warnings` — show your warnings",
+        "staffValue": "• `/help` — this message\n• `/rules` — server rules\n• `/warnings` — show your warnings"
       },
       "moderationCommands": {
         "name": "👮 Moderation commands (permissions required)",

@@ -79,13 +79,15 @@
       "description": "Pokazuje dostępne komendy i sposób korzystania z bota",
       "title": "🤖 AI Assistant Bot - Pomoc",
       "intro": "Witaj! Jestem botem AI. Napisz do mnie w wiadomości prywatnej, aby porozmawiać. Wszystkie komendy `/` działają w DM z botem.",
+      "staffIntro": "Wszystkie komendy `/` działają w DM z botem.",
       "usage": {
         "name": "💬 Jak korzystać?",
         "value": "Po prostu wyślij mi wiadomość prywatną — odpowiem z pomocą AI. Komendy `/` uruchamiasz w tym samym oknie DM."
       },
       "userCommands": {
         "name": "📋 Komendy użytkownika",
-        "value": "• `/help` — ta wiadomość\n• `/rules` — regulamin serwera\n• `/code <wiadomość>` — tryb programistyczny\n• `/flushmemory` — wyczyść pamięć konwersacji\n• `/warnings` — pokaż swoje ostrzeżenia"
+        "value": "• `/help` — ta wiadomość\n• `/rules` — regulamin serwera\n• `/code <wiadomość>` — tryb programistyczny\n• `/flushmemory` — wyczyść pamięć konwersacji\n• `/warnings` — pokaż swoje ostrzeżenia",
+        "staffValue": "• `/help` — ta wiadomość\n• `/rules` — regulamin serwera\n• `/warnings` — pokaż swoje ostrzeżenia"
       },
       "moderationCommands": {
         "name": "👮 Komendy moderacji (wymagane uprawnienia)",

@@ -44,16 +44,21 @@ async function helpMessage(context: CommandContext): Promise<{
       PermissionFlagsBits.Administrator,
     ]);
 
-  const fields: APIEmbedField[] = [
-    {
+  // Staff without an AI role get here too; the assistant and its commands
+  // would refuse them, so those are left out.
+  const fields: APIEmbedField[] = [];
+  if (access.isAiAllowed) {
+    fields.push({
       name: t('commands.help.usage.name'),
       value: t('commands.help.usage.value'),
-    },
-    {
-      name: t('commands.help.userCommands.name'),
-      value: t('commands.help.userCommands.value'),
-    },
-  ];
+    });
+  }
+  fields.push({
+    name: t('commands.help.userCommands.name'),
+    value: access.isAiAllowed
+      ? t('commands.help.userCommands.value')
+      : t('commands.help.userCommands.staffValue'),
+  });
 
   if (canModerate) {
     fields.push({
@@ -77,7 +82,9 @@ async function helpMessage(context: CommandContext): Promise<{
   const embed = new EmbedBuilder()
     .setColor(0x0099ff)
     .setTitle(t('commands.help.title'))
-    .setDescription(t('commands.help.intro'))
+    .setDescription(
+      access.isAiAllowed ? t('commands.help.intro') : t('commands.help.staffIntro')
+    )
     .addFields(fields)
     .setTimestamp();
 
