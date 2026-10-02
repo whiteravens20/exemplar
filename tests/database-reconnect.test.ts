@@ -65,4 +65,26 @@ describe('DatabaseConnection - start without a database', () => {
     expect(connect.mock.calls.length).toBe(calls);
     await db.close();
   });
+
+  it('runs one attempt at a time when connecting outlasts the interval', async () => {
+    const db = await startDegraded();
+    const listener = vi.fn();
+    db.onReconnect(listener);
+    const before = connect.mock.calls.length;
+
+    connect.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(working), 70_000))
+    );
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(connect.mock.calls.length).toBe(before + 1);
+
+    // Two more ticks pass while that attempt is still connecting.
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(connect.mock.calls.length).toBe(before + 1);
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(db.isAvailable()).toBe(true);
+    expect(listener).toHaveBeenCalledTimes(1);
+    await db.close();
+  });
 });

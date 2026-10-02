@@ -14,6 +14,7 @@ class DatabaseConnection {
   private maxRetries: number = 3;
   private retryDelay: number = 5000;
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnecting = false;
   private readonly reconnectListeners: Array<() => void> = [];
 
   async initialize(): Promise<void> {
@@ -132,7 +133,10 @@ class DatabaseConnection {
   }
 
   private async tryReconnect(): Promise<void> {
-    if (!this.pool || this.isConnected) return;
+    // One attempt at a time: a connect that outlasts the interval must not be
+    // joined by a second one, or both would report the reconnect.
+    if (!this.pool || this.isConnected || this.reconnecting) return;
+    this.reconnecting = true;
     try {
       const client = await this.pool.connect();
       try {
@@ -145,6 +149,8 @@ class DatabaseConnection {
         error: (error as Error).message,
       });
       return;
+    } finally {
+      this.reconnecting = false;
     }
 
     this.isConnected = true;
