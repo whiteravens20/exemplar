@@ -53,8 +53,9 @@ services:
       # The container always listens on 3000; the host side of the mapping below is what changes.
       HEALTH_CHECK_PORT: 3000
     volumes:
-      # Optional: Mount logs directory to persist logs
-      - ./logs:/app/logs
+      # Log files. A named volume, because the bot does not run as root and
+      # could not write to a ./logs directory that Docker creates as root.
+      - bot_logs:/app/logs
     networks:
       - bot-network
     depends_on:
@@ -99,3 +100,4 @@ networks:
 
 volumes:
   bot_postgres_data:
+  bot_logs:

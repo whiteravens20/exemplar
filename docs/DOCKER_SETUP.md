@@ -78,7 +78,7 @@ docker run -d \
   --restart unless-stopped \
   --env-file .env \
   -e NODE_ENV=production \
-  -v $(pwd)/logs:/app/logs \
+  -v discord-bot-logs:/app/logs \
   --memory 512m \
   --cpus 1 \
   discord-ai-bot:latest
@@ -102,7 +102,7 @@ docker run -d \
   -e ALLOWED_ROLES_FOR_AI=role_id_1,role_id_2,role_id_3 \
   -e NODE_ENV=production \
   -e DOCKER=true \
-  -v $(pwd)/logs:/app/logs \
+  -v discord-bot-logs:/app/logs \
   --memory 512m \
   --cpus 1 \
   discord-ai-bot:latest
@@ -157,8 +157,20 @@ The container includes a health check that runs every 30 seconds. If the health 
 
 ```yaml
 volumes:
-  - ./logs:/app/logs  # Persist application logs
+  - bot_logs:/app/logs  # Persist application logs
 ```
+
+The log files live in a named volume. The bot runs as a non-root user
+(UID 1001), and a host directory that Docker creates for a bind mount belongs to
+root, so the bot could not write there. To keep the files in a host directory
+instead, create it first and hand it to that user:
+
+```bash
+mkdir -p logs && sudo chown 1001:1001 logs
+```
+
+If the directory is not writable the bot says so at startup and logs to the
+console only.
 
 To access logs from the container:
 

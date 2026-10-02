@@ -141,7 +141,7 @@ npm start
 
 For development, `npm run dev` rebuilds and restarts on changes. `npm test`, `npm run typecheck` and `npm run lint` run the checks CI runs.
 
-Logs go to the console and to `logs/combined.log` and `logs/error.log`.
+Logs go to the console and to `logs/combined.log` and `logs/error.log`. Under Docker Compose the files are in the `bot_logs` volume: `docker compose exec discord-bot tail -f logs/combined.log`.
 
 ## Documentation
 
