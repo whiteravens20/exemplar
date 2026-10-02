@@ -20,7 +20,7 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 ### Moderation
 - Slash commands `/kick`, `/ban`, `/unban`, `/mute`, `/unmute`, `/warn`, run from a DM and acting on `DISCORD_SERVER_ID`.
 - Each command checks the invoker's server permissions and role hierarchy; the target is DMed the reason and duration before the action.
-- Optional **AI moderation**: eligible channel messages go to a second n8n workflow that returns `allow`, `warn`, `timeout` or `delete`, executed through the same action layer as the slash commands. Roll it out in `shadow` mode first. See [docs/AI_MODERATION.md](docs/AI_MODERATION.md).
+- Optional **AI moderation**: eligible channel messages go to a second n8n workflow that returns `allow`, `warn`, `timeout` or `delete`, executed through the same action layer as the slash commands. Every eligible message is analysed: they go to the workflow a few at a time, and one the workflow did not answer is tried again. Roll it out in `shadow` mode first. See [docs/AI_MODERATION.md](docs/AI_MODERATION.md).
 - Escalation across all warnings, human or AI: 3 active warnings auto-mute, 100 lifetime warnings auto-ban (both configurable).
 
 ### Reaction roles
