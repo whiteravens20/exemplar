@@ -357,7 +357,10 @@
     "shadowFooter": "Tryb shadow — żadna akcja nie została wykonana.",
     "noReason": "_(brak)_",
     "failedTitle": "⚠️ Moderacja AI nie wykonała akcji: {{action}}",
-    "failedFooter": "Żadna akcja nie została wykonana. Sprawdź uprawnienia bota i pozycję jego roli."
+    "failedFooter": "Żadna akcja nie została wykonana. Sprawdź uprawnienia bota i pozycję jego roli.",
+    "uncheckedTitle": "⚠️ Moderacja AI nie sprawdziła części wiadomości",
+    "uncheckedCount": "Niesprawdzone wiadomości",
+    "uncheckedFooter": "Workflow moderacji nie odpowiedział. Sprawdź, czy n8n i model są dostępne."
   },
   "reactionRoles": {
     "auditGrant": "Rola za reakcję: dodano reakcję {{emoji}}",

@@ -442,12 +442,19 @@ yourself or a real member:
   hardware. The bot fires moderation requests fire-and-forget so chat
   latency is unaffected, but deletes / timeouts may land a second or two
   after the offending message.
-- **When n8n is unreachable**: the bot logs `AI moderation: n8n returned
-  failure` and continues. No action is taken on that message. Chat
-  functionality is unaffected.
-- **Rate limits**: the existing `N8NClient` retries 5xx / 429 with
-  exponential backoff and bails after 3 attempts. If your LLM provider
-  rate-limits you, you'll see those errors in the bot log.
+- **When the workflow does not answer**: the bot waits up to five minutes for
+  a verdict, since nobody is waiting on it and a model that has to be loaded
+  first is slow to start. A request that fails (n8n down or restarting, a
+  timeout, an HTTP error) puts the message back at the end of the queue: a
+  second attempt after 30 s and a third after another 60 s, as long as the
+  message is less than ten minutes old. Within one attempt the `N8NClient`
+  already retries network errors, 5xx and 429 three times with exponential
+  backoff.
+- **Messages that could not be checked**: when the attempts are used up, the
+  bot logs `AI moderation: message not analysed` and posts a "could not check
+  some messages" notice in the mod-log channel with the count, the channels
+  and the last error. The first one is reported at once, later ones together,
+  at most every ten minutes. Chat functionality is unaffected.
 - **Bursts**: every eligible message is analysed. At most
   `AI_MOD_MAX_CONCURRENT` (default 2) are with n8n at once and the rest wait
   in memory, so during a burst a verdict arrives later instead of not at all.
@@ -455,8 +462,8 @@ yourself or a real member:
   setting; a hosted model that answers in parallel clears a burst faster with
   a higher value. The `waitedMs` field of the `AI moderation verdict` log
   line shows how long a message waited. The queue holds 1000 messages; past
-  that a message is not analysed and the bot logs
-  `AI moderation queue is full`.
+  that a message is not analysed and is reported like any other message
+  that could not be checked.
 - **Restart resilience**: when the bot restarts with an existing
   `ai_mod_active_mutes` row, the reconciliation job runs once after the
   client is `ready` and re-evaluates each row — extending the Discord

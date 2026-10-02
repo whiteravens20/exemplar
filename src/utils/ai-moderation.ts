@@ -1,6 +1,7 @@
 import {
   ChannelType,
   EmbedBuilder,
+  type Guild,
   type Message,
   type TextChannel,
 } from 'discord.js';
@@ -48,6 +49,19 @@ const MAX_CONTENT_LENGTH = 4000;
 // Messages waiting for their turn at the moderation workflow. Only a flood
 // reaches this; past it a message is not analysed, and that is logged.
 const MAX_QUEUED_MESSAGES = 1000;
+// Longer than the assistant's two minutes: nobody is waiting for this answer,
+// and a model that has to be loaded first can spend most of that before it
+// starts on the message.
+const REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
+// A request that failed goes back to the end of the queue after a pause, so a
+// restart of n8n or a model that was busy costs a delay, not the verdict. The
+// pauses before the second and the third attempt; there is no fourth.
+const RETRY_DELAYS_MS = [30 * 1000, 60 * 1000];
+// Past this age a message is not retried any more.
+const MAX_MESSAGE_AGE_MS = 10 * 60 * 1000;
+// Messages given up on are reported to the mod-log together, at most this
+// often, so an outage does not flood the channel.
+const UNCHECKED_REPORT_INTERVAL_MS = 10 * 60 * 1000;
 
 export type ModerationAction = 'allow' | 'warn' | 'timeout' | 'delete';
 
@@ -81,7 +95,9 @@ function getClient(): N8NClient | null {
   const { aiModerationUrl } = configManager.config.moderation;
   if (!aiModerationUrl) return null;
   if (!cachedClient) {
-    cachedClient = new N8NClient(aiModerationUrl, configManager.config.n8n.apiKey);
+    cachedClient = new N8NClient(aiModerationUrl, configManager.config.n8n.apiKey, {
+      timeout: REQUEST_TIMEOUT_MS,
+    });
   }
   return cachedClient;
 }
@@ -368,27 +384,126 @@ export async function analyzeAndAct(message: Message): Promise<void> {
   const client = getClient();
   if (!client) return;
 
-  const queuedAt = Date.now();
-  if (!(await queue.acquire())) {
-    logger.error('AI moderation queue is full — message not analysed', {
+  const firstQueuedAt = Date.now();
+  for (let attempt = 1; ; attempt++) {
+    const queuedAt = Date.now();
+    if (!(await queue.acquire())) {
+      giveUp(message, 'the moderation queue is full');
+      return;
+    }
+    let failure: string | null;
+    try {
+      failure = await analyze(message, client, Date.now() - queuedAt);
+    } finally {
+      queue.release();
+    }
+    if (failure === null) return;
+
+    const delay = RETRY_DELAYS_MS[attempt - 1];
+    if (
+      delay === undefined ||
+      Date.now() - firstQueuedAt + delay > MAX_MESSAGE_AGE_MS
+    ) {
+      giveUp(message, failure);
+      return;
+    }
+    logger.info('AI moderation: request failed — message goes back to the queue', {
       userId: message.author.id,
-      channelId: message.channelId,
-      waiting: queue.waitingCount,
+      attempt,
+      retryInMs: delay,
+      error: failure,
     });
-    return;
-  }
-  try {
-    await analyze(message, client, Date.now() - queuedAt);
-  } finally {
-    queue.release();
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 }
 
+let unchecked = { count: 0, channels: new Set<string>(), lastError: '' };
+let lastUncheckedReportAt = 0;
+let uncheckedReportTimer: NodeJS.Timeout | null = null;
+
+/**
+ * A message the workflow never judged. It is counted and reported to the
+ * moderators: the first one straight away, later ones together.
+ */
+function giveUp(message: Message, error: string): void {
+  logger.error('AI moderation: message not analysed', {
+    userId: message.author.id,
+    channelId: message.channelId,
+    messageId: message.id,
+    error,
+  });
+
+  unchecked.count++;
+  unchecked.channels.add(message.channelId);
+  unchecked.lastError = error;
+
+  const guild = message.guild;
+  if (!guild) return;
+  const wait = lastUncheckedReportAt + UNCHECKED_REPORT_INTERVAL_MS - Date.now();
+  if (wait <= 0) {
+    void postUncheckedReport(guild);
+  } else if (!uncheckedReportTimer) {
+    uncheckedReportTimer = setTimeout(() => {
+      uncheckedReportTimer = null;
+      void postUncheckedReport(guild);
+    }, wait);
+    uncheckedReportTimer.unref();
+  }
+}
+
+async function postUncheckedReport(guild: Guild): Promise<void> {
+  const report = unchecked;
+  unchecked = { count: 0, channels: new Set<string>(), lastError: '' };
+  lastUncheckedReportAt = Date.now();
+  if (report.count === 0) return;
+
+  const modLogChannelId = configManager.config.moderation.modLogChannelId;
+  const channel = modLogChannelId
+    ? guild.channels.cache.get(modLogChannelId)
+    : undefined;
+  if (!channel || channel.type !== ChannelType.GuildText) return;
+
+  const embed = new EmbedBuilder()
+    .setColor(0xe67e22)
+    .setTitle(t('aiModeration.uncheckedTitle'))
+    .addFields(
+      {
+        name: t('aiModeration.uncheckedCount'),
+        value: String(report.count),
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.channel'),
+        value: [...report.channels].map((id) => `<#${id}>`).join(' '),
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.problem'),
+        value: report.lastError.slice(0, 1000) || t('errors.operationFailed'),
+      }
+    )
+    .setFooter({ text: t('aiModeration.uncheckedFooter') })
+    .setTimestamp();
+
+  try {
+    await (channel as TextChannel).send({ embeds: [embed] });
+  } catch (error) {
+    logger.error('Failed to post the unchecked-messages notice to the mod-log', {
+      error: (error as Error).message,
+    });
+  }
+}
+
+/**
+ * One attempt at a verdict for `message`. Resolves to null once the message
+ * has been dealt with, or to what went wrong when the workflow did not answer
+ * and the message should be tried again.
+ */
 async function analyze(
   message: Message,
   client: N8NClient,
   waitedMs: number
-): Promise<void> {
+): Promise<string | null> {
 
   // Fetch the user's recent warning history so the LLM can ground "repeated
   // rule-breaking" verdicts in actual evidence rather than guessing. Cheap —
@@ -426,7 +541,7 @@ async function analyze(
       error: (error as Error).message,
       userId: message.author.id,
     });
-    return;
+    return (error as Error).message;
   }
 
   if (!result.success) {
@@ -435,7 +550,7 @@ async function analyze(
       status: result.status,
       error: result.error,
     });
-    return;
+    return result.error ?? `HTTP ${result.status}`;
   }
 
   const verdict = validateVerdict(
@@ -446,7 +561,7 @@ async function analyze(
       userId: message.author.id,
       data: JSON.stringify(result.data).slice(0, 300),
     });
-    return;
+    return null;
   }
 
   const mode = configManager.config.moderation.aiMode;
@@ -463,7 +578,7 @@ async function analyze(
     waitedMs,
   });
 
-  if (verdict.action === 'allow') return;
+  if (verdict.action === 'allow') return null;
 
   // Record the AI decision itself (the transparent "why") on the dashboard
   // event log, in both shadow and enforce modes. In enforce mode the resulting
@@ -473,10 +588,11 @@ async function analyze(
 
   if (mode === 'shadow') {
     await postShadowLog(message, verdict);
-    return;
+    return null;
   }
 
   await enforce(message, verdict);
+  return null;
 }
 
 /** Map a non-`allow` verdict to a dashboard severity. */

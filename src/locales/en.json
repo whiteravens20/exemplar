@@ -331,7 +331,10 @@
     "shadowFooter": "Shadow mode — no action was taken.",
     "noReason": "_(none)_",
     "failedTitle": "⚠️ AI moderation could not carry out: {{action}}",
-    "failedFooter": "No action was taken. Check the bot's permissions and role position."
+    "failedFooter": "No action was taken. Check the bot's permissions and role position.",
+    "uncheckedTitle": "⚠️ AI moderation could not check some messages",
+    "uncheckedCount": "Messages not checked",
+    "uncheckedFooter": "The moderation workflow did not answer. Check that n8n and the model are reachable."
   },
   "reactionRoles": {
     "auditGrant": "Reaction role: reacted with {{emoji}}",
