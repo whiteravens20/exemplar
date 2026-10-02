@@ -395,9 +395,9 @@ export async function applyUnban(
   actor: Actor
 ): Promise<ActionResult> {
   try {
-    await guild.bans.remove(userId);
-    const user = await guild.client.users.fetch(userId);
     const done = t('moderation.unban.done');
+    await guild.bans.remove(userId, done);
+    const user = await guild.client.users.fetch(userId);
     await sendModLog(
       guild,
       {
