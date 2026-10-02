@@ -38,6 +38,7 @@
      - Kick Members
      - Ban Members
      - Timeout Members
+     - Manage Messages (only for AI moderation, to delete messages; see [AI_MODERATION.md](AI_MODERATION.md))
 
 4. Copy the generated URL and open it in your browser to add the bot to your server
 

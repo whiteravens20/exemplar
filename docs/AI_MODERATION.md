@@ -349,6 +349,13 @@ Other relevant Discord settings (already enabled if you have chat working):
 **Message Content** privileged intent, **Server Members** intent. No new
 intent is required for AI moderation.
 
+**Permissions.** A `timeout` verdict and the auto-mute need **Timeout
+Members**, the auto-ban needs **Ban Members**, and a `delete` verdict needs
+**Manage Messages** — the one permission the rest of the bot does not use, so
+add it to the bot's role when you turn AI moderation on. The bot's role also
+has to sit above the members it acts on. When an action fails, the bot posts a
+"could not carry out" entry in the mod-log channel with the reason.
+
 ---
 
 ## Rollout: shadow → enforce
@@ -400,7 +407,8 @@ Restart the bot. Verify with controlled tests:
   `Warn` entry in mod-log with `Moderator: AI moderation`, row in `warnings`.
 - A `timeout` verdict → user is muted, DM'd with duration, mod-log entry.
 - A `delete` verdict → message vanishes, user gets a DM with channel ref +
-  content preview, mod-log entry.
+  content preview, mod-log entry. If the message stays and the mod-log shows
+  "could not carry out: delete", the bot lacks **Manage Messages**.
 
 ### 3. Escalation ladder
 
