@@ -273,7 +273,8 @@
       "channel": "Kanał",
       "content": "Treść",
       "dm": "DM",
-      "activeWarnings": "Aktywne ostrzeżenia"
+      "activeWarnings": "Aktywne ostrzeżenia",
+      "problem": "Problem"
     },
     "errors": {
       "selfAction": "❌ Nie możesz wykonać tej akcji na sobie.",
@@ -354,7 +355,9 @@
     "defaultReason": "Naruszenie wykryte przez moderację AI",
     "shadowTitle": "🤖 [SHADOW] {{action}}",
     "shadowFooter": "Tryb shadow — żadna akcja nie została wykonana.",
-    "noReason": "_(brak)_"
+    "noReason": "_(brak)_",
+    "failedTitle": "⚠️ Moderacja AI nie wykonała akcji: {{action}}",
+    "failedFooter": "Żadna akcja nie została wykonana. Sprawdź uprawnienia bota i pozycję jego roli."
   },
   "reactionRoles": {
     "auditGrant": "Rola za reakcję: dodano reakcję {{emoji}}",

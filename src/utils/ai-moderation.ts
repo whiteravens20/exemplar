@@ -233,6 +233,59 @@ async function postShadowLog(
   }
 }
 
+/**
+ * Tell the moderators that a verdict could not be carried out — typically a
+ * missing permission, such as Manage Messages for a delete. Otherwise the
+ * failure is only in the bot's log and the message stays up unnoticed.
+ */
+async function postFailureLog(
+  message: Message,
+  verdict: ModerationVerdict,
+  detail: string | undefined
+): Promise<void> {
+  const modLogChannelId = configManager.config.moderation.modLogChannelId;
+  const channel = modLogChannelId
+    ? message.guild?.channels.cache.get(modLogChannelId)
+    : undefined;
+  if (!channel || channel.type !== ChannelType.GuildText) return;
+
+  const embed = new EmbedBuilder()
+    .setColor(0xe67e22)
+    .setTitle(t('aiModeration.failedTitle', { action: verdict.action }))
+    .addFields(
+      {
+        name: t('moderation.fields.user'),
+        value: `${message.author.tag} (${message.author.id})`,
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.channel'),
+        value: `<#${message.channelId}>`,
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.reason'),
+        value: verdict.reason || t('aiModeration.noReason'),
+      },
+      {
+        name: t('moderation.fields.problem'),
+        value: detail || t('errors.operationFailed'),
+      },
+      { name: t('moderation.fields.content'), value: buildPreview(message.content) }
+    )
+    .setFooter({ text: t('aiModeration.failedFooter') })
+    .setTimestamp();
+
+  try {
+    await (channel as TextChannel).send({ embeds: [embed] });
+  } catch (error) {
+    logger.error('Failed to post the AI moderation failure to the mod-log', {
+      error: (error as Error).message,
+      userId: message.author.id,
+    });
+  }
+}
+
 function buildPreview(content: string): string {
   const trimmed = (content || '').trim();
   if (!trimmed) return t('moderation.emptyMessage');
@@ -264,6 +317,7 @@ async function enforce(
           userId: message.author.id,
           detail: result.content,
         });
+        await postFailureLog(message, verdict, result.content);
       }
       return;
     }
@@ -287,6 +341,7 @@ async function enforce(
           userId: message.author.id,
           detail: result.content,
         });
+        await postFailureLog(message, verdict, result.content);
       }
       return;
     }
@@ -297,6 +352,7 @@ async function enforce(
           messageId: message.id,
           detail: result.content,
         });
+        await postFailureLog(message, verdict, result.content);
       }
       return;
     }

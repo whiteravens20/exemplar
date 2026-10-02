@@ -251,7 +251,8 @@
       "channel": "Channel",
       "content": "Content",
       "dm": "DM",
-      "activeWarnings": "Active warnings"
+      "activeWarnings": "Active warnings",
+      "problem": "Problem"
     },
     "errors": {
       "selfAction": "❌ You can't do this to yourself.",
@@ -328,7 +329,9 @@
     "defaultReason": "Violation detected by AI moderation",
     "shadowTitle": "🤖 [SHADOW] {{action}}",
     "shadowFooter": "Shadow mode — no action was taken.",
-    "noReason": "_(none)_"
+    "noReason": "_(none)_",
+    "failedTitle": "⚠️ AI moderation could not carry out: {{action}}",
+    "failedFooter": "No action was taken. Check the bot's permissions and role position."
   },
   "reactionRoles": {
     "auditGrant": "Reaction role: reacted with {{emoji}}",
