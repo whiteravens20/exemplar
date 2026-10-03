@@ -193,7 +193,9 @@ All package managers are configured with minimum release age to block compromise
 - Node.js 22+ (latest LTS with security fixes)
 - Discord.js 14.x (actively maintained)
 - All dependencies regularly updated via Dependabot
-- `npm audit --audit-level=high` runs on every push and pull request, and weekly on a schedule — a high or critical finding fails the build
+- `npm audit` runs on every push and pull request, and weekly on a schedule: a production dependency fails the build from a moderate finding, a development dependency from a high one
+- An advisory with no installable fix and no reachable code path can be allowlisted on its own in `.github/scripts/audit-allowlist.json`, with a justification and an expiry date
+- The registry signatures of the installed packages are verified in the same job (`npm audit signatures`)
 
 **Key Dependencies:** the authoritative, exact-pinned list lives in [`package.json`](package.json); it is not duplicated here, so that it cannot drift out of date.
 
@@ -314,7 +316,8 @@ We use multiple automated tools to catch security issues early:
 **Dependency Vulnerability Scanning:**
 - Runs in CI/CD pipeline
 - Checks npm advisory database
-- Fails builds on high/critical vulnerabilities
+- Fails builds on moderate or worse findings in production dependencies and on high or critical ones in development dependencies
+- Verifies the registry signatures of the installed packages
 - Automated fixes when possible
 
 ```bash
@@ -325,11 +328,17 @@ npm audit fix
 
 ### 🐳 Trivy Scanning
 
-**Docker Image Vulnerability Scanning:**
-- Scans Docker images in CI/CD
+**Repository and Docker Image Vulnerability Scanning:**
+- Scans the repository and the built Docker image on every push and pull request
+- Scans the published image again at release
 - Checks for OS and package vulnerabilities
-- Integrated into Docker workflow
 - Fails on high/critical vulnerabilities
+
+### 📊 OpenSSF Scorecard
+
+**Security Practice Scoring:**
+- Scores the repository's security practices on every push to `dev` and weekly
+- The result is public and shown by the badge in the README
 
 ---
 

@@ -84,12 +84,13 @@ jobs:
           # merge.
           #   test.yml      -> job id `test`
           #   codeql.yml    -> "Analyze Code" + matrix language
-          #   security.yml  -> "npm audit", "Trivy filesystem scan"
+          #   security.yml  -> "npm audit", "Trivy filesystem scan",
+          #                    "Trivy Docker image scan"
           REQUIRED_CHECKS=$(echo "$PROT" | jq -r '.required_status_checks.contexts[]? // empty' | sort)
           echo "Configured required checks:"
           echo "$REQUIRED_CHECKS" | sed 's/^/  - /'
 
-          for must in "test" "Analyze Code (javascript-typescript)" "npm audit" "Trivy filesystem scan"; do
+          for must in "test" "Analyze Code (javascript-typescript)" "npm audit" "Trivy filesystem scan" "Trivy Docker image scan"; do
             if ! echo "$REQUIRED_CHECKS" | grep -Fxq "$must"; then
               echo "::error::Required status check missing: '${must}'"
               fail=1
