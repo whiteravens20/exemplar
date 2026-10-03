@@ -72,19 +72,22 @@
       "done_one": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomość (bot + n8n AI Agent).",
       "done_few": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent).",
       "done_many": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent).",
-      "done_other": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent)."
+      "done_other": "✅ Twoja pamięć konwersacji została wyczyszczona.\n📊 Usunięto **{{count}}** wiadomości (bot + n8n AI Agent).",
+      "failed": "❌ Nie udało się wyczyścić pamięci konwersacji. Spróbuj ponownie później."
     },
     "help": {
       "description": "Pokazuje dostępne komendy i sposób korzystania z bota",
       "title": "🤖 AI Assistant Bot - Pomoc",
       "intro": "Witaj! Jestem botem AI. Napisz do mnie w wiadomości prywatnej, aby porozmawiać. Wszystkie komendy `/` działają w DM z botem.",
+      "staffIntro": "Wszystkie komendy `/` działają w DM z botem.",
       "usage": {
         "name": "💬 Jak korzystać?",
         "value": "Po prostu wyślij mi wiadomość prywatną — odpowiem z pomocą AI. Komendy `/` uruchamiasz w tym samym oknie DM."
       },
       "userCommands": {
         "name": "📋 Komendy użytkownika",
-        "value": "• `/help` — ta wiadomość\n• `/rules` — regulamin serwera\n• `/code <wiadomość>` — tryb programistyczny\n• `/flushmemory` — wyczyść pamięć konwersacji\n• `/warnings` — pokaż swoje ostrzeżenia"
+        "value": "• `/help` — ta wiadomość\n• `/rules` — regulamin serwera\n• `/code <wiadomość>` — tryb programistyczny\n• `/flushmemory` — wyczyść pamięć konwersacji\n• `/warnings` — pokaż swoje ostrzeżenia",
+        "staffValue": "• `/help` — ta wiadomość\n• `/rules` — regulamin serwera\n• `/warnings` — pokaż swoje ostrzeżenia"
       },
       "moderationCommands": {
         "name": "👮 Komendy moderacji (wymagane uprawnienia)",
@@ -270,7 +273,8 @@
       "channel": "Kanał",
       "content": "Treść",
       "dm": "DM",
-      "activeWarnings": "Aktywne ostrzeżenia"
+      "activeWarnings": "Aktywne ostrzeżenia",
+      "problem": "Problem"
     },
     "errors": {
       "selfAction": "❌ Nie możesz wykonać tej akcji na sobie.",
@@ -351,7 +355,12 @@
     "defaultReason": "Naruszenie wykryte przez moderację AI",
     "shadowTitle": "🤖 [SHADOW] {{action}}",
     "shadowFooter": "Tryb shadow — żadna akcja nie została wykonana.",
-    "noReason": "_(brak)_"
+    "noReason": "_(brak)_",
+    "failedTitle": "⚠️ Moderacja AI nie wykonała akcji: {{action}}",
+    "failedFooter": "Żadna akcja nie została wykonana. Sprawdź uprawnienia bota i pozycję jego roli.",
+    "uncheckedTitle": "⚠️ Moderacja AI nie sprawdziła części wiadomości",
+    "uncheckedCount": "Niesprawdzone wiadomości",
+    "uncheckedFooter": "Workflow moderacji nie odpowiedział. Sprawdź, czy n8n i model są dostępne."
   },
   "reactionRoles": {
     "auditGrant": "Rola za reakcję: dodano reakcję {{emoji}}",

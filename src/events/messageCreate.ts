@@ -1,6 +1,6 @@
 import { Events, ChannelType, type Message } from 'discord.js';
 import logger from '../utils/logger.js';
-import N8NClient from '../utils/n8n-client.js';
+import N8NClient, { redactWebhookUrl } from '../utils/n8n-client.js';
 import RateLimiter from '../utils/rate-limiter.js';
 import { hasPermission } from '../utils/permissions.js';
 import * as aiModeration from '../utils/ai-moderation.js';
@@ -98,11 +98,16 @@ const event: BotEvent = {
     if (!botUser) return;
     const botMention = `<@${botUser.id}>`;
     const botNicknameMention = `<@!${botUser.id}>`;
+    // The bot's own role carries the bot's name and Discord's mention
+    // autocomplete lists it next to the bot user, so members pick it by mistake.
+    const botRoleId = message.guild?.members.me?.roles.botRole?.id;
+    const botRoleMention = botRoleId ? `<@&${botRoleId}>` : null;
 
     // Handle bot mentions in public channels
     if (
       message.content.includes(botMention) ||
-      message.content.includes(botNicknameMention)
+      message.content.includes(botNicknameMention) ||
+      (botRoleMention !== null && message.content.includes(botRoleMention))
     ) {
       if (message.channel.type !== ChannelType.DM) {
         try {
@@ -348,13 +353,13 @@ const event: BotEvent = {
             logger.error('❌ n8n unreachable (network error)', {
               userId: message.author.id,
               error: result.error,
-              url: configManager.config.n8n.workflowUrl,
+              url: redactWebhookUrl(configManager.config.n8n.workflowUrl),
             });
           } else if (status === 404) {
             errorMessage = t('assistant.errors.notFound');
             logger.error('❌ n8n workflow not found (404)', {
               userId: message.author.id,
-              url: configManager.config.n8n.workflowUrl,
+              url: redactWebhookUrl(configManager.config.n8n.workflowUrl),
             });
           } else if (status === 401 || status === 403) {
             errorMessage = t('assistant.errors.auth');

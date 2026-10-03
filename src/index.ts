@@ -169,9 +169,15 @@ async function start(): Promise<void> {
 
       // Reaction roles (issue #24): load the bindings and drop those whose
       // message or role was deleted while the bot was offline.
-      reactionRoles.load(client).catch((error: Error) => {
-        logger.error('Failed to load reaction roles', { error: error.message });
-      });
+      const loadReactionRoles = (): void => {
+        reactionRoles.load(client).catch((error: Error) => {
+          logger.error('Failed to load reaction roles', { error: error.message });
+        });
+      };
+      loadReactionRoles();
+      // The bindings are read once; after a start without a database they would
+      // stay empty until the next restart.
+      db.onReconnect(loadReactionRoles);
 
       // Start the logging dashboard (issue #18) once the client is ready — it
       // reuses the client for RBAC and live ban/mute lookups. Opt-in.

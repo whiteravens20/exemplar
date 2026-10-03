@@ -20,7 +20,7 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 ### Moderation
 - Slash commands `/kick`, `/ban`, `/unban`, `/mute`, `/unmute`, `/warn`, run from a DM and acting on `DISCORD_SERVER_ID`.
 - Each command checks the invoker's server permissions and role hierarchy; the target is DMed the reason and duration before the action.
-- Optional **AI moderation**: eligible channel messages go to a second n8n workflow that returns `allow`, `warn`, `timeout` or `delete`, executed through the same action layer as the slash commands. Roll it out in `shadow` mode first. See [docs/AI_MODERATION.md](docs/AI_MODERATION.md).
+- Optional **AI moderation**: eligible channel messages go to a second n8n workflow that returns `allow`, `warn`, `timeout` or `delete`, executed through the same action layer as the slash commands. Every eligible message is analysed: they go to the workflow a few at a time, and one the workflow did not answer is tried again. Roll it out in `shadow` mode first. See [docs/AI_MODERATION.md](docs/AI_MODERATION.md).
 - Escalation across all warnings, human or AI: 3 active warnings auto-mute, 100 lifetime warnings auto-ban (both configurable).
 
 ### Reaction roles
@@ -35,7 +35,7 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 
 ### Storage and operations
 - PostgreSQL for conversation history, rate limits, warnings (30-day expiry), usage analytics (90 days) and the moderation log.
-- The Docker image runs pending migrations on start; the bot falls back to in-memory state if the database is unavailable.
+- The Docker image runs pending migrations on start; the bot falls back to in-memory state if the database is unavailable and picks it up again, without a restart, once it is back.
 - `/health` endpoint on `HEALTH_CHECK_PORT` for orchestration.
 - Optional read-only **logging dashboard** behind Discord OAuth2. See [docs/DASHBOARD.md](docs/DASHBOARD.md).
 - n8n errors are classified (offline, timeout, 404, auth) and retried with exponential backoff.
@@ -110,7 +110,7 @@ After importing, fill in what every fork has to supply itself; each node's note 
 
 1. **Header Auth** credential on each webhook: header `X-API-Key`, value = your `N8N_API_KEY`.
 2. **Ollama** credential on the model nodes, or swap them for another provider's chat-model node.
-3. **Postgres** credential on *Postgres Chat Memory*, pointing at the **bot's own database**, so `/flushmemory` and `/flushdb` can clear the n8n memory.
+3. **Postgres** credential on *Postgres Chat Memory*, pointing at the **bot's own database**, so `/flushmemory` and `/flushdb` can clear the n8n memory. With n8n on another host, publish the database port first; see [Letting n8n reach the database](docs/DOCKER_SETUP.md#letting-n8n-reach-the-database).
 4. The **SearXNG URL** in *web_search*. The instance must allow `format=json` and must not rate-limit n8n: list n8n's IP in `pass_ip` in `limiter.toml`, or run the instance with the limiter off. Without SearXNG, delete the node and the assistant keeps Wikipedia.
 5. **Activate** the workflow and copy the webhook's production URL into `.env`.
 
@@ -141,7 +141,7 @@ npm start
 
 For development, `npm run dev` rebuilds and restarts on changes. `npm test`, `npm run typecheck` and `npm run lint` run the checks CI runs.
 
-Logs go to the console and to `logs/combined.log` and `logs/error.log`.
+Logs go to the console and to `logs/combined.log` and `logs/error.log`. Under Docker Compose the files are in the `bot_logs` volume: `docker compose exec discord-bot tail -f logs/combined.log`.
 
 ## Documentation
 

@@ -40,9 +40,9 @@ class ConfigManager {
           process.env.AI_MOD_BAN_THRESHOLD,
           100
         ),
-        userCooldownMs: this.parseNonNegativeInt(
-          process.env.AI_MOD_USER_COOLDOWN_MS,
-          5000
+        maxConcurrent: this.parsePositiveInt(
+          process.env.AI_MOD_MAX_CONCURRENT,
+          2
         ),
         rulesText: process.env.MOD_RULES_TEXT || '',
       },
@@ -109,13 +109,6 @@ class ConfigManager {
     if (!value) return fallback;
     const parsed = parseInt(value, 10);
     if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-    return parsed;
-  }
-
-  parseNonNegativeInt(value: string | undefined, fallback: number): number {
-    if (value === undefined || value === '') return fallback;
-    const parsed = parseInt(value, 10);
-    if (!Number.isFinite(parsed) || parsed < 0) return fallback;
     return parsed;
   }
 

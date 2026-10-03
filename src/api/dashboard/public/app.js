@@ -238,16 +238,19 @@ async function openDrawer(id) {
   catch { return; }
   const body = $('#drawer-body');
   clear(body);
-  body.appendChild(el('h3', { text: label('eventTypes', r.event_type) + ' · ' + label('severities', r.severity) }));
-  body.appendChild(field(t('columns.time'), fmtTime(r.created_at)));
-  body.appendChild(field(t('columns.source'), r.actor_type && label('actorTypes', r.actor_type)));
-  body.appendChild(field(t('drawer.moderator'), r.actor_label));
-  body.appendChild(field(t('drawer.target'), (r.target_username || '') + (r.target_user_id ? ' (' + r.target_user_id + ')' : '')));
-  body.appendChild(field(t('drawer.channel'), r.channel_id));
-  body.appendChild(field(t('columns.action'), r.action && label('actions', r.action)));
-  body.appendChild(field(t('columns.reason'), r.reason));
-  if (r.ai_reasoning) body.appendChild(field(t('drawer.aiReasoning'), r.ai_reasoning));
-  if (r.ai_rule) body.appendChild(field(t('drawer.rule'), r.ai_rule));
+  // field() is null for an empty value, and most entries lack one: an action
+  // run from a DM has no channel.
+  const add = (node) => { if (node) body.appendChild(node); };
+  add(el('h3', { text: label('eventTypes', r.event_type) + ' · ' + label('severities', r.severity) }));
+  add(field(t('columns.time'), fmtTime(r.created_at)));
+  add(field(t('columns.source'), r.actor_type && label('actorTypes', r.actor_type)));
+  add(field(t('drawer.moderator'), r.actor_label));
+  add(field(t('drawer.target'), (r.target_username || '') + (r.target_user_id ? ' (' + r.target_user_id + ')' : '')));
+  add(field(t('drawer.channel'), r.channel_id));
+  add(field(t('columns.action'), r.action && label('actions', r.action)));
+  add(field(t('columns.reason'), r.reason));
+  add(field(t('drawer.aiReasoning'), r.ai_reasoning));
+  add(field(t('drawer.rule'), r.ai_rule));
   if (r.metadata && Object.keys(r.metadata).length) {
     const f = el('div', { class: 'field' }, el('div', { class: 'field-label', text: t('drawer.metadata') }));
     f.appendChild(el('pre', { text: JSON.stringify(r.metadata, null, 2) }));

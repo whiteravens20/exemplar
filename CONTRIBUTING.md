@@ -80,7 +80,7 @@ Ready to code? Awesome! Let's get you set up. 🎮
 ### Prerequisites
 
 - 📦 Node.js 22+ (LTS) - **Required as of v2.0.0!**
-- 📦 npm 10+ or yarn
+- 📦 npm 11+
 - 🤖 Discord Bot Token ([Get one here](https://discord.com/developers/applications))
 - 🔄 n8n instance (for testing workflows)
 - ☕ Your favorite beverage
@@ -114,8 +114,8 @@ npm run dev
 
 Before you start coding, understand these key architectural decisions:
 
-🔒 **DM-Only Mode** - The bot exclusively operates in Direct Messages (privacy-first design)  
-💻 **Dual AI Modes** - `!code` prefix routes to specialized coding LLM, default is chat mode  
+🔒 **DMs first** - The assistant and every slash command work in Direct Messages; AI moderation and reaction roles act in server channels  
+💻 **Dual AI Modes** - `/code` routes to a specialized coding LLM, a plain DM is chat mode  
 🚦 **Rate Limiting** - Built-in protection: 5 messages/minute per user  
 ✂️ **Smart Message Splitting** - Automatically handles Discord's 2000 character limit  
 🔄 **n8n Integration** - All AI responses go through n8n workflows  
@@ -456,8 +456,8 @@ Before submitting your PR, make sure you've tested:
 - ✅ **Error handling** - What happens when things go wrong?
 - ✅ **Edge cases** - Empty inputs? Very long inputs? Special characters?
 - ✅ **Rate limiting** - Does it respect the 5 messages/minute limit?
-- ✅ **DM-only mode** - Does it work in DMs? Does it ignore guild messages?
-- ✅ **Coding mode** - If relevant, test with `!code` prefix
+- ✅ **DMs** - Does it work in DMs? Does a command used in a channel only point to DMs?
+- ✅ **Coding mode** - If relevant, test with `/code`
 - ✅ **Logs** - Check that appropriate logs are generated
 
 ### 🧪 Automated Tests

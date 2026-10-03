@@ -1,7 +1,7 @@
 # Discord AI Assistant Bot - Project Structure
 
 ```
-discord-ai-bot/
+exemplar/
 │
 ├── 📄 README.md                  # Main documentation
 ├── 📄 CONTRIBUTING.md            # Contribution guidelines
@@ -14,14 +14,17 @@ discord-ai-bot/
 ├── 📄 .env.example               # Variable template
 ├── 📄 .gitignore                 # Git ignore rules
 ├── 📄 docker-compose.yml         # Docker services (bot + PostgreSQL)
-├── 📄 Dockerfile                 # Bot container image (multi-stage w/ tsc)
+├── 📄 Dockerfile                 # Bot container image (multi-stage)
 ├── 📄 eslint.config.mjs          # ESLint + typescript-eslint configuration
+├── 📄 start.sh                   # Install, build and start without Docker
 │
 ├── 📁 docs/                      # Documentation
 │   ├── SETUP.md                  # Setup instructions
 │   ├── QUICKSTART.md             # Quick start guide
 │   ├── DATABASE.md               # Database documentation
 │   ├── N8N_INTEGRATION.md        # n8n workflow guide
+│   ├── AI_MODERATION.md          # AI moderation setup and tuning
+│   ├── DASHBOARD.md              # Logging dashboard
 │   ├── I18N.md                   # Bot language and translations
 │   ├── REACTION_ROLES.md         # Reaction roles
 │   ├── assistant-workflow.n8n.json  # Importable n8n assistant workflow
@@ -32,23 +35,23 @@ discord-ai-bot/
 │   └── FAQ.md                    # Common questions
 │
 ├── 📁 migrations/                # Database migrations
-│   ├── 001_initial_schema.sql    # Users, conversations, rate limits
+│   ├── 001_initial_schema.sql    # Users, conversations, rate limits, warnings
 │   ├── 002_cleanup_functions.sql # Cleanup stored procedures
-│   └── 003_analytics_schema.sql  # Analytics tables
+│   ├── 003_analytics_schema.sql  # Analytics tables
+│   ├── 004_ai_mod_mutes.sql      # Mutes applied by the warning escalation
+│   ├── 005_dashboard_logs.sql    # Moderation event log for the dashboard
+│   ├── 006_reaction_roles.sql    # Reaction-role bindings
+│   └── 007_atomic_get_or_create_user.sql # Concurrency-safe user upsert
 │
 ├── 📁 scripts/                   # Utility scripts
-│   ├── migrate.ts                # Migration runner (TypeScript)
-│   ├── test-bot.sh               # Bot testing script
+│   ├── copy-assets.mjs           # Copies the dashboard page and locales into dist/
+│   ├── docker-entrypoint.sh      # Docker startup: wait for the database, migrate
+│   ├── test-bot.sh               # Checks Node.js, dependencies and the type check
+│   ├── verify-dm-config.sh       # Checks the DM-related settings in the code and logs
 │   ├── seed-test-data.sh         # Test data seeder
-│   ├── verify-dm-config.sh       # Config validator
-│   ├── docker-entrypoint.sh      # Docker startup script
 │   └── create-release-package.sh # Release packager
 │
-├── 📁 tests/                     # Test suites (Vitest)
-│   ├── database.test.ts          # Database integration tests
-│   ├── rate-limiter.test.ts      # Rate limiter tests (deprecated)
-│   ├── admin-stats-types.test.ts # Stats type tests
-│   └── final-result.test.ts      # Message splitter tests
+├── 📁 tests/                     # Unit tests (Vitest), one file per module
 │
 ├── 📁 logs/                      # Log files (gitignored)
 │   ├── combined.log              # All logs
@@ -66,24 +69,35 @@ discord-ai-bot/
 │   │   └── n8n.ts                # N8N webhook contracts
 │   │
 │   ├── 📁 api/                   # HTTP API
-│   │   └── server.ts             # Health check endpoints
+│   │   ├── server.ts             # Health check endpoints
+│   │   └── dashboard/            # Logging dashboard (opt-in)
+│   │       ├── server.ts         # Routes and API
+│   │       ├── oauth.ts session.ts rbac.ts http-helpers.ts  # Sign-in and access
+│   │       └── public/           # The page: index.html, app.js, styles.css
 │   │
 │   ├── 📁 db/                    # Database layer
 │   │   ├── connection.ts         # PostgreSQL connection pool
 │   │   └── repositories/         # Data access layer
-│   │       ├── analytics-repository.ts    # Usage analytics
-│   │       ├── conversation-repository.ts # Conversation history
-│   │       ├── rate-limit-repository.ts   # Rate limiting
-│   │       └── warning-repository.ts      # User warnings
+│   │       ├── analytics-repository.ts       # Usage analytics
+│   │       ├── conversation-repository.ts    # Conversation history
+│   │       ├── rate-limit-repository.ts      # Rate limiting
+│   │       ├── warning-repository.ts         # User warnings
+│   │       ├── ai-mod-mute-repository.ts     # Mutes from the warning escalation
+│   │       ├── moderation-log-repository.ts  # Dashboard event log
+│   │       └── reaction-role-repository.ts   # Reaction-role bindings
 │   │
 │   ├── 📁 jobs/                  # Background jobs
-│   │   └── database-cleanup.ts   # Hourly cleanup task
+│   │   ├── database-cleanup.ts   # Hourly cleanup task
+│   │   └── mute-reconciliation.ts # Hourly check of escalation mutes
+│   │
+│   ├── 📁 scripts/
+│   │   └── migrate.ts            # Migration runner (npm run migrate:up)
 │   │
 │   ├── 📁 slashcommands/         # Slash commands (run in DMs)
 │   │   ├── shared.ts             # Command resolution helpers
 │   │   ├── kick.ts ban.ts unban.ts          # Moderation
 │   │   ├── mute.ts unmute.ts warn.ts        # Moderation
-│   │   ├── help.ts code.ts flushmemory.ts   # User
+│   │   ├── help.ts rules.ts code.ts flushmemory.ts  # User
 │   │   ├── warnings.ts stats.ts flushdb.ts  # User/admin
 │   │   └── reactionrole.ts       # Reaction-role bindings (Manage Roles)
 │   │
@@ -104,6 +118,8 @@ discord-ai-bot/
 │   │   ├── message-splitter.ts   # Discord 2000 char splitting
 │   │   ├── token-estimator.ts    # Token counting
 │   │   ├── moderation-actions.ts # Shared moderation action layer
+│   │   ├── ai-moderation.ts      # AI moderation: queue, verdicts, enforcement
+│   │   ├── concurrency-limiter.ts # Limits simultaneous moderation requests
 │   │   ├── reaction-roles.ts     # Reaction-role parsing, checks, index
 │   │   ├── reaction-role-manager.ts # Reaction-role runtime
 │   │   └── stats-embed.ts        # Statistics embed formatting
@@ -145,7 +161,8 @@ discord-ai-bot/
   - `GET /health` - Overall health + DB status
   - `GET /alive` - Liveness probe
   - `GET /ready` - Readiness probe
-- **Port:** 3000 (configurable via `PORT` env var)
+- **Port:** 3000 (`HEALTH_CHECK_PORT`)
+- `/health` and `/ready` answer 503 while the database is unreachable; `/alive` always answers 200
 
 ### 🔐 User & Admin Commands (slash, run in DMs)
 - **Location:** `src/slashcommands/`
@@ -156,7 +173,9 @@ discord-ai-bot/
   - `/flushdb confirm:true` - Clear all database data (admin)
   - `/flushmemory` - Clear conversation histories
   - `/help` - Show help message
+  - `/rules` - Show the server rules (`RULES_TEXT`)
   - `/code <message>` - Coding-mode AI request
+  - `/reactionrole add|remove|list` - Reaction-role bindings (Manage Roles)
 
 ### 🛡️ Moderation Commands
 - **Location:** `src/slashcommands/` (kick, ban, unban, mute, unmute, warn)
@@ -164,7 +183,21 @@ discord-ai-bot/
 - **Action layer:** `src/utils/moderation-actions.ts` (shared, caller-agnostic)
 - **Authorization:** `src/utils/permissions.ts` + per-command permission checks
 - Run by moderators in DMs; act on the configured server. The shared action
-  layer is reused by the planned AI automated moderation (issue #16).
+  layer is also what AI moderation calls.
+
+### 🤖 AI Moderation (optional)
+- **File:** `src/utils/ai-moderation.ts`
+- Sends every eligible message of the enrolled channels to a second n8n
+  workflow, a few at a time, and carries out the verdict. See
+  [AI_MODERATION.md](AI_MODERATION.md).
+
+### 📊 Logging Dashboard (optional)
+- **Location:** `src/api/dashboard/`
+- Read-only web page behind Discord sign-in. See [DASHBOARD.md](DASHBOARD.md).
+
+### 🎭 Reaction Roles
+- **Files:** `src/utils/reaction-role-manager.ts`, `src/slashcommands/reactionrole.ts`
+- See [REACTION_ROLES.md](REACTION_ROLES.md).
 
 ### 🚦 Rate Limiting
 - **File:** `src/utils/rate-limiter.ts`
@@ -175,13 +208,16 @@ discord-ai-bot/
 ### 🔐 Permission System
 - **File:** `src/utils/permissions.ts`
 - **Role-based:** ALLOWED_ROLES_FOR_AI in .env
-- **Admin-only:** Moderation commands require ModerateMembers permission
+- **Moderation:** each command checks the invoker's own Discord permission
+  (Kick Members, Ban Members, Timeout Members) and the role hierarchy; the
+  server owner is above every role
 
 ### 📝 Logging System
 - **File:** `src/utils/logger.ts`
 - **Output:** console, logs/combined.log, logs/error.log
 - **Level:** Configurable via LOG_LEVEL in .env
-- **Rotation:** Manual (logs stored to disk)
+- **Rotation:** 10 MB per file, five files kept
+- If `logs/` is not writable the bot logs to the console only and says so at startup
 
 ## 🔄 Data Flow
 
@@ -200,24 +236,26 @@ discord-ai-bot/
 
 ## 🔧 Configuration Priority
 
-1. `.env` file (production)
-2. Environment variables
-3. `.env.example` (fallback/defaults)
+1. Environment variables
+2. `.env` file (does not override a variable that is already set)
+3. Defaults in `src/config/config.ts`
+
+`.env.example` documents every variable; it is a template and is never read.
 
 ## 📦 Dependencies
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| discord.js | 14.25.1 | Discord API |
-| dotenv | 17.2.4 | .env loading |
-| axios | 1.13.5 | HTTP requests (n8n) |
-| winston | 3.19.0 | Logging |
-| undici | 7.21.0 | HTTP client || pg | 8.13.1 | PostgreSQL driver |
-| express | 5.0.1 | Health check API || typescript | 5.x | TypeScript compiler |
-| vitest | latest | Test runner |
-| typescript-eslint | latest | TS linting |
-| eslint | 10.0.0 | Code linting |
-| nodemon | 3.1.11 | Dev auto-reload |
+Versions are pinned in `package.json`.
+
+| Package | Purpose |
+|---------|---------|
+| discord.js | Discord API |
+| axios | HTTP requests (n8n) |
+| pg | PostgreSQL driver |
+| express, express-rate-limit | Health check API and dashboard |
+| i18next | Translations |
+| winston | Logging |
+| dotenv | .env loading |
+| typescript, vitest, eslint, typescript-eslint, nodemon | Build, tests, linting, dev reload |
 
 ## 🚀 Scripts
 
@@ -227,7 +265,7 @@ npm run build         # Compile TypeScript to dist/
 npm run typecheck     # Type-check without emitting
 npm run dev           # Development with auto-reload
 npm run test          # Run tests (Vitest)
-npm run test:all      # Run all tests
+npm run test:watch    # Run tests on change
 npm run migrate:up    # Run database migrations
 npm run migrate:down  # Rollback last migration
 npm run db:seed       # Seed test data
@@ -245,8 +283,7 @@ npm run release-package # Create release package
 - `N8N_WORKFLOW_URL` - Webhook URL
 
 ### Database (Required for persistence)
-- `DATABASE_URL` - Full connection string (alternative to individual vars)
-- `DB_HOST` - PostgreSQL host (default: postgres)
+- `DB_HOST` - PostgreSQL host (default: localhost; Docker Compose sets `postgres`)
 - `DB_PORT` - PostgreSQL port (default: 5432)
 - `DB_NAME` - Database name (default: discord_bot)
 - `DB_USER` - Database user
@@ -255,15 +292,17 @@ npm run release-package # Create release package
 - `DB_MAX_CONNECTIONS` - Pool size (default: 10)
 
 ### Optional
-- `N8N_API_KEY` - n8n authentication
-- `PORT` - Health check server port (default: 3000)
+- `N8N_API_KEY` - Shared secret sent to the n8n webhooks
+- `HEALTH_CHECK_PORT` - Health check server port (default: 3000)
 - `BOT_LANGUAGE` - Language of the bot and dashboard (default: en)
 - `HARDCODED_MENTION_RESPONSE` - Overrides the mention response
 - `RESTRICTED_RESPONSE` - Overrides the access denied message
 - `ALLOWED_ROLES_FOR_AI` - Authorized roles
 - `MOD_LOG_CHANNEL_ID` - Channel for moderation action logs
 - `LOG_LEVEL` - Logging level (default: info)
-- `NODE_ENV` - production/development
+
+AI moderation, the dashboard and the remaining options are described in
+`.env.example`, which lists every variable the bot reads.
 
 ## 🎯 Extension Points
 
@@ -312,7 +351,7 @@ curl http://localhost:3000/health
 psql -h localhost -U bot_user -d discord_bot
 
 # Docker: Watch container logs
-docker compose logs -f bot
+docker compose logs -f discord-bot
 
 # Docker: Check database logs
 docker compose logs -f postgres
@@ -320,16 +359,13 @@ docker compose logs -f postgres
 
 ## 📈 Performance Considerations
 
-- **Message Rate**: Limited by Discord API (5 msgs/5s per user)
-- **Rate Limiting**: Database-backed, < 1ms overhead
-- **Database Queries**: 2-15ms for typical operations
-- **n8n Timeout**: 30 seconds (configurable)
-- **Status Rotation**: Every 30 seconds
+- **Rate Limiting**: 5 messages per minute per user, database-backed
+- **n8n Timeout**: 2 minutes for the assistant, 5 minutes for AI moderation
+- **AI Moderation**: at most `AI_MOD_MAX_CONCURRENT` requests at once, the rest queue
+- **Status Rotation**: Every 5 minutes
 - **DM Processing**: Async with typing indicator
-- **Connection Pool**: 10-20 connections
-- **Conversation Fetch**: ~5-15ms for 20 messages
-- **Analytics Queries**: 50-200ms for 90-day stats
-- **Cleanup Jobs**: Hourly, ~100-500ms per run
+- **Connection Pool**: 10 connections (`DB_MAX_CONNECTIONS`)
+- **Cleanup and mute reconciliation**: Hourly
 
 ## 🔒 Security Checklist
 
@@ -348,11 +384,11 @@ docker compose logs -f postgres
 ## 📞 Support
 
 For issues:
-1. Check `logs/combined.log` for errors
-2. Run `npm run test-config`
+1. Check `logs/combined.log` for errors (`docker compose logs discord-bot` under Docker)
+2. Run `bash scripts/test-bot.sh`
 3. Verify .env configuration
 4. Check database connectivity (`curl http://localhost:3000/health`)
-5. Test with `npm run test:all`
+5. Test with `npm test`
 6. Check n8n workflow logs
 7. Review Discord permissions
 8. See [DATABASE.md](DATABASE.md) for database troubleshooting

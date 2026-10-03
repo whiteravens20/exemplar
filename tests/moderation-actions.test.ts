@@ -100,6 +100,27 @@ describe('canModerate', () => {
     };
     expect(canModerate(moderator as any, target as any)).toBe(false);
   });
+
+  it('lets the owner moderate a member at or above their highest role', () => {
+    const owner = {
+      id: mockOwnerId,
+      guild: mockGuild,
+      roles: { highest: { position: 0 } },
+    };
+    const sameLevel = { id: 'user-1', roles: { highest: { position: 0 } } };
+    const higher = { id: 'user-2', roles: { highest: { position: 7 } } };
+    expect(canModerate(owner as any, sameLevel as any)).toBe(true);
+    expect(canModerate(owner as any, higher as any)).toBe(true);
+  });
+
+  it('blocks the owner acting on themselves', () => {
+    const owner = {
+      id: mockOwnerId,
+      guild: mockGuild,
+      roles: { highest: { position: 0 } },
+    };
+    expect(canModerate(owner as any, owner as any)).toBe(false);
+  });
 });
 
 describe('checkBasePermissions', () => {
