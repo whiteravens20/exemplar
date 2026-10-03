@@ -23,7 +23,7 @@ We actively maintain and provide security updates for the following versions:
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 3.0.x   | ✅ Yes            | Active development |
+| 3.x.x   | ✅ Yes            | Active development |
 | 2.x.x   | ⚠️ Limited        | Critical security fixes only |
 | < 2.0   | ❌ No             | No longer supported |
 
