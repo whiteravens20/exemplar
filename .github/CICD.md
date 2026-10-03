@@ -6,7 +6,8 @@
 |---|---|---|
 | `test.yml` | Push to `main`/`dev`, any PR (skipped for docs-only changes) | Lint, tests, typecheck, build, required-file and env checks |
 | `codeql.yml` | Push/PR to `main`/`dev` (skipped for docs-only changes); weekly | CodeQL analysis (`javascript-typescript`) |
-| `security.yml` | PR to `main`/`dev`; push to `main`/`dev` touching `package*.json`; weekly | `npm audit`, dependency review, Trivy filesystem scan |
+| `security.yml` | Push or PR to `main`/`dev`; weekly; manual | Dependency audit and registry signature check, dependency review, Trivy scans of the repository and of the Docker image |
+| `scorecard.yml` | Push to `dev`; weekly | OpenSSF Scorecard, published for the README badge |
 | `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges patch updates once required checks pass; labels major updates |
 | `release.yml` | Push of a `vX.Y.Z` tag | Verifies the tag is on `main`, builds and pushes the Docker image to GHCR, scans it with Trivy, creates the GitHub Release |
 | `branch-protection-audit.yml` | Daily; manual | Fails if `main` branch protection drifts from the profile below |
@@ -27,7 +28,7 @@
 | Require linear history | Off | Release PRs land as merge commits |
 | Require signed commits | On | Every commit on `main` carries a verified signature |
 | Require branches to be up to date | On | No stale-branch merges that skip CI |
-| Required status checks | `test`, `Analyze Code (javascript-typescript)`, `npm audit`, `Trivy filesystem scan` | The check names GitHub reports, not job IDs |
+| Required status checks | `test`, `Analyze Code (javascript-typescript)`, `npm audit`, `Trivy filesystem scan`, `Trivy Docker image scan` | The check names GitHub reports, not job IDs |
 | Force pushes, deletions | Blocked | Preserves history |
 
 To read the full protection config, the audit needs a fine-grained PAT with `Administration: read` on this repo, stored as the `BRANCH_PROTECTION_READ_TOKEN` secret. Otherwise it falls back to `GITHUB_TOKEN`, which cannot see everything, and fails.
@@ -46,7 +47,19 @@ To read the full protection config, the audit needs a fine-grained PAT with `Adm
 
 `release.yml` then publishes `ghcr.io/whiteravens20/exemplar` with the tags `X.Y.Z`, `X.Y`, `X` and `main`, and creates the GitHub Release. The release body is the tag message plus notes generated from PR titles (grouped by `.github/release.yml`), with a source tarball attached. A tag that does not point at a commit on `main` is ignored.
 
-The image scan fails on unacknowledged HIGH/CRITICAL CVEs; acknowledge one by adding its ID with a justification to `.trivyignore`.
+The image scan, here and in `security.yml`, fails on unacknowledged HIGH/CRITICAL CVEs; acknowledge one by adding its ID with a justification to `.trivyignore`.
+
+## Dependency audit
+
+The `npm audit` check runs `.github/scripts/audit-check.mjs` twice: production dependencies fail it from `moderate`, the whole tree from `high`. It then installs the packages and verifies their registry signatures with `npm audit signatures`.
+
+`npm audit` cannot ignore a single advisory. When one has no installable fix and its code path cannot be reached here, add it to `.github/scripts/audit-allowlist.json` with a reason and an expiry date, and the same ID to `allow-ghsas` of the dependency review in `security.yml`:
+
+```json
+{ "ghsa": "GHSA-xxxx-xxxx-xxxx", "reason": "why it cannot be reached", "expires": "2026-12-31", "workspaces": ["."] }
+```
+
+An expired entry fails the check, so every exception comes back for review. If a fix can be installed, bump the dependency instead.
 
 ## Dependency policy
 
