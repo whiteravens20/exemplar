@@ -129,7 +129,7 @@ docker compose logs -f discord-bot
 curl http://localhost:3000/health
 ```
 
-Compose starts PostgreSQL, waits for it to be healthy, runs pending migrations and starts the bot. Release images are published to `ghcr.io/whiteravens20/exemplar` (tags `X.Y.Z`, `X.Y`, `X` and `main`). See [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md).
+Compose starts PostgreSQL, waits for it to be healthy, runs pending migrations and starts the bot. Release images are published to `ghcr.io/whiteravens20/exemplar` (tags `X.Y.Z`, `X.Y`, `X`, `main` and its alias `latest`). See [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md).
 
 ### Node.js
 
