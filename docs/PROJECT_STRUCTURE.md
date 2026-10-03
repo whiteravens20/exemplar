@@ -45,6 +45,7 @@ exemplar/
 │
 ├── 📁 scripts/                   # Utility scripts
 │   ├── copy-assets.mjs           # Copies the dashboard page and locales into dist/
+│   ├── dev.mjs                   # Builds and starts the bot for `npm run dev`
 │   ├── docker-entrypoint.sh      # Docker startup: wait for the database, migrate
 │   ├── test-bot.sh               # Checks Node.js, dependencies and the type check
 │   ├── verify-dm-config.sh       # Checks the DM-related settings in the code and logs
@@ -255,7 +256,7 @@ Versions are pinned in `package.json`.
 | i18next | Translations |
 | winston | Logging |
 | dotenv | .env loading |
-| typescript, vitest, eslint, typescript-eslint, nodemon | Build, tests, linting, dev reload |
+| typescript, vitest, eslint, typescript-eslint | Build, tests, linting |
 
 ## 🚀 Scripts
 
