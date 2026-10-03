@@ -36,11 +36,18 @@ jobs:
       - name: Update npm to 11+
         run: npm install -g npm@latest
 
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
+      # Production dependencies ship in the image, so they are held to a tighter
+      # bar (moderate). Development dependencies stay at high.
+      #
+      # audit-check.mjs wraps `npm audit` so that an advisory with no installable
+      # fix and no reachable code path can be allowlisted on its own, with a
+      # justification and an expiry, instead of lowering the threshold for every
+      # package. See .github/scripts/audit-allowlist.json.
+      - name: Audit production dependencies (moderate)
+        run: node .github/scripts/audit-check.mjs --dir . --omit=dev --audit-level moderate
 
-      - name: Run npm audit
-        run: npm audit --audit-level=high
+      - name: Audit all dependencies (high)
+        run: node .github/scripts/audit-check.mjs --dir . --audit-level high
 
   dependency-review:
     name: Dependency review
@@ -60,6 +67,8 @@ jobs:
         with:
           fail-on-severity: high
           comment-summary-in-pr: always
+          # Any allowlisted ID goes here as `allow-ghsas:`, and its justification
+          # in .github/scripts/audit-allowlist.json. Keep the two in sync.
 
   trivy-fs:
     name: Trivy filesystem scan
