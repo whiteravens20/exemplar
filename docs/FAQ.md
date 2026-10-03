@@ -74,8 +74,8 @@ docker compose up -d
 ```
 Compose starts PostgreSQL, applies the migrations and starts the bot. See [DOCKER_SETUP.md](DOCKER_SETUP.md).
 
-### Q: What is "nodemon"?
-**A:** It's a development tool. Automatically restarts bot when you change code. Used by `npm run dev`.
+### Q: What does `npm run dev` do?
+**A:** It builds the bot and starts it, then rebuilds and restarts it whenever a file under `src/` changes. It uses Node's own watch mode.
 
 ## 💬 AI Assistant Features
 
