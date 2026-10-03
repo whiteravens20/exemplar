@@ -7,9 +7,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ main, dev ]
-    paths:
-      - 'package.json'
-      - 'package-lock.json'
   pull_request:
     branches: [ main, dev ]
 
