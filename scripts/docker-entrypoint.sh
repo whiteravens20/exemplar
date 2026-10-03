@@ -19,7 +19,10 @@ wait_for_postgres() {
         port: parseInt(process.env.DB_PORT || '5432', 10),
         database: process.env.DB_NAME || 'discord_bot',
         user: process.env.DB_USER || 'bot_user',
-        password: process.env.DB_PASSWORD
+        password: process.env.DB_PASSWORD,
+        ssl: process.env.DB_SSL === 'true'
+          ? { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
+          : undefined
       });
       pool.connect()
         .then(() => { pool.end(); process.exit(0); })

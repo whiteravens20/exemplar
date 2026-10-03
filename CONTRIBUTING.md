@@ -80,7 +80,7 @@ Ready to code? Awesome! Let's get you set up. 🎮
 ### Prerequisites
 
 - 📦 Node.js 22+ (LTS) - **Required as of v2.0.0!**
-- 📦 npm 10+ or yarn
+- 📦 npm 11+
 - 🤖 Discord Bot Token ([Get one here](https://discord.com/developers/applications))
 - 🔄 n8n instance (for testing workflows)
 - ☕ Your favorite beverage
@@ -105,10 +105,8 @@ npm install
 cp .env.example .env
 # Edit .env with your test bot token and n8n details
 
-# 6. Deploy slash commands to your test server
-npm run deploy-commands
-
-# 7. Start in development mode with auto-reload 🔥
+# 6. Start in development mode with auto-reload 🔥
+#    (slash commands are registered with Discord on every start)
 npm run dev
 ```
 
@@ -116,8 +114,8 @@ npm run dev
 
 Before you start coding, understand these key architectural decisions:
 
-🔒 **DM-Only Mode** - The bot exclusively operates in Direct Messages (privacy-first design)  
-💻 **Dual AI Modes** - `!code` prefix routes to specialized coding LLM, default is chat mode  
+🔒 **DMs first** - The assistant and every slash command work in Direct Messages; AI moderation and reaction roles act in server channels  
+💻 **Dual AI Modes** - `/code` routes to a specialized coding LLM, a plain DM is chat mode  
 🚦 **Rate Limiting** - Built-in protection: 5 messages/minute per user  
 ✂️ **Smart Message Splitting** - Automatically handles Discord's 2000 character limit  
 🔄 **n8n Integration** - All AI responses go through n8n workflows  
@@ -150,7 +148,7 @@ git checkout -b fix/annoying-bug
 
 ### 📦 Committing Changes
 
-We use **conventional commits** - they help generate changelogs automatically! 🎉
+We use **conventional commits**. PR titles follow the same format and become the release notes.
 
 **Format:** `type: brief description`
 
@@ -300,20 +298,21 @@ Want to add a new slash command? Here's the template! 🚀
 // src/slashcommands/mycommand.ts
 import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
 import logger from '../utils/logger.js';
+import { t } from '../utils/i18n.js';
 import type { SlashCommand } from '../types/discord.js';
 
 const command: SlashCommand = {
   data: new SlashCommandBuilder()
     .setName('mycommand')
-    .setDescription('🎉 Description of your awesome command')
+    .setDescription(t('commands.mycommand.description'))
     .addStringOption(option =>
       option.setName('text')
-        .setDescription('Some helpful text input')
+        .setDescription(t('commands.mycommand.options.text'))
         .setRequired(true)
     )
     .addIntegerOption(option =>
       option.setName('amount')
-        .setDescription('An optional number')
+        .setDescription(t('commands.mycommand.options.amount'))
         .setRequired(false)
     ),
   
@@ -335,7 +334,7 @@ const command: SlashCommand = {
       
       // Reply to user
       await interaction.reply({
-        content: `✨ ${result}`,
+        content: t('commands.mycommand.done', { result }),
         ephemeral: false // Set to true for private replies
       });
       
@@ -346,7 +345,7 @@ const command: SlashCommand = {
       });
       
       await interaction.reply({
-        content: '❌ Oops! Something went wrong. Please try again.',
+        content: t('errors.commandFailed'),
         ephemeral: true
       });
     }
@@ -356,7 +355,9 @@ const command: SlashCommand = {
 export default command;
 ```
 
-**Don't forget:** Run `npm run deploy-commands` after adding new commands! 🔄
+**Don't forget:** add the command to the `slashCommands` list in `src/index.ts` — the bot registers that list with Discord on every start. 🔄
+
+**Texts:** everything the command shows people comes from the locale files, never a string in the code. Add the `commands.mycommand` keys to every file in `src/locales/`; `npm test` fails when a language misses one. See [docs/I18N.md](docs/I18N.md). 🌍
 
 ### 🎯 Adding an Event Handler
 
@@ -434,16 +435,13 @@ Testing is super important! 🧪 Here's how to make sure your code works:
 # 1. Type check your code
 npm run typecheck
 
-# 2. Deploy commands (if you added/modified slash commands)
-npm run deploy-commands
-
-# 3. Build the project
+# 2. Build the project
 npm run build
 
-# 4. Start the bot in dev mode
+# 3. Start the bot in dev mode (slash commands are registered on start)
 npm run dev
 
-# 5. Test in Discord!
+# 4. Test in Discord!
 # - Create a test server
 # - Add your bot
 # - Try all the features you changed
@@ -458,8 +456,8 @@ Before submitting your PR, make sure you've tested:
 - ✅ **Error handling** - What happens when things go wrong?
 - ✅ **Edge cases** - Empty inputs? Very long inputs? Special characters?
 - ✅ **Rate limiting** - Does it respect the 5 messages/minute limit?
-- ✅ **DM-only mode** - Does it work in DMs? Does it ignore guild messages?
-- ✅ **Coding mode** - If relevant, test with `!code` prefix
+- ✅ **DMs** - Does it work in DMs? Does a command used in a channel only point to DMs?
+- ✅ **Coding mode** - If relevant, test with `/code`
 - ✅ **Logs** - Check that appropriate logs are generated
 
 ### 🧪 Automated Tests

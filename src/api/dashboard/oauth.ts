@@ -1,4 +1,3 @@
-import { request } from 'undici';
 import logger from '../../utils/logger.js';
 
 /**
@@ -53,19 +52,19 @@ export async function exchangeCode(params: {
   });
 
   try {
-    const res = await request(`${DISCORD_API}/oauth2/token`, {
+    const res = await fetch(`${DISCORD_API}/oauth2/token`, {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: body.toString(),
     });
 
-    if (res.statusCode !== 200) {
-      await res.body.dump();
-      logger.warn('Discord token exchange failed', { status: res.statusCode });
+    if (!res.ok) {
+      await res.body?.cancel();
+      logger.warn('Discord token exchange failed', { status: res.status });
       return null;
     }
 
-    const json = (await res.body.json()) as { access_token?: string };
+    const json = (await res.json()) as { access_token?: string };
     return json.access_token ?? null;
   } catch (error) {
     logger.error('Discord token exchange threw', {
@@ -78,17 +77,17 @@ export async function exchangeCode(params: {
 /** Fetch the authenticated user's profile via their access token. */
 export async function fetchUser(accessToken: string): Promise<DiscordUser | null> {
   try {
-    const res = await request(`${DISCORD_API}/users/@me`, {
+    const res = await fetch(`${DISCORD_API}/users/@me`, {
       headers: { authorization: `Bearer ${accessToken}` },
     });
 
-    if (res.statusCode !== 200) {
-      await res.body.dump();
-      logger.warn('Discord /users/@me failed', { status: res.statusCode });
+    if (!res.ok) {
+      await res.body?.cancel();
+      logger.warn('Discord /users/@me failed', { status: res.status });
       return null;
     }
 
-    const user = (await res.body.json()) as DiscordUser;
+    const user = (await res.json()) as DiscordUser;
     if (!user || typeof user.id !== 'string') return null;
     return user;
   } catch (error) {

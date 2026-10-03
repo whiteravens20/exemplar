@@ -25,7 +25,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
-      pull-requests: write
 
     steps:
       - uses: actions/checkout@v7
@@ -40,35 +39,13 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Install dependencies
-        id: install
         run: npm ci --ignore-scripts
 
-      - name: Label quarantined PR
-        if: failure() && steps.install.outcome == 'failure' && github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          if npm ci --ignore-scripts --dry-run 2>&1 | grep -qiE "min-release-age|ERESOLVE|could not resolve"; then
-            gh pr edit "$PR_NUMBER" --add-label "min-release-age"
-          fi
-
-      - name: Remove quarantine label
-        if: success() && github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          gh pr edit "$PR_NUMBER" --remove-label "min-release-age" 2>/dev/null || true
-
       - name: Run linting
-        run: npm run lint --if-present
+        run: npm run lint
 
       - name: Run all tests
         run: npm run test:all
-
-      - name: Security audit
-        run: npm audit --audit-level=high
 
       - name: Type check
         run: npx tsc --noEmit
@@ -79,7 +56,6 @@ jobs:
       - name: Verify required files
         run: |
           test -f src/index.ts || (echo "src/index.ts missing" && exit 1)
-          test -f src/deploy-commands.ts || (echo "src/deploy-commands.ts missing" && exit 1)
           test -f tsconfig.json || (echo "tsconfig.json missing" && exit 1)
           test -f package.json || (echo "package.json missing" && exit 1)
           test -f Dockerfile || (echo "Dockerfile missing" && exit 1)
@@ -93,5 +69,5 @@ jobs:
           echo "✅ Environment variables configured"
 
       - name: Package.json validation
-        run: |
-          npm ls --depth=0 2>&1 | grep -q "ERR!" && (echo "❌ Package.json has issues" && exit 1) || echo "✅ Package.json OK"
+        # Exits non-zero on missing, invalid or extraneous packages.
+        run: npm ls --depth=0

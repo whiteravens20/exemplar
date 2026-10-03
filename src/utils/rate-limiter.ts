@@ -16,24 +16,32 @@ interface RateLimiterStats {
   usingDatabase: boolean;
 }
 
+// After a failed database check, stay on the in-memory fallback this long
+// before trying the database again.
+const DB_RETRY_MS = 60 * 1000;
+
 class RateLimiter {
   private maxRequests: number;
   private timeWindow: number;
   private requests: Map<string, number[]>;
-  private _isDbAvailable: boolean;
+  /** Epoch ms before which database checks are skipped; 0 = try now. */
+  private dbRetryAt = 0;
 
   constructor(maxRequests: number = 5, timeWindow: number = 60000) {
     this.maxRequests = maxRequests;
     this.timeWindow = timeWindow;
     this.requests = new Map();
-    this._isDbAvailable = true;
+  }
+
+  private get useDatabase(): boolean {
+    return Date.now() >= this.dbRetryAt;
   }
 
   /**
    * Check if user has exceeded rate limit
    */
   async checkLimit(userId: string): Promise<RateLimitResult> {
-    if (this._isDbAvailable) {
+    if (this.useDatabase) {
       try {
         const dbResult = await rateLimitRepo.checkAndUpdateLimit(
           userId,
@@ -54,12 +62,12 @@ class RateLimiter {
           };
         }
 
-        this._isDbAvailable = false;
+        this.dbRetryAt = Date.now() + DB_RETRY_MS;
         logger.warn(
           'Database unavailable for rate limiting, using in-memory fallback'
         );
       } catch (error) {
-        this._isDbAvailable = false;
+        this.dbRetryAt = Date.now() + DB_RETRY_MS;
         logger.error(
           'Rate limit database check failed, using in-memory fallback',
           {
@@ -109,7 +117,7 @@ class RateLimiter {
    * Reset rate limit for a user (admin override)
    */
   async reset(userId: string): Promise<void> {
-    if (this._isDbAvailable) {
+    if (this.useDatabase) {
       try {
         await rateLimitRepo.resetUserLimit(userId);
       } catch (error) {
@@ -127,7 +135,7 @@ class RateLimiter {
    * Clear old entries periodically to prevent memory leak
    */
   async cleanup(): Promise<void> {
-    if (this._isDbAvailable) {
+    if (this.useDatabase) {
       try {
         await rateLimitRepo.cleanup(this.timeWindow);
       } catch (error) {
@@ -157,7 +165,7 @@ class RateLimiter {
   async getStats(): Promise<RateLimiterStats> {
     let dbStats: RateLimitStats | null = null;
 
-    if (this._isDbAvailable) {
+    if (this.useDatabase) {
       try {
         dbStats = await rateLimitRepo.getStats();
       } catch (error) {
@@ -173,15 +181,8 @@ class RateLimiter {
         (arr) => arr.length > 0
       ).length,
       database: dbStats,
-      usingDatabase: this._isDbAvailable && dbStats !== null,
+      usingDatabase: dbStats !== null,
     };
-  }
-
-  /**
-   * Re-enable database attempts
-   */
-  enableDatabase(): void {
-    this._isDbAvailable = true;
   }
 }
 

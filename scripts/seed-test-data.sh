@@ -3,9 +3,12 @@
 
 set -e
 
-# Source .env if it exists
+# Load the DB_* settings from .env if it exists; the other values need not be
+# valid shell (unquoted messages with spaces, for example)
 if [ -f .env ]; then
-  export $(cat .env | grep -v '^#' | xargs)
+  set -a
+  . <(grep -E '^DB_[A-Z_]+=' .env)
+  set +a
 fi
 
 # Database configuration

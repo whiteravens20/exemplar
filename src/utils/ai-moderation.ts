@@ -1,12 +1,15 @@
 import {
   ChannelType,
   EmbedBuilder,
+  type Guild,
   type Message,
   type TextChannel,
 } from 'discord.js';
 import logger from './logger.js';
+import { i18n, t } from './i18n.js';
 import configManager from '../config/config.js';
 import N8NClient from './n8n-client.js';
+import { ConcurrencyLimiter } from './concurrency-limiter.js';
 import warningRepo from '../db/repositories/warning-repository.js';
 import moderationLogRepo from '../db/repositories/moderation-log-repository.js';
 import {
@@ -35,17 +38,30 @@ import type { ModerationSeverity } from '../types/database.js';
  *             slash command — only the mod-log "Moderator" field differs.
  */
 
-const ACTOR_LABEL = 'AI moderation';
 const RECENT_WARNINGS_LIMIT = 5;
+// Discord caps audit-log reasons at 512 characters.
+const MAX_REASON_LENGTH = 512;
 // Upper bound on message length forwarded to n8n. Discord's own 2 000-char
 // guild limit keeps real messages well under this, so the cap is a defensive
 // guard (and self-documenting intent) against any future path that bypasses
 // Discord's limit — not a constraint operators are expected to hit.
 const MAX_CONTENT_LENGTH = 4000;
-// Cap the in-memory cooldown map so a long-running bot in a noisy guild can't
-// leak unbounded entries. Eviction policy is "drop oldest"; entries older than
-// the configured cooldown are also evicted lazily on each check.
-const COOLDOWN_MAX_ENTRIES = 10_000;
+// Messages waiting for their turn at the moderation workflow. Only a flood
+// reaches this; past it a message is not analysed, and that is logged.
+const MAX_QUEUED_MESSAGES = 1000;
+// Longer than the assistant's two minutes: nobody is waiting for this answer,
+// and a model that has to be loaded first can spend most of that before it
+// starts on the message.
+const REQUEST_TIMEOUT_MS = 5 * 60 * 1000;
+// A request that failed goes back to the end of the queue after a pause, so a
+// restart of n8n or a model that was busy costs a delay, not the verdict. The
+// pauses before the second and the third attempt; there is no fourth.
+const RETRY_DELAYS_MS = [30 * 1000, 60 * 1000];
+// Past this age a message is not retried any more.
+const MAX_MESSAGE_AGE_MS = 10 * 60 * 1000;
+// Messages given up on are reported to the mod-log together, at most this
+// often, so an outage does not flood the channel.
+const UNCHECKED_REPORT_INTERVAL_MS = 10 * 60 * 1000;
 
 export type ModerationAction = 'allow' | 'warn' | 'timeout' | 'delete';
 
@@ -63,42 +79,25 @@ export interface ModerationVerdict {
 
 let cachedClient: N8NClient | null = null;
 let startupWarningLogged = false;
-const lastAnalysisAt = new Map<string, number>();
 
 /**
- * Per-user cooldown gate. Prevents a single user from triggering unbounded
- * concurrent n8n calls during a burst of messages in an enrolled channel.
- * Returns true when this call is allowed (and records the timestamp); false
- * when the user is still within their cooldown window. Cooldown of 0 disables
- * the gate.
- *
- * Exported for tests.
+ * Every eligible message is analysed. At most AI_MOD_MAX_CONCURRENT requests
+ * are with the moderation workflow at a time and the rest wait their turn, so
+ * a burst reaches the model as a steady stream instead of piling up until
+ * requests time out. A verdict that arrives late still gets acted on.
  */
-export function checkCooldown(userId: string, now: number = Date.now()): boolean {
-  const cooldownMs = configManager.config.moderation.userCooldownMs;
-  if (cooldownMs <= 0) return true;
-
-  const last = lastAnalysisAt.get(userId);
-  if (last !== undefined && now - last < cooldownMs) return false;
-
-  if (lastAnalysisAt.size >= COOLDOWN_MAX_ENTRIES) {
-    const oldestKey = lastAnalysisAt.keys().next().value;
-    if (oldestKey !== undefined) lastAnalysisAt.delete(oldestKey);
-  }
-  lastAnalysisAt.set(userId, now);
-  return true;
-}
-
-/** Test hook — wipes the in-memory cooldown map. */
-export function _resetCooldownForTests(): void {
-  lastAnalysisAt.clear();
-}
+const queue = new ConcurrencyLimiter(
+  () => configManager.config.moderation.maxConcurrent,
+  MAX_QUEUED_MESSAGES
+);
 
 function getClient(): N8NClient | null {
   const { aiModerationUrl } = configManager.config.moderation;
   if (!aiModerationUrl) return null;
   if (!cachedClient) {
-    cachedClient = new N8NClient(aiModerationUrl, configManager.config.n8n.apiKey);
+    cachedClient = new N8NClient(aiModerationUrl, configManager.config.n8n.apiKey, {
+      timeout: REQUEST_TIMEOUT_MS,
+    });
   }
   return cachedClient;
 }
@@ -173,7 +172,8 @@ export function validateVerdict(raw: unknown): ModerationVerdict | null {
     return null;
   }
   const verdict: ModerationVerdict = { action };
-  if (typeof v.reason === 'string') verdict.reason = v.reason;
+  if (typeof v.reason === 'string')
+    verdict.reason = v.reason.slice(0, MAX_REASON_LENGTH);
   if (typeof v.duration === 'string') verdict.duration = v.duration;
   if (typeof v.rule === 'string') verdict.rule = v.rule;
   if (action === 'timeout') {
@@ -210,23 +210,34 @@ async function postShadowLog(
 
   const embed = new EmbedBuilder()
     .setColor(0xf1c40f)
-    .setTitle(`🤖 [SHADOW] ${verdict.action}`)
+    .setTitle(t('aiModeration.shadowTitle', { action: verdict.action }))
     .addFields(
       {
-        name: 'Użytkownik',
+        name: t('moderation.fields.user'),
         value: `${message.author.tag} (${message.author.id})`,
         inline: true,
       },
-      { name: 'Kanał', value: `<#${message.channelId}>`, inline: true },
-      { name: 'Powód', value: verdict.reason || '_(brak)_' }
+      {
+        name: t('moderation.fields.channel'),
+        value: `<#${message.channelId}>`,
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.reason'),
+        value: verdict.reason || t('aiModeration.noReason'),
+      }
     )
     .setTimestamp();
 
   if (verdict.action === 'timeout' && verdict.duration) {
-    embed.addFields({ name: 'Czas', value: verdict.duration, inline: true });
+    embed.addFields({
+      name: t('moderation.fields.duration'),
+      value: verdict.duration,
+      inline: true,
+    });
   }
-  embed.addFields({ name: 'Treść', value: preview });
-  embed.setFooter({ text: 'Tryb shadow — żadna akcja nie została wykonana.' });
+  embed.addFields({ name: t('moderation.fields.content'), value: preview });
+  embed.setFooter({ text: t('aiModeration.shadowFooter') });
 
   try {
     await (channel as TextChannel).send({ embeds: [embed] });
@@ -238,9 +249,62 @@ async function postShadowLog(
   }
 }
 
+/**
+ * Tell the moderators that a verdict could not be carried out — typically a
+ * missing permission, such as Manage Messages for a delete. Otherwise the
+ * failure is only in the bot's log and the message stays up unnoticed.
+ */
+async function postFailureLog(
+  message: Message,
+  verdict: ModerationVerdict,
+  detail: string | undefined
+): Promise<void> {
+  const modLogChannelId = configManager.config.moderation.modLogChannelId;
+  const channel = modLogChannelId
+    ? message.guild?.channels.cache.get(modLogChannelId)
+    : undefined;
+  if (!channel || channel.type !== ChannelType.GuildText) return;
+
+  const embed = new EmbedBuilder()
+    .setColor(0xe67e22)
+    .setTitle(t('aiModeration.failedTitle', { action: verdict.action }))
+    .addFields(
+      {
+        name: t('moderation.fields.user'),
+        value: `${message.author.tag} (${message.author.id})`,
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.channel'),
+        value: `<#${message.channelId}>`,
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.reason'),
+        value: verdict.reason || t('aiModeration.noReason'),
+      },
+      {
+        name: t('moderation.fields.problem'),
+        value: detail || t('errors.operationFailed'),
+      },
+      { name: t('moderation.fields.content'), value: buildPreview(message.content) }
+    )
+    .setFooter({ text: t('aiModeration.failedFooter') })
+    .setTimestamp();
+
+  try {
+    await (channel as TextChannel).send({ embeds: [embed] });
+  } catch (error) {
+    logger.error('Failed to post the AI moderation failure to the mod-log', {
+      error: (error as Error).message,
+      userId: message.author.id,
+    });
+  }
+}
+
 function buildPreview(content: string): string {
   const trimmed = (content || '').trim();
-  if (!trimmed) return '_(pusta wiadomość)_';
+  if (!trimmed) return t('moderation.emptyMessage');
   const truncated =
     trimmed.length > 200 ? `${trimmed.slice(0, 200)}…` : trimmed;
   return `\`\`\`\n${truncated.replace(/```/g, '` ` `')}\n\`\`\``;
@@ -254,8 +318,12 @@ async function enforce(
   const botUser = message.client.user;
   if (!guild || !botUser) return;
 
-  const actor: Actor = { id: botUser.id, label: ACTOR_LABEL, type: 'ai' };
-  const reason = verdict.reason || 'Naruszenie wykryte przez moderację AI';
+  const actor: Actor = {
+    id: botUser.id,
+    label: t('moderation.aiModerator'),
+    type: 'ai',
+  };
+  const reason = verdict.reason || t('aiModeration.defaultReason');
 
   switch (verdict.action) {
     case 'warn': {
@@ -265,6 +333,7 @@ async function enforce(
           userId: message.author.id,
           detail: result.content,
         });
+        await postFailureLog(message, verdict, result.content);
       }
       return;
     }
@@ -288,6 +357,7 @@ async function enforce(
           userId: message.author.id,
           detail: result.content,
         });
+        await postFailureLog(message, verdict, result.content);
       }
       return;
     }
@@ -298,6 +368,7 @@ async function enforce(
           messageId: message.id,
           detail: result.content,
         });
+        await postFailureLog(message, verdict, result.content);
       }
       return;
     }
@@ -310,17 +381,129 @@ async function enforce(
 export async function analyzeAndAct(message: Message): Promise<void> {
   if (!shouldAnalyze(message)) return;
 
-  // Per-user cooldown — guards the n8n workflow against bursts. Checked after
-  // shouldAnalyze so an exempt/ignored message doesn't burn the user's slot.
-  if (!checkCooldown(message.author.id)) {
-    logger.debug('AI moderation: user within cooldown — skipping', {
-      userId: message.author.id,
-    });
-    return;
-  }
-
   const client = getClient();
   if (!client) return;
+
+  const firstQueuedAt = Date.now();
+  for (let attempt = 1; ; attempt++) {
+    const queuedAt = Date.now();
+    if (!(await queue.acquire())) {
+      giveUp(message, 'the moderation queue is full');
+      return;
+    }
+    let failure: string | null;
+    try {
+      failure = await analyze(message, client, Date.now() - queuedAt);
+    } finally {
+      queue.release();
+    }
+    if (failure === null) return;
+
+    const delay = RETRY_DELAYS_MS[attempt - 1];
+    if (
+      delay === undefined ||
+      Date.now() - firstQueuedAt + delay > MAX_MESSAGE_AGE_MS
+    ) {
+      giveUp(message, failure);
+      return;
+    }
+    logger.info('AI moderation: request failed — message goes back to the queue', {
+      userId: message.author.id,
+      attempt,
+      retryInMs: delay,
+      error: failure,
+    });
+    await new Promise((resolve) => setTimeout(resolve, delay));
+  }
+}
+
+let unchecked = { count: 0, channels: new Set<string>(), lastError: '' };
+let lastUncheckedReportAt = 0;
+let uncheckedReportTimer: NodeJS.Timeout | null = null;
+
+/**
+ * A message the workflow never judged. It is counted and reported to the
+ * moderators: the first one straight away, later ones together.
+ */
+function giveUp(message: Message, error: string): void {
+  logger.error('AI moderation: message not analysed', {
+    userId: message.author.id,
+    channelId: message.channelId,
+    messageId: message.id,
+    error,
+  });
+
+  unchecked.count++;
+  unchecked.channels.add(message.channelId);
+  unchecked.lastError = error;
+
+  const guild = message.guild;
+  if (!guild) return;
+  const wait = lastUncheckedReportAt + UNCHECKED_REPORT_INTERVAL_MS - Date.now();
+  if (wait <= 0) {
+    void postUncheckedReport(guild);
+  } else if (!uncheckedReportTimer) {
+    uncheckedReportTimer = setTimeout(() => {
+      uncheckedReportTimer = null;
+      void postUncheckedReport(guild);
+    }, wait);
+    uncheckedReportTimer.unref();
+  }
+}
+
+async function postUncheckedReport(guild: Guild): Promise<void> {
+  const report = unchecked;
+  unchecked = { count: 0, channels: new Set<string>(), lastError: '' };
+  lastUncheckedReportAt = Date.now();
+  if (report.count === 0) return;
+
+  const modLogChannelId = configManager.config.moderation.modLogChannelId;
+  const channel = modLogChannelId
+    ? guild.channels.cache.get(modLogChannelId)
+    : undefined;
+  if (!channel || channel.type !== ChannelType.GuildText) return;
+
+  const embed = new EmbedBuilder()
+    .setColor(0xe67e22)
+    .setTitle(t('aiModeration.uncheckedTitle'))
+    .addFields(
+      {
+        name: t('aiModeration.uncheckedCount'),
+        value: String(report.count),
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.channel'),
+        value: [...report.channels].map((id) => `<#${id}>`).join(' '),
+        inline: true,
+      },
+      {
+        name: t('moderation.fields.problem'),
+        value: report.lastError.slice(0, 1000) || t('errors.operationFailed'),
+      }
+    )
+    .setFooter({ text: t('aiModeration.uncheckedFooter') })
+    .setTimestamp();
+
+  try {
+    await (channel as TextChannel).send({ embeds: [embed] });
+  } catch (error) {
+    logger.error('Failed to post the unchecked-messages notice to the mod-log', {
+      error: (error as Error).message,
+    });
+  }
+}
+
+/**
+ * One attempt at a verdict for `message`. Resolves to null once the message
+ * has been dealt with, or to what went wrong when the workflow did not answer
+ * and the message should be tried again.
+ */
+async function analyze(
+  message: Message,
+  client: N8NClient,
+  waitedMs: number
+): Promise<string | null> {
 
   // Fetch the user's recent warning history so the LLM can ground "repeated
   // rule-breaking" verdicts in actual evidence rather than guessing. Cheap —
@@ -351,13 +534,14 @@ export async function analyzeAndAct(message: Message): Promise<void> {
       timestamp: new Date().toISOString(),
       recentWarnings,
       serverRules: configManager.config.moderation.rulesText,
+      language: i18n.language,
     });
   } catch (error) {
     logger.error('AI moderation: n8n request threw', {
       error: (error as Error).message,
       userId: message.author.id,
     });
-    return;
+    return (error as Error).message;
   }
 
   if (!result.success) {
@@ -366,7 +550,7 @@ export async function analyzeAndAct(message: Message): Promise<void> {
       status: result.status,
       error: result.error,
     });
-    return;
+    return result.error ?? `HTTP ${result.status}`;
   }
 
   const verdict = validateVerdict(
@@ -377,7 +561,7 @@ export async function analyzeAndAct(message: Message): Promise<void> {
       userId: message.author.id,
       data: JSON.stringify(result.data).slice(0, 300),
     });
-    return;
+    return null;
   }
 
   const mode = configManager.config.moderation.aiMode;
@@ -391,9 +575,10 @@ export async function analyzeAndAct(message: Message): Promise<void> {
     mode,
     userId: message.author.id,
     channelId: message.channelId,
+    waitedMs,
   });
 
-  if (verdict.action === 'allow') return;
+  if (verdict.action === 'allow') return null;
 
   // Record the AI decision itself (the transparent "why") on the dashboard
   // event log, in both shadow and enforce modes. In enforce mode the resulting
@@ -403,10 +588,11 @@ export async function analyzeAndAct(message: Message): Promise<void> {
 
   if (mode === 'shadow') {
     await postShadowLog(message, verdict);
-    return;
+    return null;
   }
 
   await enforce(message, verdict);
+  return null;
 }
 
 /** Map a non-`allow` verdict to a dashboard severity. */
@@ -434,7 +620,7 @@ async function recordAiDecision(
     severity: verdictSeverity(verdict.action),
     actorType: 'ai',
     actorId: message.client.user?.id ?? null,
-    actorLabel: ACTOR_LABEL,
+    actorLabel: t('moderation.aiModerator'),
     targetUserId: message.author.id,
     targetUsername: message.author.tag,
     channelId: message.channelId,

@@ -22,14 +22,18 @@ COPY tsconfig.json ./
 # --ignore-scripts blocks postinstall malware vectors
 RUN npm ci --ignore-scripts
 
-# Copy source files
+# Copy source files and the build helper that copies the dashboard assets and
+# translations
 COPY src/ ./src/
+COPY scripts/copy-assets.mjs ./scripts/
 
-# Build TypeScript
-RUN npx tsc
+# Build TypeScript and copy the dashboard assets and translations into dist/
+RUN npm run build
 
-# Remove dev dependencies
-RUN npm prune --production --ignore-scripts
+# Remove dev dependencies. TypeScript is an optional peer of i18next, which
+# npm keeps under --omit=dev alone; the only other optional package in the
+# production tree, pg-cloudflare, is never loaded on Node.
+RUN npm prune --omit=dev --omit=optional --ignore-scripts
 
 # Runtime stage
 FROM node:22-alpine
@@ -59,9 +63,12 @@ RUN chmod +x ./scripts/docker-entrypoint.sh
 # Remove npm (not needed in runtime; eliminates npm's own CVEs)
 RUN npm uninstall -g npm && rm -rf /usr/local/lib/node_modules/npm
 
-# Create non-root user for security
+# Create non-root user for security. /app/logs exists in the image so that a
+# named volume mounted there starts out owned by that user; the root filesystem
+# is read-only under docker-compose.yml, so the bot could not create it itself.
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 && \
+    mkdir -p /app/logs && \
     chown -R nodejs:nodejs /app
 
 USER nodejs

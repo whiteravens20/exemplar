@@ -5,6 +5,7 @@ import {
   canModerate,
   checkBasePermissions,
 } from '../src/utils/moderation-actions.js';
+import { t } from '../src/utils/i18n.js';
 
 describe('parseDuration', () => {
   it('parses seconds', () => {
@@ -99,6 +100,27 @@ describe('canModerate', () => {
     };
     expect(canModerate(moderator as any, target as any)).toBe(false);
   });
+
+  it('lets the owner moderate a member at or above their highest role', () => {
+    const owner = {
+      id: mockOwnerId,
+      guild: mockGuild,
+      roles: { highest: { position: 0 } },
+    };
+    const sameLevel = { id: 'user-1', roles: { highest: { position: 0 } } };
+    const higher = { id: 'user-2', roles: { highest: { position: 7 } } };
+    expect(canModerate(owner as any, sameLevel as any)).toBe(true);
+    expect(canModerate(owner as any, higher as any)).toBe(true);
+  });
+
+  it('blocks the owner acting on themselves', () => {
+    const owner = {
+      id: mockOwnerId,
+      guild: mockGuild,
+      roles: { highest: { position: 0 } },
+    };
+    expect(canModerate(owner as any, owner as any)).toBe(false);
+  });
 });
 
 describe('checkBasePermissions', () => {
@@ -136,7 +158,7 @@ describe('checkBasePermissions', () => {
     const result = checkBasePermissions(moderator as any, target as any, KICK_MEMBERS);
     expect(result).not.toBeNull();
     expect(result?.success).toBe(false);
-    expect(result?.content).toContain('Nie masz wymaganych uprawnień');
+    expect(result?.content).toBe(t('errors.missingPermission'));
   });
 
   it('returns error for self-action', () => {
@@ -152,6 +174,6 @@ describe('checkBasePermissions', () => {
       KICK_MEMBERS
     );
     expect(result).not.toBeNull();
-    expect(result?.content).toContain('sobie');
+    expect(result?.content).toBe(t('moderation.errors.selfAction'));
   });
 });

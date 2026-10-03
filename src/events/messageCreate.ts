@@ -1,11 +1,11 @@
 import { Events, ChannelType, type Message } from 'discord.js';
 import logger from '../utils/logger.js';
-import N8NClient from '../utils/n8n-client.js';
+import N8NClient, { redactWebhookUrl } from '../utils/n8n-client.js';
 import RateLimiter from '../utils/rate-limiter.js';
 import { hasPermission } from '../utils/permissions.js';
 import * as aiModeration from '../utils/ai-moderation.js';
 import configManager from '../config/config.js';
-import { getTemplate } from '../config/response-templates.js';
+import { t } from '../utils/i18n.js';
 import { splitMessage } from '../utils/message-splitter.js';
 import conversationRepo from '../db/repositories/conversation-repository.js';
 import analyticsRepo from '../db/repositories/analytics-repository.js';
@@ -98,11 +98,16 @@ const event: BotEvent = {
     if (!botUser) return;
     const botMention = `<@${botUser.id}>`;
     const botNicknameMention = `<@!${botUser.id}>`;
+    // The bot's own role carries the bot's name and Discord's mention
+    // autocomplete lists it next to the bot user, so members pick it by mistake.
+    const botRoleId = message.guild?.members.me?.roles.botRole?.id;
+    const botRoleMention = botRoleId ? `<@&${botRoleId}>` : null;
 
     // Handle bot mentions in public channels
     if (
       message.content.includes(botMention) ||
-      message.content.includes(botNicknameMention)
+      message.content.includes(botNicknameMention) ||
+      (botRoleMention !== null && message.content.includes(botRoleMention))
     ) {
       if (message.channel.type !== ChannelType.DM) {
         try {
@@ -159,7 +164,7 @@ const event: BotEvent = {
         const rateLimit = await rateLimiter.checkLimit(message.author.id);
         if (!rateLimit.allowed) {
           await message.reply({
-            content: `⏳ Przekroczono limit wiadomości. Poczekaj ${rateLimit.retryAfter} sekund przed wysłaniem kolejnej wiadomości.`,
+            content: t('assistant.rateLimited', { count: rateLimit.retryAfter ?? 0 }),
           });
           logger.warn('Rate limit exceeded', {
             userId: message.author.id,
@@ -171,7 +176,7 @@ const event: BotEvent = {
         // Validate message length
         if (message.content.length > MAX_MESSAGE_LENGTH) {
           await message.reply({
-            content: `❌ Wiadomość za długa. Maksymalna długość to ${MAX_MESSAGE_LENGTH} znaków.`,
+            content: t('assistant.tooLong', { count: MAX_MESSAGE_LENGTH }),
           });
           logger.warn('Message too long', {
             userId: message.author.id,
@@ -185,7 +190,7 @@ const event: BotEvent = {
 
         if (!sanitizedContent) {
           await message.reply({
-            content: '❌ Otrzymano pustą wiadomość.',
+            content: t('assistant.empty'),
           });
           return;
         }
@@ -201,7 +206,7 @@ const event: BotEvent = {
         const typedCommand = slashMatch?.[1].toLowerCase();
         if (typedCommand && message.client.commands.has(typedCommand)) {
           await message.reply({
-            content: `Aby użyć komendy \`/${typedCommand}\`, wybierz ją z menu komend Discorda (wpisz \`/\` i kliknij ją na liście) — wpisana ręcznie jako zwykła wiadomość nie zostanie wykonana.`,
+            content: t('assistant.useCommandMenu', { command: typedCommand }),
           });
           logger.info('Intercepted command-like DM text', {
             userId: message.author.id,
@@ -277,7 +282,7 @@ const event: BotEvent = {
             });
 
             await message.reply({
-              content: '❌ Błąd konfiguracji n8n workflow. Brak pola "response" w odpowiedzi. Sprawdź konfigurację workflow.',
+              content: t('assistant.errors.missingResponse'),
             });
             return;
           }
@@ -336,41 +341,41 @@ const event: BotEvent = {
           let errorMessage: string;
           const status = result.status;
 
-          if (!status) {
-            errorMessage = getTemplate('error', 'n8nDown');
+          // A timeout carries no status, so it has to be checked first.
+          if (result.error?.includes('timeout')) {
+            errorMessage = t('assistant.errors.timeout');
+            logger.error('❌ n8n timeout', {
+              userId: message.author.id,
+              error: result.error,
+            });
+          } else if (!status) {
+            errorMessage = t('assistant.errors.unavailable');
             logger.error('❌ n8n unreachable (network error)', {
               userId: message.author.id,
               error: result.error,
-              url: configManager.config.n8n.workflowUrl,
+              url: redactWebhookUrl(configManager.config.n8n.workflowUrl),
             });
           } else if (status === 404) {
-            errorMessage = getTemplate('error', 'notFound');
+            errorMessage = t('assistant.errors.notFound');
             logger.error('❌ n8n workflow not found (404)', {
               userId: message.author.id,
-              url: configManager.config.n8n.workflowUrl,
+              url: redactWebhookUrl(configManager.config.n8n.workflowUrl),
             });
           } else if (status === 401 || status === 403) {
-            errorMessage =
-              '🔒 Błąd uwierzytelnienia backendu. Sprawdź konfigurację klucza API.';
+            errorMessage = t('assistant.errors.auth');
             logger.error('❌ n8n authentication error', {
               userId: message.author.id,
               status,
             });
           } else if (status >= 500) {
-            errorMessage = getTemplate('error', 'n8nDown');
+            errorMessage = t('assistant.errors.unavailable');
             logger.error('❌ n8n server error', {
               userId: message.author.id,
               status,
               error: result.error,
             });
-          } else if (result.error?.includes('timeout')) {
-            errorMessage = getTemplate('error', 'timeout');
-            logger.error('❌ n8n timeout', {
-              userId: message.author.id,
-              error: result.error,
-            });
           } else {
-            errorMessage = getTemplate('error', 'processing');
+            errorMessage = t('assistant.errors.processing');
             logger.error('❌ n8n workflow error', {
               userId: message.author.id,
               status,
@@ -388,12 +393,12 @@ const event: BotEvent = {
         });
 
         // Determine appropriate error message
-        let errorMessage = getTemplate('error', 'generic');
+        let errorMessage = t('assistant.errors.generic');
 
         if ((error as NodeJS.ErrnoException).code === 'ECONNREFUSED') {
-          errorMessage = getTemplate('error', 'n8nDown');
+          errorMessage = t('assistant.errors.unavailable');
         } else if ((error as Error).message.includes('timeout')) {
-          errorMessage = getTemplate('error', 'timeout');
+          errorMessage = t('assistant.errors.timeout');
         }
 
         try {

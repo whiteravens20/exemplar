@@ -7,8 +7,10 @@ This document describes the PostgreSQL database integration for persistent stora
 The bot uses PostgreSQL for persistent storage of:
 - **Conversation history** (20 messages per user, 24H retention)
 - **Rate limits** (persistent across bot restarts)
-- **User warnings** (30D retention per warning)
+- **User warnings** (active for 30 days; kept afterwards, because the lifetime count drives the auto-ban)
 - **Usage analytics** (90D retention)
+- **Moderation event log** for the dashboard (90D retention)
+- **Reaction-role bindings**
 
 ## Architecture
 
@@ -18,6 +20,7 @@ The bot implements **soft fallback** behavior:
 - No service interruption for users
 - Database errors are logged but don't crash the bot
 - Health check endpoint shows database status
+- A database lost while the bot runs is used again as soon as it answers; a bot that started without one looks for it every 30 seconds and needs no restart
 
 ### Schema Design
 
@@ -28,14 +31,22 @@ The bot implements **soft fallback** behavior:
 - `warnings` - Moderation warnings with expiry
 - `message_stats` - Message analytics
 - `command_usage` - Command execution tracking
+- `ai_mod_active_mutes` - Mutes applied by the warning escalation
+- `moderation_logs` - Moderation event log shown on the dashboard
+- `reaction_roles` - Reaction-role bindings (message + emoji → role)
+- `schema_migrations` - Which migrations have run
+
+n8n creates one more table here, `n8n_chat_histories`, when its Postgres Chat
+Memory credential points at this database.
 
 #### SQL Functions
 - `cleanup_old_conversations()` - Removes messages older than 24H
-- `cleanup_expired_warnings()` - Removes expired warnings
+- `cleanup_expired_warnings()` - Removes expired warnings; for manual use, the cleanup job does not call it
 - `cleanup_old_analytics()` - Removes analytics older than 90D
+- `cleanup_old_moderation_logs(days)` - Removes dashboard log entries older than `days`
 - `get_user_context(discord_id, limit)` - Fetches conversation history
 - `get_or_create_user(discord_id, username)` - Upserts user records
-- `get_global_stats(days)` - Aggregated analytics
+- `get_global_stats(days)`, `get_user_stats(discord_id, days)` - Aggregated analytics
 
 ## Configuration
 
@@ -68,21 +79,25 @@ services:
   postgres:
     image: postgres:16-alpine
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - bot_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bot_user"]
+      test: ["CMD-SHELL", "pg_isready -U bot_user -d discord_bot"]
 ```
 
 ## Database Setup
 
 ### Initial Setup
 
+With Docker Compose, `docker compose up -d` starts PostgreSQL and the bot's
+container applies the pending migrations itself. To run them by hand against
+the Compose database:
+
 1. **Start PostgreSQL** (Docker Compose):
    ```bash
-   docker-compose up -d postgres
+   docker compose up -d postgres
    ```
 
-2. **Run migrations**:
+2. **Run migrations** (needs `npm install` and `npm run build` first):
    ```bash
    npm run migrate:up
    ```
@@ -101,7 +116,7 @@ services:
    GRANT ALL PRIVILEGES ON DATABASE discord_bot TO bot_user;
    ```
 
-2. **Run migrations**:
+2. **Run migrations** (needs `npm install` and `npm run build` first):
    ```bash
    npm run migrate:up
    ```
@@ -124,6 +139,10 @@ Located in `migrations/`:
 - `001_initial_schema.sql` - Core tables
 - `002_cleanup_functions.sql` - Maintenance functions
 - `003_analytics_schema.sql` - Analytics tables
+- `004_ai_mod_mutes.sql` - Timeouts applied by the warning escalation ladder
+- `005_dashboard_logs.sql` - Moderation event log for the dashboard
+- `006_reaction_roles.sql` - Reaction-role bindings
+- `007_atomic_get_or_create_user.sql` - `get_or_create_user()` safe under concurrent calls
 
 ### Creating New Migrations
 
@@ -137,8 +156,12 @@ Located in `migrations/`:
 
 Cleanup job runs **every hour** and removes:
 - Conversations older than **24 hours**
-- Warnings past their **30-day expiry**
 - Analytics older than **90 days**
+- Dashboard log entries older than **90 days**
+
+Warnings are not removed. A warning stops counting as active after **30 days**,
+but stays in the table: the number of warnings a user has ever received
+decides the auto-ban.
 
 ### Manual Cleanup
 
@@ -158,8 +181,9 @@ Cleanup job runs **every hour** and removes:
 
 **Note:**
 - All commands are slash commands and run in DMs with the bot.
-- `/flushmemory` clears both bot conversations table AND n8n AI Agent memory (`n8n_chat_histories`)
-- `/flushdb` preserves users and warnings but clears all conversations, rate limits, stats, and n8n memory
+- `/flushmemory` clears the user's rows in the bot's conversations table and, when n8n keeps its memory in this database, in `n8n_chat_histories`
+- `/flushdb` preserves users and warnings but clears all conversations, rate limits, stats, and that n8n memory
+- With n8n's memory in another database both commands clear the bot's side only
 
 ## Repository Pattern
 
@@ -270,8 +294,8 @@ AI Agent Node → Memory Settings:
 ```bash
 Host: localhost (or postgres in docker-compose)
 Port: 5432
-Database: exemplar
-User: dbot_user
+Database: discord_bot
+User: bot_user
 Password: [from .env]
 ```
 
@@ -386,6 +410,9 @@ Response:
 }
 ```
 
+`/health` answers 200 when the database answers a query and 503 otherwise.
+`/ready` does the same with a shorter body; `/alive` always answers 200.
+
 ### Kubernetes Probes
 
 ```yaml
@@ -410,19 +437,19 @@ readinessProbe:
 
 ```bash
 # Full backup
-docker-compose exec postgres pg_dump -U bot_user discord_bot > backup.sql
+docker compose exec postgres pg_dump -U bot_user discord_bot > backup.sql
 
 # Schema only
-docker-compose exec postgres pg_dump -U bot_user --schema-only discord_bot > schema.sql
+docker compose exec postgres pg_dump -U bot_user --schema-only discord_bot > schema.sql
 
 # Data only
-docker-compose exec postgres pg_dump -U bot_user --data-only discord_bot > data.sql
+docker compose exec postgres pg_dump -U bot_user --data-only discord_bot > data.sql
 ```
 
 ### Restore
 
 ```bash
-docker-compose exec -T postgres psql -U bot_user discord_bot < backup.sql
+docker compose exec -T postgres psql -U bot_user discord_bot < backup.sql
 ```
 
 ### Automated Backups
@@ -440,13 +467,13 @@ Consider setting up:
 **Problem**: `Database connection unavailable`
 ```bash
 # Check if PostgreSQL is running
-docker-compose ps postgres
+docker compose ps postgres
 
 # Check logs
-docker-compose logs postgres
+docker compose logs postgres
 
 # Test connection
-docker-compose exec postgres psql -U bot_user -d discord_bot -c 'SELECT 1'
+docker compose exec postgres psql -U bot_user -d discord_bot -c 'SELECT 1'
 ```
 
 **Problem**: Bot starts but database degraded
@@ -509,8 +536,8 @@ ANALYZE message_stats;
 
 5. **Regular updates**
    ```bash
-   docker-compose pull postgres
-   docker-compose up -d postgres
+   docker compose pull postgres
+   docker compose up -d postgres
    ```
 
 6. **Audit logging**
@@ -535,20 +562,14 @@ Creates:
 ### Unit Tests
 
 ```bash
-npm test:db  # (to be implemented)
+npm test
 ```
 
-### Integration Tests
+The unit tests mock the database and need no PostgreSQL. To try the migrations
+on a scratch database, point `DB_NAME` at it:
 
 ```bash
-# Start test database
-docker-compose -f docker-compose.test.yml up -d
-
-# Run migrations
 DB_NAME=discord_bot_test npm run migrate:up
-
-# Run tests
-npm test
 ```
 
 ## Performance Optimization
@@ -578,7 +599,7 @@ Configured limits:
 ## FAQ
 
 **Q: What happens if database goes down during operation?**
-A: Bot continues with in-memory fallbacks. Data written during downtime is lost but service continues.
+A: Bot continues with in-memory fallbacks. Data written during downtime is lost but service continues, and the bot uses the database again once it is back.
 
 **Q: Can I use a different database?**
 A: Currently PostgreSQL only. Adapting to MySQL/MongoDB would require repository layer changes.
@@ -587,7 +608,7 @@ A: Currently PostgreSQL only. Adapting to MySQL/MongoDB would require repository
 A: Admin command `/flushdb confirm:true` or manually `TRUNCATE` tables.
 
 **Q: Can multiple bot instances share one database?**
-A: Yes! The database is designed for this. Rate limiting uses transactions for consistency.
+A: Give each instance its own database. Warnings, conversations and rate limits are stored per user, not per server, so two instances serving different servers would share them.
 
 **Q: How much storage is needed?**
 A: Approximately:

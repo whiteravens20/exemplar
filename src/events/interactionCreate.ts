@@ -1,11 +1,38 @@
-import { Events, MessageFlags, type ChatInputCommandInteraction } from 'discord.js';
+import {
+  Events,
+  MessageFlags,
+  type AutocompleteInteraction,
+  type Interaction,
+} from 'discord.js';
 import logger from '../utils/logger.js';
 import configManager from '../config/config.js';
+import { t } from '../utils/i18n.js';
 import type { BotEvent, SlashCommand } from '../types/discord.js';
+
+/** Suggestions for options declared with `setAutocomplete(true)`; DMs only, like the commands. */
+async function autocomplete(interaction: AutocompleteInteraction): Promise<void> {
+  const command = interaction.client.commands.get(interaction.commandName);
+  try {
+    if (command?.autocomplete && !interaction.inGuild()) {
+      await command.autocomplete(interaction);
+    } else {
+      await interaction.respond([]);
+    }
+  } catch (error) {
+    logger.warn('Autocomplete failed', {
+      command: interaction.commandName,
+      error: (error as Error).message,
+    });
+  }
+}
 
 const event: BotEvent = {
   name: Events.InteractionCreate,
-  async execute(interaction: ChatInputCommandInteraction) {
+  async execute(interaction: Interaction) {
+    if (interaction.isAutocomplete()) {
+      await autocomplete(interaction);
+      return;
+    }
     if (!interaction.isChatInputCommand()) return;
 
     const command = interaction.client.commands.get(
@@ -44,7 +71,7 @@ const event: BotEvent = {
         error: (error as Error).message,
       });
 
-      const errorContent = '❌ Wystąpił błąd podczas wykonywania tej komendy!';
+      const errorContent = t('errors.commandFailed');
 
       if (interaction.replied || interaction.deferred) {
         await interaction.followUp({

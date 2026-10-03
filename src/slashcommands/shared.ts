@@ -3,6 +3,7 @@ import {
   ApplicationIntegrationType,
   type SlashCommandBuilder,
   type SlashCommandOptionsOnlyBuilder,
+  type SlashCommandSubcommandsOnlyBuilder,
   type ChatInputCommandInteraction,
   type Guild,
   type GuildMember,
@@ -10,14 +11,19 @@ import {
 } from 'discord.js';
 import configManager from '../config/config.js';
 import { hasPermission, isModeratorOrAdmin } from '../utils/permissions.js';
+import { t } from '../utils/i18n.js';
 import {
   getConfiguredGuild,
   resolveInvokingMember,
   checkBasePermissions,
   type Actor,
 } from '../utils/moderation-actions.js';
+import type { CommandContext } from '../types/discord.js';
 
-type AnyCommandBuilder = SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
+type AnyCommandBuilder =
+  | SlashCommandBuilder
+  | SlashCommandOptionsOnlyBuilder
+  | SlashCommandSubcommandsOnlyBuilder;
 
 /**
  * Declare command availability explicitly per the modern Discord apps model:
@@ -45,18 +51,15 @@ type GuildInvoker =
 
 /** Resolve the configured guild and the invoking user as a member of it. */
 export async function resolveGuildInvoker(
-  interaction: ChatInputCommandInteraction
+  interaction: CommandContext
 ): Promise<GuildInvoker> {
   const guild = getConfiguredGuild(interaction.client);
   if (!guild) {
-    return { ok: false, error: '❌ Skonfigurowany serwer jest obecnie niedostępny.' };
+    return { ok: false, error: t('errors.guildUnavailable') };
   }
   const invoker = await resolveInvokingMember(guild, interaction.user.id);
   if (!invoker) {
-    return {
-      ok: false,
-      error: '❌ Nie jesteś członkiem skonfigurowanego serwera.',
-    };
+    return { ok: false, error: t('errors.notAMember') };
   }
   return { ok: true, guild, invoker };
 }
@@ -88,12 +91,12 @@ export async function resolveModerationContext(
     .fetch(targetUser.id)
     .catch(() => null);
   if (!targetMember) {
-    return { ok: false, error: '❌ Ten użytkownik nie jest członkiem serwera.' };
+    return { ok: false, error: t('errors.targetNotAMember') };
   }
 
   const permCheck = checkBasePermissions(base.invoker, targetMember, requiredPerm);
   if (permCheck) {
-    return { ok: false, error: permCheck.content ?? '❌ Brak uprawnień.' };
+    return { ok: false, error: permCheck.content ?? t('errors.missingPermission') };
   }
 
   return {
@@ -118,7 +121,7 @@ export interface DmAccess {
 
 /** Resolve the invoking user's access level for DM utility/admin commands. */
 export async function getDmAccess(
-  interaction: ChatInputCommandInteraction
+  interaction: CommandContext
 ): Promise<DmAccess> {
   const guild = getConfiguredGuild(interaction.client);
   const member = guild

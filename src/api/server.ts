@@ -66,12 +66,18 @@ class HealthCheckServer {
       res.status(200).json({ alive: true });
     });
 
-    this.app.get('/ready', (_req: Request, res: Response) => {
-      const ready = db.isAvailable();
-      res.status(ready ? 200 : 503).json({
-        ready,
-        database: db.isAvailable(),
-      });
+    this.app.get('/ready', async (_req: Request, res: Response) => {
+      // A database lost while the bot runs still counts as available to the
+      // connection; only a query shows whether it answers.
+      let ready = db.isAvailable();
+      if (ready) {
+        try {
+          await db.query('SELECT 1', []);
+        } catch {
+          ready = false;
+        }
+      }
+      res.status(ready ? 200 : 503).json({ ready, database: ready });
     });
   }
 

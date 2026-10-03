@@ -186,6 +186,3 @@ Let's make this community a place where:
 ---
 
 **Questions about this Code of Conduct?** Feel free to reach out to the maintainers! 💬
-
-**Last Updated:** February 12, 2026  
-**Version:** 1.0.0

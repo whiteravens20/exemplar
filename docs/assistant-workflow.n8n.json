@@ -1,0 +1,386 @@
+{
+  "name": "Exemplar Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "exemplar",
+        "responseMode": "responseNode",
+        "options": {},
+        "authentication": "headerAuth"
+      },
+      "id": "1e5ec11f-a033-4474-8d30-9cd18b765d39",
+      "name": "Discord Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        -96
+      ],
+      "webhookId": "exemplar-assistant",
+      "notes": "Receives DMs and /code requests from the bot. Header Auth: X-API-Key must match N8N_API_KEY. Production URL goes into N8N_WORKFLOW_URL.",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_HEADER_AUTH_CRED_ID",
+          "name": "X-API-Key (N8N_API_KEY)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.mode }}",
+              "value2": "code"
+            }
+          ]
+        }
+      },
+      "id": "c9af28f8-c7da-4057-a933-9e6154f0d1d4",
+      "name": "Check Mode",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -848,
+        -96
+      ],
+      "notes": "mode === \"code\" (the /code command) goes to the Code agent, everything else to General."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"response\": $json.response } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "2f178c62-a5f2-4cdf-b577-9a25b0f9a195",
+      "name": "Send Response to Discord",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -112
+      ],
+      "notes": "Returns { response } — the field the bot reads."
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5-coder:7b-instruct",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        -128
+      ],
+      "id": "a78d583f-16b6-450e-99ad-bcd3e8e0c534",
+      "name": "Qwen2.5 Coder 7B",
+      "credentials": {
+        "ollamaApi": {
+          "id": "REPLACE_WITH_YOUR_OLLAMA_CRED_ID",
+          "name": "Ollama account"
+        }
+      },
+      "notes": "Coding model. Any tool-less chat model works; swap for another provider by wiring its chat-model node into Code."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "You are an experienced software engineer. Solve the task in a readable, efficient way.\nWrite clean, well-commented code, explain the key decisions, and follow established best practices.\nReply in the language the user wrote in."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -480,
+        -320
+      ],
+      "id": "3c1d3fcc-ad3e-4339-ba80-6df4f3ea5909",
+      "name": "Code",
+      "notes": "Coding agent for /code. Shares the Postgres memory with General."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message }}",
+        "options": {
+          "systemMessage": "You are a helpful assistant on Discord.\nKeep answers short and to the point, and reply in the language the user wrote in.\nUse the web_search tool when the answer may be out of date or needs checking against current information, and summarise what you found before answering.\nUse the wikipedia tool for reliable encyclopedic knowledge: definitions, history, and general facts about people, places, events and concepts.\nSummarise the key points instead of quoting long passages."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -480,
+        80
+      ],
+      "id": "5cdc91a0-8b35-4ee9-b74f-f968c46f7bc5",
+      "name": "General",
+      "notes": "Chat agent for plain DMs, with web_search and wikipedia tools."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Flatten the bot payload. n8n's Webhook node nests the POST body under\n// `body`; fall back to the root for manual test executions.\nconst b = $input.first().json.body ?? $input.first().json;\n\nreturn [\n  {\n    json: {\n      userId: b.userId,\n      userName: b.userName,\n      message: b.message,\n      serverId: b.serverId,\n      mode: b.mode || 'chat',\n      timestamp: b.timestamp,\n      platform: b.platform,\n    },\n  },\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1040,
+        -96
+      ],
+      "id": "2b4da4dc-efd9-45ad-aacd-b4d3d877be39",
+      "name": "Extract payload",
+      "notes": "Unwrap the webhook body and default mode to chat."
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json.output;\n\nreturn [{\n  json: {\n    response: response\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -96,
+        -112
+      ],
+      "id": "d13dcadc-4e6f-4543-8e64-6571002ba726",
+      "name": "ResponseMerger",
+      "notes": "Maps the agent's output to { response }."
+    },
+    {
+      "parameters": {
+        "model": "ministral-3:8b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        272
+      ],
+      "id": "8961988b-e6a9-4d9a-ba3a-870b8610492e",
+      "name": "Ministral3 8B",
+      "credentials": {
+        "ollamaApi": {
+          "id": "REPLACE_WITH_YOUR_OLLAMA_CRED_ID",
+          "name": "Ollama account"
+        }
+      },
+      "notes": "Chat model. Must support tool calling, since General uses web_search and wikipedia."
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.userId }}",
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        -256,
+        272
+      ],
+      "id": "c455af42-1097-4d1e-b13e-161d080d629b",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "REPLACE_WITH_YOUR_POSTGRES_CRED_ID",
+          "name": "Exemplar bot database"
+        }
+      },
+      "notes": "Point this at the bot's own database (DB_* in .env). The bot's /flushmemory and /flushdb clear n8n_chat_histories there."
+    },
+    {
+      "parameters": {
+        "toolDescription": "Search the web (SearXNG). Use for current events, prices, releases, or anything that may have changed recently. Input: a short search query. Returns the top results with title, url and snippet.",
+        "url": "https://searxng.example.com/search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $fromAI('query', 'Short web search query, in the language most likely to find good results', 'string') }}"
+            },
+            {
+              "name": "format",
+              "value": "json"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000
+        },
+        "optimizeResponse": true,
+        "responseType": "json",
+        "dataField": "results",
+        "fieldsToInclude": "selected",
+        "fields": "title,url,content"
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.3,
+      "position": [
+        -112,
+        272
+      ],
+      "id": "951b2fb0-5bcd-41e1-9352-022ff4d66f40",
+      "name": "web_search",
+      "notes": "Your SearXNG instance. It must allow the json format and must not rate-limit n8n: add the IP n8n connects from to pass_ip in limiter.toml, or run it with the limiter off."
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.toolWikipedia",
+      "typeVersion": 1,
+      "position": [
+        0,
+        272
+      ],
+      "id": "6e326eb4-0036-4833-927c-1faf54eab5ae",
+      "name": "wikipedia",
+      "notes": "Wikipedia lookup tool for General. No credentials needed."
+    }
+  ],
+  "connections": {
+    "Discord Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qwen2.5 Coder 7B": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Code",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Mode": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "General",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "ResponseMerger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "General": {
+      "main": [
+        [
+          {
+            "node": "ResponseMerger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract payload": {
+      "main": [
+        [
+          {
+            "node": "Check Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ResponseMerger": {
+      "main": [
+        [
+          {
+            "node": "Send Response to Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ministral3 8B": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "General",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "General",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Code",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "web_search": {
+      "ai_tool": [
+        [
+          {
+            "node": "General",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "wikipedia": {
+      "ai_tool": [
+        [
+          {
+            "node": "General",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "tags": []
+}

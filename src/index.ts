@@ -16,6 +16,7 @@ import HealthCheckServer from './api/server.js';
 import DashboardServer from './api/dashboard/server.js';
 import cleanupJob from './jobs/database-cleanup.js';
 import muteReconciliationJob from './jobs/mute-reconciliation.js';
+import reactionRoles from './utils/reaction-role-manager.js';
 import type { SlashCommand } from './types/discord.js';
 
 // Import events
@@ -23,6 +24,10 @@ import errorEvent from './events/error.js';
 import readyEvent from './events/ready.js';
 import interactionCreateEvent from './events/interactionCreate.js';
 import messageCreateEvent from './events/messageCreate.js';
+import messageDeleteEvent from './events/messageDelete.js';
+import messageReactionAddEvent from './events/messageReactionAdd.js';
+import messageReactionRemoveEvent from './events/messageReactionRemove.js';
+import guildRoleDeleteEvent from './events/guildRoleDelete.js';
 
 // Import slash commands
 import banCommand from './slashcommands/ban.js';
@@ -38,6 +43,7 @@ import flushmemoryCommand from './slashcommands/flushmemory.js';
 import warningsCommand from './slashcommands/warnings.js';
 import statsCommand from './slashcommands/stats.js';
 import flushdbCommand from './slashcommands/flushdb.js';
+import reactionroleCommand from './slashcommands/reactionrole.js';
 
 // Validate configuration
 if (!configManager.validateRequiredConfig()) {
@@ -54,10 +60,13 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildModeration,
+    GatewayIntentBits.GuildMessageReactions,
   ],
   partials: [
     Partials.Channel, // Required for DM support
     Partials.Message, // Required for uncached messages
+    Partials.Reaction, // Reaction roles on messages sent before the last restart
+    Partials.User,
   ],
 });
 
@@ -78,6 +87,7 @@ const slashCommands: SlashCommand[] = [
   warningsCommand,
   statsCommand,
   flushdbCommand,
+  reactionroleCommand,
 ];
 
 const commandsJson: unknown[] = [];
@@ -88,7 +98,16 @@ for (const command of slashCommands) {
 }
 
 // Register events statically
-const events = [errorEvent, readyEvent, interactionCreateEvent, messageCreateEvent];
+const events = [
+  errorEvent,
+  readyEvent,
+  interactionCreateEvent,
+  messageCreateEvent,
+  messageDeleteEvent,
+  messageReactionAddEvent,
+  messageReactionRemoveEvent,
+  guildRoleDeleteEvent,
+];
 
 for (const event of events) {
   if (event.once) {
@@ -147,6 +166,18 @@ async function start(): Promise<void> {
     // applied by the escalation ladder before the previous shutdown).
     client.once(Events.ClientReady, () => {
       muteReconciliationJob.start(client);
+
+      // Reaction roles (issue #24): load the bindings and drop those whose
+      // message or role was deleted while the bot was offline.
+      const loadReactionRoles = (): void => {
+        reactionRoles.load(client).catch((error: Error) => {
+          logger.error('Failed to load reaction roles', { error: error.message });
+        });
+      };
+      loadReactionRoles();
+      // The bindings are read once; after a start without a database they would
+      // stay empty until the next restart.
+      db.onReconnect(loadReactionRoles);
 
       // Start the logging dashboard (issue #18) once the client is ready — it
       // reuses the client for RBAC and live ban/mute lookups. Opt-in.

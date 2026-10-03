@@ -4,7 +4,7 @@ services:
     container_name: discord-bot-db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_DB: ${DB_NAME:-discord_bot}
       POSTGRES_USER: ${DB_USER:-bot_user}
@@ -50,9 +50,12 @@ services:
     environment:
       NODE_ENV: production
       DB_HOST: postgres
+      # The container always listens on 3000; the host side of the mapping below is what changes.
+      HEALTH_CHECK_PORT: 3000
     volumes:
-      # Optional: Mount logs directory to persist logs
-      - ./logs:/app/logs
+      # Log files. A named volume, because the bot does not run as root and
+      # could not write to a ./logs directory that Docker creates as root.
+      - bot_logs:/app/logs
     networks:
       - bot-network
     depends_on:
@@ -80,8 +83,6 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
-    cap_add:
-      - NET_BIND_SERVICE
     read_only: true
     tmpfs:
       - /tmp:noexec,nosuid,size=64M
@@ -99,3 +100,4 @@ networks:
 
 volumes:
   bot_postgres_data:
+  bot_logs:

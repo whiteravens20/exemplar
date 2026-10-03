@@ -1,21 +1,21 @@
 {
   "name": "discord-ai-bot",
-  "version": "3.1.2",
+  "version": "3.2.0",
   "description": "Discord Bot with n8n AI Assistant integration",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc && node scripts/copy-dashboard-assets.mjs",
+    "build": "tsc && node scripts/copy-assets.mjs",
     "start": "node dist/index.js",
-    "dev": "nodemon --watch src --ext ts,html,css,js --exec \"npx tsc && node scripts/copy-dashboard-assets.mjs && node dist/index.js\"",
+    "dev": "node --watch-path=src --watch-preserve-output scripts/dev.mjs",
     "watch": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:all": "vitest run",
     "test:watch": "vitest",
-    "deploy-commands": "node dist/deploy-commands.js",
     "release-package": "bash scripts/create-release-package.sh",
-    "lint": "eslint src --fix",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
     "migrate:up": "node dist/scripts/migrate.js up",
     "migrate:down": "node dist/scripts/migrate.js down",
     "db:seed": "bash scripts/seed-test-data.sh"
@@ -30,34 +30,33 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "axios": "1.19.0",
+    "axios": "1.20.0",
     "discord.js": "14.27.0",
-    "dotenv": "17.4.2",
+    "dotenv": "18.0.2",
     "express": "5.2.1",
-    "express-rate-limit": "8.6.2",
+    "express-rate-limit": "8.7.0",
+    "i18next": "26.4.2",
     "pg": "8.23.0",
-    "undici": "8.10.0",
     "winston": "3.19.0"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@types/express": "5.0.6",
-    "@types/node": "26.2.0",
-    "@types/pg": "8.21.0",
-    "eslint": "10.8.1",
-    "globals": "17.9.0",
-    "nodemon": "3.1.14",
+    "@types/node": "26.6.2",
+    "@types/pg": "8.23.1",
+    "eslint": "10.11.0",
+    "globals": "17.12.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.66.0",
-    "vitest": "4.1.10"
+    "typescript-eslint": "8.70.0",
+    "vitest": "5.0.1"
   },
   "overrides": {
     "minimatch": "10.2.6",
     "follow-redirects": "1.16.0",
     "postcss": "8.5.26",
-    "ip-address": "10.4.0",
+    "ip-address": "10.7.1",
     "discord.js": {
-      "undici": "6.28.0"
+      "undici": "6.28.1"
     }
   },
   "engines": {

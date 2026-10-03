@@ -23,6 +23,11 @@ export interface N8NWebhookPayload {
    * generic community baseline in its system prompt.
    */
   serverRules?: string;
+  /**
+   * Moderation-only: the bot's language code (BOT_LANGUAGE, e.g. `en`, `pl`),
+   * so the verdict reason users and moderators read comes in that language.
+   */
+  language?: string;
   conversationContext?: Array<{
     userMessage: string;
     aiResponse: string;
@@ -48,12 +53,6 @@ export interface N8NClientOptions {
   maxRetries?: number;
   retryDelay?: number;
   timeout?: number;
-}
-
-export interface N8NHealthCheckResult {
-  healthy: boolean;
-  status?: number;
-  error?: string;
 }
 
 export type ConversationContextRow = Pick<UserContext, 'user_message' | 'ai_response'> & {

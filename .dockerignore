@@ -3,14 +3,8 @@ npm-debug.log
 .git
 .gitignore
 README.md
-QUICKSTART.md
-SETUP.md
-NEXT_STEPS.md
-N8N_INTEGRATION.md
-PROJECT_STRUCTURE.md
-FAQ.md
+docs
 CONTRIBUTING.md
-CHANGELOG.md
 LICENSE
 .env
 .env.local
@@ -22,5 +16,3 @@ logs
 .vscode
 .idea
 coverage
-test-config.js
-n8n-workflow-example.json
