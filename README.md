@@ -5,6 +5,7 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 [![Tests](https://github.com/whiteravens20/exemplar/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/test.yml)
 [![CodeQL](https://github.com/whiteravens20/exemplar/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/whiteravens20/exemplar/actions/workflows/codeql.yml)
 [![Release](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml/badge.svg)](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/whiteravens20/exemplar/badge)](https://scorecard.dev/viewer/?uri=github.com/whiteravens20/exemplar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
 
