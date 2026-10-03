@@ -105,3 +105,36 @@ jobs:
         with:
           sarif_file: trivy-fs.sarif
           category: trivy-fs
+
+  trivy-docker:
+    name: Trivy Docker image scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build Docker image
+        run: docker build -t exemplar:ci .
+
+      - name: Run Trivy on Docker image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: exemplar:ci
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-docker.sarif
+          trivyignores: .trivyignore
+          limit-severities-for-sarif: true
+          exit-code: '1'
+
+      - name: Upload Trivy SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-docker.sarif
+          category: trivy-docker
