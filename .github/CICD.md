@@ -45,7 +45,7 @@ To read the full protection config, the audit needs a fine-grained PAT with `Adm
    git push origin vX.Y.Z
    ```
 
-`release.yml` then publishes `ghcr.io/whiteravens20/exemplar` with the tags `X.Y.Z`, `X.Y`, `X` and `main`, and creates the GitHub Release. The release body is the tag message plus notes generated from PR titles (grouped by `.github/release.yml`), with a source tarball attached. A tag that does not point at a commit on `main` is ignored.
+`release.yml` then publishes `ghcr.io/whiteravens20/exemplar` with the tags `X.Y.Z`, `X.Y`, `X`, `main` and `latest`, an alias of `main`, and creates the GitHub Release. The release body is the tag message plus notes generated from PR titles (grouped by `.github/release.yml`), with a source tarball attached. A tag that does not point at a commit on `main` is ignored.
 
 The image scan, here and in `security.yml`, fails on unacknowledged HIGH/CRITICAL CVEs; acknowledge one by adding its ID with a justification to `.trivyignore`.
 
