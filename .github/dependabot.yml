@@ -76,12 +76,21 @@ updates:
 
   # Monitor Docker base images
   - package-ecosystem: "docker"
-    # Let a newly published version settle for a week before proposing it. A
-    # release can be yanked or a tag repointed in the hours after it lands, and
-    # none of these bumps is urgent. Dependabot security updates are exempt
-    # from cooldown and still open the moment an advisory lands.
+    # The Dockerfile pins node by version and digest. A new minor or patch
+    # moves the two together; a rebuild of the same version moves the digest
+    # alone.
+    #
+    # Let a newly published version settle for a week before proposing it, a
+    # rebuilt one as well. A release can be yanked or a tag repointed in the
+    # hours after it lands, and none of these bumps is urgent.
     cooldown:
       default-days: 7
+    # A new major of Node is a change to the project, made by hand together
+    # with `node-version` in the workflows.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
     directory: "/"
     target-branch: "dev"
     schedule:
