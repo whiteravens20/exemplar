@@ -10,12 +10,10 @@ on:
       - '.gitignore'
       - '.github/workflows/**'
       - '!.github/workflows/test.yml'
+  # Every pull request: `test` is a required check, and one that never reports
+  # leaves a documentation-only pull request unmergeable.
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE'
-      - '.gitignore'
+    branches: [ main, dev ]
 
 permissions: {}
 
