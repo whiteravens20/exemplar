@@ -44,17 +44,20 @@ updates:
 
   # Monitor GitHub Actions
   - package-ecosystem: "github-actions"
+    # Actions are pinned to commit SHAs; Dependabot moves the SHA and the
+    # version comment beside it together.
+    #
     # Let a newly published version settle for a week before proposing it. A
     # release can be yanked or a tag repointed in the hours after it lands, and
-    # none of these bumps is urgent. Dependabot security updates are exempt
-    # from cooldown and still open the moment an advisory lands.
+    # none of these bumps is urgent. A pinned action gets no Dependabot alert,
+    # so the "Actions audit" job in security.yml watches the advisory database
+    # instead.
     cooldown:
       default-days: 7
     directory: "/"
     target-branch: "dev"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "06:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
@@ -64,6 +67,12 @@ updates:
     labels:
       - "github-actions"
       - "dependencies"
+    groups:
+      # Minor and patch updates in one pull request; a major comes on its own
+      actions-non-breaking:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Monitor Docker base images
   - package-ecosystem: "docker"
