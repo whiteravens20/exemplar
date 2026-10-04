@@ -65,8 +65,7 @@ Contributions we will **not accept**:
 
 | Tool | Version |
 |---|---|
-| Node.js | ≥ 22.0.0 |
-| npm | ≥ 11.12.1 |
+| Node.js and npm | the versions `engines` in [`package.json`](package.json) asks for |
 | PostgreSQL | ≥ 14 — or use the one in `docker-compose.yml` |
 | A Discord application with a bot token | for a test server of your own |
 | n8n | an instance with the workflows from `docs/` imported |
