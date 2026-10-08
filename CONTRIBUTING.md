@@ -288,6 +288,10 @@ if (member.permissions.has('ADMINISTRATOR')) {
 const delay = Math.pow(2, attempt) * 1000;
 ```
 
+### 🤖 AI-Assisted Code
+
+Most of this project is written with AI coding tools, as the [README](README.md#how-the-code-is-written-and-checked) describes, and contributions may be too. Do not submit AI output that you cannot explain and defend in review: read it, test it and take responsibility for it.
+
 ## 🔨 Creating New Features
 
 ### 🎮 Adding a Slash Command
