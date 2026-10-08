@@ -170,6 +170,32 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code
 
 Please report vulnerabilities privately as described in [SECURITY.md](SECURITY.md), not in public issues.
 
+## How the code is written and checked
+
+Exemplar is built by one maintainer using AI coding tools. The tools write most of the code, tests and documentation; the maintainer decides what gets built and is responsible for everything that is merged. There is no second human reviewer, so the project relies on checks that anyone can inspect.
+
+**What a change goes through**
+
+- Every pull request runs lint, the test suite, type checking and a build, and is merged only after they pass ([test.yml](.github/workflows/test.yml)). The parts that act on your server have tests of their own: moderation actions, permission and role-hierarchy checks, the dashboard's sign-in, sessions and access control, and the rate limiter.
+- CodeQL, `npm audit` and Trivy scans of the repository and of the image run on pull requests and again every week ([codeql.yml](.github/workflows/codeql.yml), [security.yml](.github/workflows/security.yml)).
+- Pull requests other than automated dependency updates also get an automated review by an AI reviewer that looks for security, correctness and supply-chain problems. It is an extra check, not one of the gates.
+- Commits are signed, and the [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/whiteravens20/exemplar) results are public.
+
+**What the maintainer decided and read**
+
+- AI moderation checks every eligible message, and a late verdict is better than none: messages wait their turn, and a failed check is retried instead of dropped.
+- A verdict from the moderation workflow is carried out through the same action layer as a moderator's slash command, and the feature has a shadow mode that only reports what it would do, meant to be run first.
+- Changes to the code that acts on a server or guards access are read line by line by the maintainer: `src/utils/moderation-actions.ts`, `src/utils/permissions.ts` and the dashboard's sign-in, session and access-control modules in `src/api/dashboard/`.
+
+**Before a release**
+
+- A release is cut only from `main`, and nothing reaches `main` without passing every check above. That rule binds the maintainer too.
+- The release candidate is checked again from a clean build, and the results go into the release pull request ([#153](https://github.com/whiteravens20/exemplar/pull/153) for v3.2.0).
+- New functionality is run live before it ships: the bot, its database and its n8n workflows against a test Discord server, in Polish and in English, including what happens when the database or a workflow stops answering. The run before v3.2.0 turned up the defects fixed in [#150](https://github.com/whiteravens20/exemplar/pull/150).
+- Each release image and tarball carries a Sigstore build provenance that `gh attestation verify` checks.
+
+If something looks wrong, open an issue. For a vulnerability, follow [SECURITY.md](SECURITY.md).
+
 ## License
 
 [MIT](LICENSE)
