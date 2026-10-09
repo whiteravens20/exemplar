@@ -254,9 +254,7 @@ Exemplar acts on people and handles their messages. The following rules apply st
 
 ### AI-assisted code
 
-- AI-generated code **must be reviewed line by line** before submission.
-- Files that decide who may do what (`utils/moderation-actions.ts`, `api/dashboard/rbac.ts`, `api/dashboard/session.ts`) must be reviewed with extra care.
-- Do not submit AI output that you cannot explain and defend in a PR review. Tests are the primary guard against code that only looks right.
+Most of this project is written with AI coding tools, as the [README](README.md#how-the-code-is-written-and-checked) describes, and contributions may be too. Do not submit AI output that you cannot explain and defend in review: read it, test it and take responsibility for it.
 
 ### Pull request security checklist
 
