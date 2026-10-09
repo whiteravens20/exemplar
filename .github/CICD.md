@@ -59,7 +59,7 @@ When adding an action, pin it the same way and run the script before pushing.
 
 ## Pinned base image
 
-The `Dockerfile` pins its base image by version and digest: `node:22.23.3-alpine@sha256:…`. Docker pulls the image by the digest; the version beside it says what the digest is. Dependabot moves both when a new minor or patch of Node 22 is out, and the digest alone when the same version is rebuilt, each after the same seven days as any other update. A new major of Node is not proposed: it is changed by hand, together with `node-version` in the workflows.
+The `Dockerfile` pins its base image by version and digest: `node:24.21.0-alpine@sha256:…`. Docker pulls the image by the digest; the version beside it says what the digest is. Dependabot moves both when a new minor or patch of Node 24 is out, and the digest alone when the same version is rebuilt, each after the same seven days as any other update. A new major of Node is not proposed: it is changed by hand, together with `node-version` in the workflows.
 
 ## Dependency audit
 
