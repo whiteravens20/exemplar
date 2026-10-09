@@ -1,427 +1,95 @@
-# 🔒 Security Policy
+# Security — Exemplar
 
-## 🛡️ Our Security Commitment
+## Reporting a vulnerability
 
-Security is a top priority for the Discord AI Assistant Bot project. We take the protection of our users' data and the integrity of our codebase seriously. This document outlines our security practices, how to report vulnerabilities, and what you can expect from us.
+Report vulnerabilities privately through GitHub's [private vulnerability reporting](https://github.com/whiteravens20/exemplar/security/advisories/new). Please do not open a public issue, discussion or pull request for a security bug.
 
-## 📋 Table of Contents
+Include the version or commit you tested, how the bot runs (Docker or directly on Node.js), the steps that reproduce the problem and the impact you expect. You will get a first reply within a week. A confirmed issue is fixed in a new release, and the advisory credits you unless you ask otherwise.
 
-- [🔐 Supported Versions](#-supported-versions)
-- [🚨 Reporting a Vulnerability](#-reporting-a-vulnerability)
-- [🛡️ Security Features](#️-security-features)
-- [🔍 Security Practices](#-security-practices)
-- [⚙️ Security Configuration](#️-security-configuration)
-- [🤖 Automated Security](#-automated-security)
-- [📚 Security Best Practices for Users](#-security-best-practices-for-users)
-- [🏆 Security Hall of Fame](#-security-hall-of-fame)
+## Supported versions
 
----
+Only the latest release receives security fixes.
 
-## 🔐 Supported Versions
+## Security checklist
 
-We actively maintain and provide security updates for the following versions:
+What the code guarantees today, and what it deliberately does not protect against.
 
-| Version | Supported          | Status |
-| ------- | ------------------ | ------ |
-| 3.0.x   | ✅ Yes            | Active development |
-| 2.x.x   | ⚠️ Limited        | Critical security fixes only |
-| < 2.0   | ❌ No             | No longer supported |
+### Access and abuse
 
-**Current Stable Version:** see [`package.json`](package.json) and the [latest release](../../releases/latest)
+- [x] The assistant answers in DMs only; a mention in a server channel gets a fixed reply that points there
+- [x] `ALLOWED_ROLES_FOR_AI` limits the assistant to members who hold one of the listed roles on `DISCORD_SERVER_ID`; left empty, anyone who can DM the bot may use it
+- [x] 5 assistant messages per minute per user, counted in PostgreSQL, and in memory while the database is away
+- [x] A message longer than 4,000 characters is refused before it reaches n8n
+- [x] Slash commands run in DMs with the bot; used in a server channel they return the mention reply instead
+- [x] Every moderation command checks the invoker's server permission and role hierarchy, and that the bot itself may act on the target, before a kick, ban, timeout or warning
+- [x] Reaction roles check role hierarchy when a binding is made and again before every role change
+- [x] The bot needs neither Administrator nor Manage Server; [docs/SETUP.md](docs/SETUP.md) lists the permissions it is invited with
 
-### 🔄 Update Recommendations
+### Secrets and configuration
 
-- **Always use the latest version** for the best security and features
-- **Subscribe to releases** on GitHub to get notified of security updates
-- **Review the [release notes](../../releases)** before upgrading to understand breaking changes
+- [x] Every secret comes from the environment: `DISCORD_TOKEN`, `N8N_API_KEY`, `DB_PASSWORD`, `DISCORD_CLIENT_SECRET`, `DASHBOARD_SESSION_SECRET`. `.env` is git-ignored and [`.env.example`](.env.example) holds no real value
+- [x] Required settings are checked at startup; the bot exits instead of running without them
+- [x] The n8n webhook URLs are treated as secrets: a log line has the host, and `[REDACTED]` in place of the path
 
----
+### What is logged
 
-## 🚨 Reporting a Vulnerability
+- [x] The content of a user's message is not logged; the log has the user ID and the message length
+- [x] Of the assistant's reply, the first 100 characters are logged
+- [x] Logs stay on the host, in `logs/`; nothing is sent to a third party
 
-**⚠️ IMPORTANT: Please DO NOT report security vulnerabilities through public GitHub issues!**
+### n8n
 
-### 🔐 How to Report
+- [x] Requests to the workflows carry `N8N_API_KEY` in the `X-API-Key` header, for the webhook's Header Auth to check
+- [x] A request times out after 2 minutes for the assistant and 5 minutes for AI moderation
+- [x] A failed request is retried up to 3 times with exponential backoff, and only for errors a retry can help
+- [x] AI moderation sends a limited number of messages at a time (`AI_MOD_MAX_CONCURRENT`)
+- [x] In `shadow` mode AI moderation only posts its verdicts to the mod-log channel: no DM, no database write, no action on Discord
 
-Use GitHub's private vulnerability reporting — it is the only supported channel:
+### Dashboard
 
-1. Open [Report a vulnerability](https://github.com/whiteravens20/exemplar/security/advisories/new)
-2. Fill in the details listed below
-3. Submit — the report is visible only to the maintainers
+Off by default (`DASHBOARD_ENABLED`). When it is on:
 
-The advisory stays private until a fix ships and we publish it.
+- [x] Sign-in is Discord OAuth2, with a signed `state` value against CSRF
+- [x] Access is decided from the bot's own view of the member, not from anything the browser sends: the server owner, a member with Administrator or Manage Server, or a holder of one of `DASHBOARD_ALLOWED_ROLES`. Leaving the server ends it on the next check
+- [x] Sessions are signed cookies (HMAC-SHA256, compared in constant time) that expire; there is no session store
+- [x] The bot does not start with the dashboard on and a session secret shorter than 32 characters
+- [x] It only reads: no endpoint changes a setting or moderates anyone, and its config page shows the settings without secrets
+- [x] Per-IP rate limits: 300 requests a minute overall, 120 on the API, 10 on sign-in
+- [x] Headers: a Content-Security-Policy limited to its own origin, `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy: no-referrer`, and HSTS when `DASHBOARD_COOKIE_SECURE` is on
 
-### 📝 What to Include
+Details: [docs/DASHBOARD.md](docs/DASHBOARD.md).
 
-Please provide as much information as possible:
+### Data
 
-- **Type of vulnerability** (e.g., SQL injection, XSS, authentication bypass)
-- **Affected component(s)** (e.g., message handler, n8n client, rate limiter)
-- **Steps to reproduce** - Clear, step-by-step instructions
-- **Proof of concept** - Code or screenshots demonstrating the issue
-- **Impact assessment** - What could an attacker achieve?
-- **Suggested fix** - If you have ideas (optional)
-- **Your environment**:
-  - Node.js version
-  - Discord.js version
-  - Operating System
-  - Deployment method (Docker, direct, etc.)
+- [x] Database queries pass their values as parameters
+- [x] Conversation history: the last 20 messages per user, kept for 24 hours; `/flushmemory` clears it on the bot and in n8n
+- [x] Warnings expire after 30 days, usage analytics after 90
 
-### ⏰ Response Timeline
+### Supply chain
 
-We take all security reports seriously and will respond according to severity:
+- [x] Exact versions in `package.json` and a committed lockfile
+- [x] `.npmrc`: `ignore-scripts=true` and `min-release-age=7`
+- [x] 7-day dependency quarantine — Dependabot `cooldown: default-days: 7` on every ecosystem, so a freshly published version is never proposed. Security advisories are exempt and land immediately
+- [x] `npm audit` on every push and pull request and once a week: a production dependency fails the build from a moderate finding, a development dependency from a high one. An advisory with no installable fix and no reachable code path can be allowlisted on its own in `.github/scripts/audit-allowlist.json`, with a justification and an expiry date
+- [x] Registry signatures verified in CI (`npm audit signatures`)
+- [x] Dependency review on pull requests, CodeQL, and Trivy scans of the repository and of the built image
+- [x] Workflow actions pinned to commit SHAs, each checked against its version tag on every run
 
-| Severity | Initial Response | Fix Timeline | Disclosure |
-|----------|-----------------|--------------|------------|
-| 🔴 Critical | Within 24 hours | 1-3 days | After fix is deployed |
-| 🟠 High | Within 48 hours | 3-7 days | After fix is deployed |
-| 🟡 Medium | Within 1 week | 1-2 weeks | After fix is deployed |
-| 🟢 Low | Within 2 weeks | Next release | With release notes |
+The `overrides` block in `package.json` is not covered by Dependabot. Review it by hand in every dependency sweep: a stale pin there can force a transitive dependency down into a vulnerable range.
 
-### 🎁 Recognition
+### Container
 
-We believe in recognizing security researchers who help us improve:
+- [x] Multi-stage build; npm is removed from the runtime image
+- [x] Runs as a non-root user
+- [x] Alpine base image, pinned by version and digest
+- [x] `docker-compose.yml` runs the bot with a read-only root filesystem, all capabilities dropped, `no-new-privileges` and `/tmp` mounted `noexec`
 
-- **Public acknowledgment** in our Security Hall of Fame (with your permission)
-- **Credit in release notes** for the security fix
-- **Priority support** for future contributions
-- Our eternal gratitude! 💚
+### What this does NOT protect against
 
----
-
-## 🛡️ Security Features
-
-### 🔒 DM-Only Mode (v2.0.0+)
-
-**Privacy by Design:**
-- Bot **only responds to Direct Messages** (DMs)
-- All guild/channel messages are ignored (except hardcoded mention responses)
-- Reduces attack surface and protects user privacy
-- Prevents unauthorized access in compromised servers
-
-### 🚦 Rate Limiting
-
-**Built-in DDoS Protection:**
-- **5 messages per minute** per user
-- Prevents spam and abuse
-- Automatic cleanup of expired limits
-- Clear feedback to users when limits are hit
-
-```javascript
-// Rate limit implementation
-const RATE_LIMIT_MESSAGES = 5;
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-```
-
-### 🔐 Environment Variable Security
-
-**Sensitive Data Protection:**
-- All secrets stored in `.env` file (never committed)
-- `.env.example` template without real credentials
-- Environment validation on startup
-- Clear error messages without exposing sensitive data
-
-**Protected Secrets:**
-- `DISCORD_TOKEN` - Discord bot token
-- `N8N_WORKFLOW_URL`, `N8N_MODERATION_WORKFLOW_URL` - n8n webhook endpoints
-- `N8N_API_KEY` - secret shared with the n8n webhooks
-- `DB_PASSWORD` - database password
-- `DISCORD_CLIENT_SECRET`, `DASHBOARD_SESSION_SECRET` - dashboard sign-in and sessions
-
-### 🛡️ Input Validation & Sanitization
-
-**Message Processing:**
-- Discord.js handles input sanitization
-- Message content is validated before processing
-- Rate limiting prevents message flooding
-- Command permissions are enforced
-
-### 📊 Secure Logging
-
-**Privacy-Preserving Logs:**
-- **Never log sensitive data** (tokens, passwords, full webhook URLs)
-- User IDs are logged (not personal information)
-- Error stacks exclude sensitive context
-- Logs are stored locally (not transmitted)
-
-**What we DON'T log:**
-- Discord tokens
-- n8n webhook URLs (the host is logged, the path as `[REDACTED]`)
-- User message content (the log has its length; the first 100 characters of the assistant's reply are logged)
-- API keys or credentials
-
----
-
-## 🔍 Security Practices
-
-### 🔐 Authentication & Authorization
-
-**Discord Integration:**
-- Bot token is securely stored in environment variables
-- Token has minimum required permissions
-- Role-based access control for bot features
-- Admin commands require elevated permissions
-
-**n8n Integration:**
-- Webhook URL is treated as a secret
-- HTTPS-only communication (recommended)
-- Retry logic with exponential backoff prevents DoS
-- Timeout protection (2 minutes for the assistant, 5 minutes for AI moderation)
-
-### 🔒 Dependency Security
-
-**Supply-Chain Attack Mitigation:**
-
-All package managers are configured with minimum release age to block compromised packages:
-
-| Package Manager | Config File | Quarantine Period |
-|----------------|-------------|-------------------|
-| npm | `.npmrc` | 7 days (`min-release-age=7`) |
-| pnpm | `~/.config/pnpm/rc` | 7 days (`minimum-release-age=10080` min) |
-| bun | `~/.bunfig.toml` | 7 days (`minimumReleaseAge=604800` sec) |
-| uv (Python) | `~/.config/uv/uv.toml` | 7 days (`exclude-newer = "7 days"`) |
-
-**Dependency Management Policy:**
-- **Pin exact versions** in `package.json` (no `^` or `~` ranges)
-- **Verify lockfile** (`package-lock.json`) is always committed
-- **Audit new dependencies** before adding: check for known CVEs, evaluate maintainer track record, review source
-- **Remove unused dependencies** — do not leave unused packages in the tree
-- **Disable lifecycle scripts** (`ignore-scripts=true` in `.npmrc`) to block postinstall malware
-- **Run `npm audit`** before every release and in CI/CD
-
-**Keeping Dependencies Secure:**
-- Node.js 22+ (latest LTS with security fixes)
-- Discord.js 14.x (actively maintained)
-- All dependencies regularly updated via Dependabot
-- `npm audit` runs on every push and pull request, and weekly on a schedule: a production dependency fails the build from a moderate finding, a development dependency from a high one
-- An advisory with no installable fix and no reachable code path can be allowlisted on its own in `.github/scripts/audit-allowlist.json`, with a justification and an expiry date
-- The registry signatures of the installed packages are verified in the same job (`npm audit signatures`)
-
-**Key Dependencies:** the authoritative, exact-pinned list lives in [`package.json`](package.json); it is not duplicated here, so that it cannot drift out of date.
-
-> **Note:** the `overrides` block in `package.json` is *not* covered by Dependabot. Review it by hand during every dependency sweep — a stale pin there can force a transitive dependency *down* into a vulnerable range.
-
-### 🛡️ Code Security
-
-**Secure Coding Practices:**
-- ✅ Async/await error handling (no unhandled rejections)
-- ✅ Input validation on all user inputs
-- ✅ Proper error handling with user-friendly messages
-- ✅ No eval() or dangerous dynamic code execution
-- ✅ TypeScript in strict mode
-
-### 🐳 Docker Security
-
-**Container Security:**
-- Multi-stage builds to reduce image size
-- Non-root user in production images
-- Minimal base images (Alpine Linux)
-- No unnecessary packages installed
-- Trivy scanning in CI/CD pipeline
-
----
-
-## ⚙️ Security Configuration
-
-### 🔧 Environment Variables
-
-**Required Security Settings:**
-
-```bash
-# Discord Bot Token (REQUIRED)
-DISCORD_TOKEN=your_discord_bot_token_here
-
-# Discord Client ID (REQUIRED)
-DISCORD_CLIENT_ID=your_discord_client_id_here
-
-# Discord server ID (REQUIRED)
-DISCORD_SERVER_ID=your_discord_server_id_here
-
-# n8n Webhook URL (REQUIRED)
-N8N_WORKFLOW_URL=https://your-n8n-instance.com/webhook/your-path
-
-# Secret the bot sends to the webhook as X-API-Key (openssl rand -hex 32)
-N8N_API_KEY=replace_with_a_random_secret
-
-# Roles allowed to use the assistant; empty = everyone
-ALLOWED_ROLES_FOR_AI=role_id_1,role_id_2
-
-# Database password
-DB_PASSWORD=your_secure_password_here
-```
-
-The rate limit (5 messages per minute per user) and the n8n timeouts are fixed
-in the code. [`.env.example`](.env.example) lists every variable.
-
-### 🔐 Discord Bot Permissions
-
-**Required Permissions:**
-- `ViewChannel`, `SendMessages`, `ReadMessageHistory`, `AddReactions` - To read, answer and react
-- `KickMembers`, `BanMembers`, `ModerateMembers` - For the moderation commands and the warning escalation
-- `ManageRoles` - For reaction roles
-- `ManageMessages` - Only with AI moderation, to delete messages
-
-**NOT Required:**
-- ❌ Administrator
-- ❌ Manage Server
-- ❌ Manage Channels
-
-**Permission Setup:** invite the bot with the `bot` and `applications.commands` scopes and the permissions above; [docs/SETUP.md](docs/SETUP.md) has the steps. Leave out what you do not use, for example the moderation permissions on a server that only wants the assistant.
-
-### 🛡️ Network Security
-
-**Recommendations:**
-- ✅ Use HTTPS for n8n webhooks
-- ✅ Deploy behind reverse proxy (nginx, Caddy)
-- ✅ Enable firewall rules (allow only necessary ports)
-- ✅ Use VPC/private networks when possible
-- ✅ Enable bot verification on Discord
-
----
-
-## 🤖 Automated Security
-
-We use multiple automated tools to catch security issues early:
-
-### 🔍 CodeQL Analysis
-
-**Static Application Security Testing (SAST):**
-- Runs on every push and PR
-- Scans for common vulnerabilities
-- JavaScript/TypeScript security patterns
-- Automated code review
-
-**What it catches:**
-- SQL injection attempts
-- XSS vulnerabilities
-- Path traversal
-- Command injection
-- Hardcoded secrets
-
-### 🤖 Dependabot
-
-**Automated Dependency Updates:**
-- **Daily** security updates
-- **Weekly** dependency updates
-- Grouped updates by type
-- Automatic PR creation
-
-**Update Categories:**
-- Security patches (immediate)
-- Production dependencies (weekly)
-- Development dependencies (weekly)
-
-### 🛡️ npm audit
-
-**Dependency Vulnerability Scanning:**
-- Runs in CI/CD pipeline
-- Checks npm advisory database
-- Fails builds on moderate or worse findings in production dependencies and on high or critical ones in development dependencies
-- Verifies the registry signatures of the installed packages
-- Automated fixes when possible
-
-```bash
-# Run manually
-npm audit
-npm audit fix
-```
-
-### 🐳 Trivy Scanning
-
-**Repository and Docker Image Vulnerability Scanning:**
-- Scans the repository and the built Docker image on every push and pull request
-- Scans the published image again at release
-- Checks for OS and package vulnerabilities
-- Fails on high/critical vulnerabilities
-
-### 📊 OpenSSF Scorecard
-
-**Security Practice Scoring:**
-- Scores the repository's security practices on every push to `dev` and weekly
-- The result is public and shown by the badge in the README
-
----
-
-## 📚 Security Best Practices for Users
-
-### 🔐 For Bot Administrators
-
-**Token Management:**
-- ✅ **Never share your Discord bot token**
-- ✅ Rotate tokens if potentially compromised
-- ✅ Use environment variables (never hardcode)
-- ✅ Add `.env` to `.gitignore`
-- ✅ Use separate tokens for dev/staging/production
-
-**Deployment Security:**
-- ✅ Keep Node.js updated (use v22+)
-- ✅ Run bot as non-root user
-- ✅ Use Docker with non-root user
-- ✅ Enable firewall rules
-- ✅ Monitor logs for suspicious activity
-- ✅ Backup your `.env` file securely
-- ✅ Use HTTPS for n8n webhooks
-
-**Access Control:**
-- ✅ Limit bot permissions to minimum required
-- ✅ Use role-based access for bot features
-- ✅ Regularly audit bot permissions
-- ✅ Review Discord server member permissions
-
-### 👥 For Contributors
-
-**Code Security:**
-- ✅ Never commit secrets or tokens
-- ✅ Run `npm audit` before submitting PRs
-- ✅ Follow secure coding practices
-- ✅ Review code for security issues
-- ✅ Test security features thoroughly
-- ✅ Update dependencies responsibly
-
-**See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed security guidelines.**
-
-### 🚀 For End Users
-
-**Using the Bot Safely:**
-- ✅ Only interact with verified bots
-- ✅ Use DMs for sensitive conversations
-- ✅ Don't share personal information unnecessarily
-- ✅ Report suspicious bot behavior
-- ✅ Be aware of rate limits (5 msg/min)
-
----
-
-## 🏆 Security Hall of Fame
-
-We thank the following security researchers and contributors who have helped make this project more secure:
-
-<!-- Add names here when vulnerabilities are reported and fixed -->
-
-**Nobody has reported a vulnerability yet - be the first!** 🎯
-
----
-
-## 📞 Contact
-
-**Security Issues:** Report via GitHub Security Advisory or email maintainers privately  
-**General Questions:** Open a [GitHub Discussion](https://github.com/whiteravens20/exemplar/discussions)  
-**Project Issues:** [GitHub Issues](https://github.com/whiteravens20/exemplar/issues)
-
----
-
-## 📄 Additional Resources
-
-- 📖 [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines including security practices
-- 📚 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community standards
-- 📋 [README.md](README.md) - Project overview and features
-- 📝 [Releases](../../releases) - Version history and security updates
-- 🔧 [docs/SETUP.md](docs/SETUP.md) - Secure configuration guide
-- 🐳 [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md) - Docker security best practices
-
----
-
-## 🌟 Stay Secure!
-
-Remember: **Security is everyone's responsibility.** By following these guidelines and reporting issues responsibly, you help keep our community safe. Thank you! 🙏
-
-**Report security issues → Get recognized → Help the community → Feel awesome!** 💪
+| Threat vector | Why it is out of scope |
+|---|---|
+| The n8n instance and the model behind it | Every assistant message, and every message AI moderation analyses, goes to your n8n workflow and from there to the model it calls. What they keep and who can read it is outside the bot |
+| A leaked `DISCORD_TOKEN` | Whoever holds it is the bot, with every permission the bot was invited with. Reset the token in the Discord Developer Portal |
+| A webhook that does not check the key | The bot sends `N8N_API_KEY`; a workflow without Header Auth answers anyone who learns its URL |
+| Messages written to steer the model | A user can talk the assistant into answers its instructions forbid, or a channel message can argue for its own verdict. An AI moderation verdict is only ever allow, warn, timeout or delete, and `shadow` mode shows the verdicts before any is acted on |
+| Server administrators | The bot trusts the server's own roles and hierarchy. Whoever can change them decides what the bot allows |

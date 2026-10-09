@@ -1,761 +1,298 @@
-# 🎉 Contributing to Discord AI Assistant Bot
+# Contributing to Exemplar
 
-Hey there! 👋 Thanks for your interest in making this project even better! We're excited to have you here and can't wait to see what awesome contributions you'll bring to the table. 
+Thank you for considering a contribution to Exemplar. The bot **moderates a Discord server and passes its members' messages to an AI workflow**, so a mistake here can act on real people. Please read this guide fully before opening a pull request.
 
-Whether you're fixing a bug 🐛, adding a new feature ✨, improving documentation 📚, or just asking questions 💬 - all contributions are welcome and appreciated! 
+---
 
-## 📋 Table of Contents
+## Table of Contents
 
-- [🤝 Code of Conduct](#-code-of-conduct)
-- [🐛 Reporting Bugs](#-reporting-bugs)
-- [💡 Suggesting Features](#-suggesting-features)
-- [🚀 Getting Started](#-getting-started)
-- [💻 Development Workflow](#-development-workflow)
-- [📝 Coding Standards](#-coding-standards)
-- [✅ Testing Your Changes](#-testing-your-changes)
-- [📚 Documentation](#-documentation)
-- [🔒 Security Best Practices](#-security-best-practices)- ⚡ [Performance Tips](#-performance-tips)- [🎯 Pull Request Process](#-pull-request-process)
-- [❓ Questions?](#-questions)
+- [Before You Start](#before-you-start)
+- [Scope of Contributions](#scope-of-contributions)
+- [Development Setup](#development-setup)
+  - [Requirements](#requirements)
+  - [Local start](#local-start)
+  - [Environment variables](#environment-variables)
+- [Project Structure](#project-structure)
+- [Coding Guidelines](#coding-guidelines)
+  - [General](#general)
+  - [Linting and types](#linting-and-types)
+  - [Naming conventions](#naming-conventions)
+  - [Texts](#texts)
+  - [Logging and errors](#logging-and-errors)
+  - [Commands and events](#commands-and-events)
+  - [Database migrations](#database-migrations)
+  - [Dependencies](#dependencies)
+  - [Commits](#commits)
+- [Testing Requirements](#testing-requirements)
+- [Secure Contributing](#secure-contributing)
+- [Submitting Changes](#submitting-changes)
+- [Reporting Security Vulnerabilities](#reporting-security-vulnerabilities)
 
-## 🤝 Code of Conduct
+---
 
-We're committed to providing a welcoming and inclusive environment for everyone! 🌈
+## Before You Start
 
-Please read our [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for details on our community standards and how we expect everyone to behave.
+- Check the [open issues](../../issues) and [pull requests](../../pulls) to avoid duplicating work.
+- For large changes or new features, open an issue first to discuss the approach before investing time in code.
+- By contributing, you agree to the project [License](LICENSE) and [Code of Conduct](CODE_OF_CONDUCT.md).
 
-**TL;DR:** Be kind, be respectful, be awesome! ❤️
+---
 
-## 🐛 Reporting Bugs
+## Scope of Contributions
 
-Found a bug? No worries - it happens! 🪲 Here's how to report it effectively:
+Contributions that are **welcome**:
 
-### Before You Submit
+- Bug fixes (with a regression test)
+- Security improvements or hardening
+- Test coverage gaps
+- Documentation corrections
+- Translations: a new language is one file in `src/locales/` (see [docs/I18N.md](docs/I18N.md))
+- Features that fit a self-hosted bot for a single server
 
-1. 🔍 **Search existing issues** - Someone might have already reported it
-2. 📖 **Check the docs** - Make sure it's actually a bug and not expected behavior
-3. 🆕 **Use the latest version** - The bug might already be fixed in v2.0.0+
+Contributions we will **not accept**:
 
-### Creating a Bug Report
+- Anything that logs or stores the content of users' messages beyond what the bot keeps today (see [SECURITY.md](SECURITY.md))
+- Analytics, tracking or telemetry that leaves the host
+- A moderation action that skips the permission and role hierarchy checks
+- Features that need the bot to run on more than one server, or a hosted instance
+- Text shown on Discord that is written in the code instead of the locale files
 
-When you're ready to report, create a new issue and include:
+---
 
-✅ **Clear title** - Something like "Rate limiter not working in DMs"  
-✅ **Detailed description** - What went wrong?  
-✅ **Reproduction steps** - How can we see the bug ourselves?  
-✅ **Expected behavior** - What should have happened?  
-✅ **Actual behavior** - What actually happened?  
-✅ **Environment info**:
-   - Node.js version (should be 22+)
-   - Discord.js version
-   - Operating System
-✅ **Logs** - Attach relevant logs from `logs/combined.log` or `logs/error.log`  
-✅ **Screenshots** - If applicable! 📸
+## Development Setup
 
-**Pro tip:** The more details you provide, the faster we can fix it! ⚡
+### Requirements
 
-## 💡 Suggesting Features
+| Tool | Version |
+|---|---|
+| Node.js and npm | the versions `engines` in [`package.json`](package.json) asks for |
+| PostgreSQL | ≥ 14 — or use the one in `docker-compose.yml` |
+| A Discord application with a bot token | for a test server of your own |
+| n8n | an instance with the workflows from `docs/` imported |
+| Docker & Docker Compose | optional — for containerised testing |
 
-Have an awesome idea? We'd love to hear it! 🌟
-
-### Before You Suggest
-
-1. 🔍 Check if someone already suggested it
-2. 💭 Think about how it fits with the project's goals (DM-only bot, n8n integration, coding mode, etc.)
-3. 🤔 Consider if it's something many users would benefit from
-
-### Creating a Feature Request
-
-Create a new issue or discussion with `[FEATURE]` in the title and include:
-
-✨ **What** - What feature do you want?  
-❓ **Why** - Why would it be useful?  
-💡 **How** - Any ideas on implementation?  
-📊 **Use cases** - Real-world scenarios where this helps  
-🎨 **Examples** - Links to similar features elsewhere (if any)
-
-## 🚀 Getting Started
-
-Ready to code? Awesome! Let's get you set up. 🎮
-
-### Prerequisites
-
-- 📦 Node.js 22+ (LTS) - **Required as of v2.0.0!**
-- 📦 npm 11+
-- 🤖 Discord Bot Token ([Get one here](https://discord.com/developers/applications))
-- 🔄 n8n instance (for testing workflows)
-- ☕ Your favorite beverage
-
-### Initial Setup
+### Local start
 
 ```bash
-# 1. Fork the repository on GitHub 🍴
-# Click the "Fork" button on the repo page
-
-# 2. Clone YOUR fork
-git clone https://github.com/YOUR_USERNAME/exemplar.git
-cd exemplar
-
-# 3. Add upstream remote (to sync with main repo)
-git remote add upstream https://github.com/whiteravens20/exemplar.git
-
-# 4. Install dependencies 📦
-npm install
-
-# 5. Copy and configure environment variables
-cp .env.example .env
-# Edit .env with your test bot token and n8n details
-
-# 6. Start in development mode with auto-reload 🔥
-#    (slash commands are registered with Discord on every start)
-npm run dev
+npm ci
+cp .env.example .env    # then fill it in
+npm run dev             # builds, starts the bot and restarts it on changes
 ```
 
-### 🎯 Important: Project Architecture (v2.0.0+)
+Slash commands are registered with Discord on every start. The database schema comes from the SQL files in `migrations/`; the Docker image applies them on start, and without Docker you apply them with `npm run build && npm run migrate:up`.
 
-Before you start coding, understand these key architectural decisions:
+Setting up the Discord application, the bot's permissions and the n8n workflows is described in [docs/SETUP.md](docs/SETUP.md) and [docs/N8N_INTEGRATION.md](docs/N8N_INTEGRATION.md).
 
-🔒 **DMs first** - The assistant and every slash command work in Direct Messages; AI moderation and reaction roles act in server channels  
-💻 **Dual AI Modes** - `/code` routes to a specialized coding LLM, a plain DM is chat mode  
-🚦 **Rate Limiting** - Built-in protection: 5 messages/minute per user  
-✂️ **Smart Message Splitting** - Automatically handles Discord's 2000 character limit  
-🔄 **n8n Integration** - All AI responses go through n8n workflows  
-📦 **Node.js 22+** - We use the latest LTS features!
+### Environment variables
 
-## 💻 Development Workflow
+Every variable and its default is documented inline in [`.env.example`](.env.example). A new variable goes there too, with a comment, and into `src/config/config.ts`, which validates the required ones at startup.
 
-### 🌿 Branching Strategy
+Security-sensitive variables (never commit these):
 
-`dev` is the active development branch and the target for every pull request.
-`main` holds released code and is updated only by a release PR from `dev`.
+```
+DISCORD_TOKEN=
+N8N_API_KEY=
+DB_PASSWORD=
+DISCORD_CLIENT_SECRET=
+DASHBOARD_SESSION_SECRET=
+```
+
+The n8n webhook URLs (`N8N_WORKFLOW_URL`, `N8N_MODERATION_WORKFLOW_URL`) are secrets as well.
+
+---
+
+## Project Structure
+
+```
+src/
+  index.ts           # entrypoint: config check, client, command registration
+  config/            # env-var parsing and validation
+  events/            # Discord event handlers (messages, interactions, reactions)
+  slashcommands/     # one file per slash command
+  utils/             # n8n client, AI moderation, moderation actions, rate limiter, logger, i18n
+  db/                # connection and repositories
+  jobs/              # periodic cleanup and mute reconciliation
+  api/               # health endpoint and the dashboard
+  locales/           # translations, one file per language
+  types/             # shared type definitions
+
+migrations/          # SQL migrations, applied in order
+tests/               # unit tests (Vitest), one file per module
+docs/                # setup, deployment and feature guides, n8n workflows
+```
+
+The full map is in [docs/PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md).
+
+---
+
+## Coding Guidelines
+
+### General
+
+- **TypeScript** in strict mode everywhere — no `any` types and no type assertions without a comment explaining why.
+- Keep functions small and single-purpose.
+- No dead code or commented-out blocks in submitted PRs.
+- Comments say why, not what.
+- Match the existing code style; ESLint is the source of truth.
+
+### Linting and types
 
 ```bash
-# Always start from an up-to-date dev branch
-git checkout dev
-git pull upstream dev
-
-# Create a feature branch with a descriptive name
-git checkout -b feature/awesome-new-feature
-# or
-git checkout -b fix/annoying-bug
-```
-
-### 🎨 Making Changes
-
-1. 💡 **Make your changes** - Code away!
-2. 🧪 **Test locally** - Make sure it works
-3. 📝 **Update docs** - If needed
-4. ✅ **Commit often** - Small, atomic commits are your friend!
-
-### 📦 Committing Changes
-
-We use **conventional commits**. PR titles follow the same format and become the release notes.
-
-**Format:** `type: brief description`
-
-**Types:**
-- ✨ `feat` - New feature (e.g., `feat: add user statistics command`)
-- 🐛 `fix` - Bug fix (e.g., `fix: resolve rate limiter memory leak`)
-- 📚 `docs` - Documentation only (e.g., `docs: update contributing guide`)
-- ♻️ `refactor` - Code change that neither fixes a bug nor adds a feature
-- ✅ `test` - Adding or updating tests
-- ⚡ `perf` - Performance improvement
-- 🔧 `chore` - Maintenance tasks (e.g., `chore: update dependencies`)
-- 🔒 `security` - Security improvements
-
-**Examples:**
-```bash
-git commit -m "feat: add support for voice channel monitoring"
-git commit -m "fix: correct DM detection logic"
-git commit -m "docs: add examples for coding mode usage"
-git commit -m "refactor: simplify error handler code"
-```
-
-## 📝 Coding Standards
-
-Let's keep the code clean and consistent! ✨
-
-### 🏗️ File Structure
-
-```typescript
-// 1. Imports (grouped logically)
-import { Client, GatewayIntentBits } from 'discord.js';
-import axios from 'axios';
-
-// 2. Local imports
-import logger from '../utils/logger.js';
-import configManager from '../config/config.js';
-
-// 3. Constants
-const MAX_RETRIES = 3;
-const TIMEOUT_MS = 5000;
-
-// 4. Main code
-async function doSomething(): Promise<void> {
-  // Implementation here
-}
-
-// 5. Exports
-export { doSomething };
-export default doSomething;
-```
-
-### 🏷️ Naming Conventions
-
-- 🐫 `camelCase` for variables and functions: `userId`, `handleMessage()`
-- 🐫 `PascalCase` for classes: `MessageHandler`, `RateLimiter`
-- 🔤 `UPPER_SNAKE_CASE` for constants: `MAX_MESSAGE_LENGTH`, `API_TIMEOUT`
-- 📝 Use descriptive names: `userMessage` not `msg`, `retryCount` not `x`
-
-**Examples:**
-```javascript
-// ✅ Good
-const messageContent = interaction.content;
-const MAX_RETRY_ATTEMPTS = 3;
-class ErrorHandler { }
-
-// ❌ Avoid
-const mc = interaction.content;
-const max = 3;
-class errorhandler { }
-```
-
-### 📊 Logging
-
-We use Winston for logging - it's your best friend for debugging! 🔍
-
-```typescript
-import logger from '../utils/logger.js';
-
-// 📘 Info - Normal operations
-logger.info('Message received from user', { 
-  userId: message.author.id,
-  mode: isCodeMode ? 'code' : 'chat' 
-});
-
-// ⚠️ Warning - Something unexpected but not broken
-logger.warn('Rate limit approaching', { 
-  userId: user.id, 
-  messageCount: count 
-});
-
-// 🚨 Error - Something went wrong
-logger.error('Failed to send to n8n', { 
-  error: (error as Error).message,
-  url: webhookUrl
-});
-```
-
-**Pro tip:** Always include context! It makes debugging so much easier. 🎯
-
-### 🛡️ Error Handling
-
-Always handle errors gracefully - users should never see raw error stacks! 🙈
-
-```typescript
-try {
-  await riskyOperation();
-} catch (error) {
-  // Log the full error for debugging
-  logger.error('Operation failed', { 
-    error: (error as Error).message,
-    context: { userId, action }
-  });
-  
-  // Show user-friendly message
-  await interaction.reply({
-    content: '❌ Oops! Something went wrong. Please try again later.',
-    ephemeral: true
-  });
-}
-```
-
-### 💬 Comments
-
-Write comments that explain **WHY**, not **WHAT** - the code should be self-explanatory! 💡
-
-```typescript
-// ❌ Bad - Explains what (obvious from code)
-// Check if user is admin
-if (member.permissions.has('ADMINISTRATOR')) {
-
-// ✅ Good - Explains why (business logic)
-// Only admins can bypass rate limiting for urgent announcements
-if (member.permissions.has('ADMINISTRATOR')) {
-
-// ✅ Good - Complex logic explanation
-// Use exponential backoff: 1s, 2s, 4s for retries
-// This prevents overwhelming the n8n server during outages
-const delay = Math.pow(2, attempt) * 1000;
-```
-
-## 🔨 Creating New Features
-
-### 🎮 Adding a Slash Command
-
-Want to add a new slash command? Here's the template! 🚀
-
-```typescript
-// src/slashcommands/mycommand.ts
-import { SlashCommandBuilder, type ChatInputCommandInteraction } from 'discord.js';
-import logger from '../utils/logger.js';
-import { t } from '../utils/i18n.js';
-import type { SlashCommand } from '../types/discord.js';
-
-const command: SlashCommand = {
-  data: new SlashCommandBuilder()
-    .setName('mycommand')
-    .setDescription(t('commands.mycommand.description'))
-    .addStringOption(option =>
-      option.setName('text')
-        .setDescription(t('commands.mycommand.options.text'))
-        .setRequired(true)
-    )
-    .addIntegerOption(option =>
-      option.setName('amount')
-        .setDescription(t('commands.mycommand.options.amount'))
-        .setRequired(false)
-    ),
-  
-  async execute(interaction: ChatInputCommandInteraction): Promise<void> {
-    try {
-      // Get options
-      const text = interaction.options.getString('text');
-      const amount = interaction.options.getInteger('amount') ?? 1;
-      
-      // Log the command usage
-      logger.info('Command executed', {
-        command: 'mycommand',
-        userId: interaction.user.id,
-        guildId: interaction.guild?.id
-      });
-      
-      // Do something awesome
-      const result = await doSomethingCool(text, amount);
-      
-      // Reply to user
-      await interaction.reply({
-        content: t('commands.mycommand.done', { result }),
-        ephemeral: false // Set to true for private replies
-      });
-      
-    } catch (error) {
-      logger.error('Command execution failed', {
-        command: 'mycommand',
-        error: (error as Error).message,
-      });
-      
-      await interaction.reply({
-        content: t('errors.commandFailed'),
-        ephemeral: true
-      });
-    }
-  }
-};
-
-export default command;
-```
-
-**Don't forget:** add the command to the `slashCommands` list in `src/index.ts` — the bot registers that list with Discord on every start. 🔄
-
-**Texts:** everything the command shows people comes from the locale files, never a string in the code. Add the `commands.mycommand` keys to every file in `src/locales/`; `npm test` fails when a language misses one. See [docs/I18N.md](docs/I18N.md). 🌍
-
-### 🎯 Adding an Event Handler
-
-Events are what make the bot react to Discord actions! ⚡
-
-```typescript
-// src/events/myevent.ts
-import { Events, type Message } from 'discord.js';
-import logger from '../utils/logger.js';
-import type { BotEvent } from '../types/discord.js';
-
-const event: BotEvent = {
-  name: Events.MessageCreate, // or Events.GuildMemberAdd, etc.
-  once: false, // Set to true for events that should only fire once
-  
-  async execute(message: Message): Promise<void> {
-    try {
-      // Your event handling logic here
-      logger.info('Event triggered', {
-        event: 'MessageCreate',
-        userId: message.author.id
-      });
-      
-      // Do something with the event
-      await handleMessage(message);
-      
-    } catch (error) {
-      logger.error('Event handler error', {
-        event: 'MessageCreate',
-        error: (error as Error).message
-      });
-    }
-  }
-};
-
-export default event;
-```
-
-### 🔧 Adding a Utility Function
-
-Creating a reusable utility? Put it in `/src/utils/`! 🛠️
-
-```typescript
-// src/utils/my-helper.ts
-import logger from './logger.js';
-
-/**
- * 📝 Description of what this utility does
- * @param input - What this parameter is for
- * @param options - Optional configuration
- * @returns What this returns
- */
-async function myHelper(input: string, options: Record<string, unknown> = {}): Promise<string> {
-  try {
-    // Your helper logic
-    const result = processInput(input, options);
-    return result;
-  } catch (error) {
-    logger.error('Helper function error', { error: (error as Error).message });
-    throw error; // Re-throw for caller to handle
-  }
-}
-
-export { myHelper };
-export default myHelper;
-```
-
-## ✅ Testing Your Changes
-
-Testing is super important! 🧪 Here's how to make sure your code works:
-
-### 🏃 Manual Testing
-
-```bash
-# 1. Type check your code
+npm run lint
 npm run typecheck
+```
 
-# 2. Build the project
+Both must pass before you open a PR; CI runs them on every pull request.
+
+### Naming conventions
+
+| Context | Convention |
+|---|---|
+| Files | `kebab-case.ts`; an event handler is named after its Discord event (`messageCreate.ts`), a slash command after the command (`flushmemory.ts`) |
+| Variables / functions | `camelCase` |
+| Types / interfaces / classes | `PascalCase` |
+| Constants | `UPPER_SNAKE_CASE` |
+| Environment variables | `UPPER_SNAKE_CASE` |
+
+### Texts
+
+Everything the bot writes on Discord or shows in the dashboard comes from the locale files, never from a string in the code. Add the key to every file in `src/locales/` and read it with `t()`; `npm test` fails when a language misses a key. Log messages stay in English. See [docs/I18N.md](docs/I18N.md).
+
+### Logging and errors
+
+- Log through `src/utils/logger.ts`, with context: the user ID, the command, the guild.
+- Do not log the content of a user's message, a token, a password or a full webhook URL.
+- A user never sees a raw error: catch it, log the detail and reply with a translated message.
+
+### Commands and events
+
+- A slash command is one file in `src/slashcommands/` that exports a `SlashCommand` (`src/types/discord.ts`), and an entry in the `slashCommands` list in `src/index.ts`.
+- An event handler is one file in `src/events/` that exports a `BotEvent`.
+- A command that acts on a member goes through `src/utils/moderation-actions.ts`, which checks the invoker's permission and the role hierarchy. Do not call Discord's kick, ban or timeout directly.
+
+### Database migrations
+
+A schema change is a new numbered SQL file in `migrations/`, never an edit of one that has shipped. Check it both ways before you open the PR:
+
+```bash
 npm run build
-
-# 3. Start the bot in dev mode (slash commands are registered on start)
-npm run dev
-
-# 4. Test in Discord!
-# - Create a test server
-# - Add your bot
-# - Try all the features you changed
-# - Test error cases too!
+npm run migrate:up
+npm run migrate:down
 ```
 
-### 🎯 Testing Checklist
+Queries pass their values as parameters (`$1`, `$2`); never build SQL by concatenating input. [docs/DATABASE.md](docs/DATABASE.md) describes the schema.
 
-Before submitting your PR, make sure you've tested:
+### Dependencies
 
-- ✅ **Happy path** - Does it work when everything goes right?
-- ✅ **Error handling** - What happens when things go wrong?
-- ✅ **Edge cases** - Empty inputs? Very long inputs? Special characters?
-- ✅ **Rate limiting** - Does it respect the 5 messages/minute limit?
-- ✅ **DMs** - Does it work in DMs? Does a command used in a channel only point to DMs?
-- ✅ **Coding mode** - If relevant, test with `/code`
-- ✅ **Logs** - Check that appropriate logs are generated
+- **Justify every new dependency** in the PR description.
+- Prefer Node.js built-ins and already-present packages.
+- Versions are exact in `package.json` (`.npmrc` sets `save-exact`), and the lockfile is committed.
+- `.npmrc` also sets `min-release-age=7` and `ignore-scripts=true`: a version younger than a week does not install, and install scripts do not run.
+- Run `npm audit` before submitting — flag any findings in the PR.
 
-### 🧪 Automated Tests
+### Commits
 
-We use Vitest for testing critical utilities:
+Use [Conventional Commits](https://www.conventionalcommits.org/) style:
 
-```bash
-# Run all tests
-npm test
-
-# Run tests in watch mode (useful during development)
-npx vitest --watch
-
-# Run tests with coverage
-npx vitest --coverage
+```
+feat: add a per-channel exemption to AI moderation
+fix: count a warning once when the database reconnects
+docs: describe the dashboard's allowed roles
+test: cover role hierarchy for reaction role bindings
+security: refuse a dashboard session secret under 32 characters
 ```
 
-If you're adding new utility functions (especially in `/src/utils/`), please add tests! 🎯
-
-```typescript
-// tests/my-helper.test.ts
-import { describe, it, expect } from 'vitest';
-import { myHelper } from '../src/utils/my-helper.js';
-
-describe('myHelper', () => {
-  it('should handle valid input', async () => {
-    const result = await myHelper('test input');
-    expect(result).toBe('expected output');
-  });
-  
-  it('should throw error on invalid input', async () => {
-    await expect(myHelper('')).rejects.toThrow();
-  });
-});
-```
-
-## 📚 Documentation
-
-Good documentation is just as important as good code! 📖
-
-### 📝 When to Update Documentation
-
-Update the docs when you:
-
-- ✨ Add a new feature → Update `README.md` and relevant guides
-- 🐛 Fix a bug → Make sure the PR title describes it (release notes are generated from PR titles)
-- 🔧 Change configuration → Update `SETUP.md` and `.env.example`
-- 🏗️ Modify project structure → Update `PROJECT_STRUCTURE.md`
-- 🎯 Add new commands → Update usage documentation
-- ⚙️ Change environment variables → Update `.env.example` with comments
-
-### 📋 Documentation Checklist
-
-Before submitting your PR:
-
-- [ ] 📘 Updated `README.md` if user-facing changes
-- [ ] 📝 Updated relevant doc files in `/docs/`
-- [ ] 💬 Added/updated inline code comments
-- [ ] 🔧 Updated `.env.example` for new variables
-- [ ] 📊 PR title follows Conventional Commits (it becomes the release-note entry)
-- [ ] 🏗️ Updated `PROJECT_STRUCTURE.md` if you added new files
-
-### ✍️ Writing Style
-
-Keep docs friendly and clear! 🌟
-
-- ✅ Use emojis to make it more engaging (like this guide!)
-- ✅ Write in clear, simple language
-- ✅ Include code examples
-- ✅ Add step-by-step instructions
-- ✅ Use **bold** for important points
-- ✅ Use links to related sections
-- ❌ Avoid jargon without explanation
-- ❌ Don't assume prior knowledge
-
-## 🔒 Security Best Practices
-
-Security is serious business! 🛡️ Here's how to keep the project safe:
-
-### 🚫 Never Commit Secrets
-
-**NEVER EVER** commit these to the repository:
-
-- 🔑 Discord bot tokens
-- 🔐 API keys
-- 🗝️ Webhook URLs
-- 💾 Database credentials
-- 🔒 Any sensitive data
-
-**Use `.env` for secrets!** The `.env` file is in `.gitignore` for a reason. ☝️
-
-### ✅ Security Checklist
-
-- [ ] 🔍 Review your changes for exposed secrets before committing
-- [ ] 🛡️ Validate and sanitize all user inputs
-- [ ] 🔐 Use permission checks for sensitive operations
-- [ ] 📊 Log security-relevant events
-- [ ] ⚡ Keep dependencies up to date
-- [ ] 🔒 Use environment variables for configuration
-
-### 🔧 Security Commands
-
-```bash
-# Check for known vulnerabilities
-npm audit
-
-# Fix vulnerabilities automatically (when possible)
-npm audit fix
-
-# Check for outdated packages
-npm outdated
-
-# Update dependencies
-npm update
-```
-
-**Pro tip:** Dependabot is configured to automatically create PRs for security updates! 🤖
-
-### 🚨 Found a Security Issue?
-
-If you discover a security vulnerability, **DO NOT** open a public issue! 
-
-Instead:
-1. 📧 Email the maintainers privately
-2. 🔒 Include details and reproduction steps
-3. ⏰ Give us reasonable time to fix it
-4. 🎉 We'll credit you in the fix announcement (if you want)
-
-**See our [SECURITY.md](SECURITY.md) for full details on responsible disclosure.**
-
-## ⚡ Performance Tips
-
-Keep the bot fast and responsive! 🚀
-
-### Do's ✅
-
-- ✅ Use `async/await` for asynchronous operations
-- ✅ Cache frequently accessed data
-- ✅ Use connection pooling
-- ✅ Monitor logs for slow operations
-- ✅ Implement rate limiting (already built-in!)
-- ✅ Use efficient data structures
-
-### Don'ts ❌
-
-- ❌ Don't use blocking operations
-- ❌ Avoid unnecessary API calls
-- ❌ Don't load large data sets into memory unnecessarily
-- ❌ Avoid nested loops when possible
-- ❌ Don't ignore memory leaks
-
-```javascript
-// ✅ Good - Non-blocking, efficient
-async function processMessages(messages) {
-  return Promise.all(messages.map(msg => processMessage(msg)));
-}
-
-// ❌ Bad - Blocking, inefficient
-function processMessages(messages) {
-  let results = [];
-  for (let msg of messages) {
-    results.push(processMessageSync(msg)); // Blocks on each iteration
-  }
-  return results;
-}
-```
-
-## 🎯 Pull Request Process
-
-Ready to submit your contribution? Here's what happens next! 🎊
-
-### 1️⃣ Before Submitting
-
-Make sure you've:
-
-- ✅ Tested your changes thoroughly
-- ✅ Updated relevant documentation
-- ✅ Followed the coding standards
-- ✅ Written clear commit messages
-- ✅ Synced with the latest dev branch
-
-```bash
-# Sync with upstream
-git checkout dev
-git pull upstream dev
-git checkout your-feature-branch
-git rebase dev
-```
-
-### 2️⃣ Creating the PR
-
-1. 🚀 Push your branch to your fork
-   ```bash
-   git push origin feature/your-awesome-feature
-   ```
-
-2. 🌐 Go to GitHub and create a Pull Request
-
-3. 📝 Fill out the PR template:
-   - **Title**: Use conventional commit format (e.g., `feat: add user stats command`)
-   - **Description**: Explain what and why
-   - **Related issues**: Link any related issues (#123)
-   - **Screenshots**: If UI changes, include before/after
-   - **Testing**: Describe how you tested it
-
-### 3️⃣ PR Review Process
-
-Here's what happens after you submit:
-
-1. 🤖 **Automated Checks** - CI runs tests, linting, security scans
-   - ✅ All checks must pass
-   - 🔍 CodeQL analysis
-   - 🛡️ npm audit
-   - ✅ Jest tests
-
-2. 👀 **Code Review** - A maintainer reviews your code
-   - We aim to review within 48 hours
-   - We may request changes
-   - Don't take it personally - we're all learning! 💚
-
-3. 🔄 **Iterations** - Make requested changes
-   - Push new commits to the same branch
-   - The PR updates automatically
-   - Respond to comments
-
-4. ✅ **Approval** - Once approved:
-   - PR is merged to `dev`
-   - Changes ship to `main` with the next release PR
-   - You're credited in the release notes! 🎉
-
-5. 🎊 **Celebrate** - You're now a contributor! 🙌
-
-### 📋 PR Best Practices
-
-- 🎯 **Keep PRs focused** - One feature/fix per PR
-- 📏 **Keep PRs small** - Easier to review (aim for <500 lines)
-- 💬 **Be responsive** - Reply to review comments promptly
-- 🤝 **Be open to feedback** - Reviews help everyone improve
-- 📸 **Add screenshots** - Visual changes need visuals!
-- ✅ **Check the checklist** - Complete the PR template fully
-
-## ❓ Questions?
-
-Stuck? Need help? We're here for you! 🤗
-
-### 💬 Where to Ask
-
-- **💡 General questions** → [GitHub Discussions](https://github.com/whiteravens20/exemplar/discussions)
-- **🐛 Bug reports** → [GitHub Issues](https://github.com/whiteravens20/exemplar/issues)
-- **📚 Documentation** → Check `/docs` folder
-- **💻 Code examples** → Look at existing code in the repo
-
-### 📖 Helpful Resources
-
-- 📘 [README.md](README.md) - Project overview- 🔒 [SECURITY.md](SECURITY.md) - Security policy and reporting- 🚀 [QUICKSTART.md](docs/QUICKSTART.md) - Get started fast
-- 🔧 [SETUP.md](docs/SETUP.md) - Detailed setup guide
-- 🏗️ [PROJECT_STRUCTURE.md](docs/PROJECT_STRUCTURE.md) - Code organization
-- ❓ [FAQ.md](docs/FAQ.md) - Common questions
-- 🔄 [N8N_INTEGRATION.md](docs/N8N_INTEGRATION.md) - Workflow integration
-- 🐳 [DOCKER_SETUP.md](docs/DOCKER_SETUP.md) - Docker deployment
-
-### 🌟 Pro Tips
-
-- 🔍 Search closed issues - your question might be answered already
-- 📝 Read the existing code - it's a great learning resource
-- 🧪 Experiment in a test server - break things safely!
-- 💡 Start small - fix typos, improve docs, then move to code
-- 🤝 Help others - answer questions in discussions
-
-## 📄 License
-
-By contributing to this project, you agree that your contributions will be licensed under the [MIT License](LICENSE).
-
-This means:
-- ✅ Your code can be used freely
-- ✅ You retain copyright
-- ✅ You grant permissions to use, modify, and distribute
-- ✅ You provide code "as-is" without warranty
+Keep commits focused — one logical change per commit. The PR title follows the same format: release notes are generated from PR titles.
 
 ---
 
-## 🎉 Thank You!
+## Testing Requirements
 
-**Thank you so much for contributing!** 💖
+**Every change must be covered by tests.** This is not optional.
 
-Every contribution, no matter how small, makes this project better. Whether you're fixing a typo, reporting a bug, or adding a major feature - you're awesome! 🌟
+```bash
+npm test             # the whole suite, once
+npm run test:watch   # while you work
+```
 
-We're excited to see what you'll build! 🚀
+The suite must pass **with zero failures** before submitting.
 
-**Happy coding!** 💻✨
+- **Bug fixes** — add a regression test that fails on the original code and passes on the fix.
+- **New commands and handlers** — test the success path, the permission and hierarchy refusals, and the error path.
+- **Anything that decides who may do what** — test it as a pure function with the whole matrix, as `tests/dashboard-rbac.test.ts` and `tests/permissions.test.ts` do.
+- Prefer real logic over excessive mocking — mocks hide bugs. If you must mock, document why.
+
+Tests do not replace a run on Discord. Before you ask for review, try the change on a test server: in a DM, in a channel, as a member without the role, and with n8n switched off.
 
 ---
 
-### 🏆 Recognition
+## Secure Contributing
 
-Contributors are recognized in:
-- 📝 The auto-generated release notes for their contributions
-- 🌟 GitHub contributors page
-- 💚 Our eternal gratitude
+Exemplar acts on people and handles their messages. The following rules apply strictly.
 
-Want to see your name here? Make your first contribution today! 🎯
+### Permissions
+
+- Do not add a way to moderate that bypasses `src/utils/moderation-actions.ts`.
+- Do not widen what the bot asks for on the server. A change that needs a new Discord permission or gateway intent says so in the PR description and in [docs/SETUP.md](docs/SETUP.md).
+- The dashboard only reads. An endpoint that changes anything needs a dedicated issue first.
+
+### Messages and privacy
+
+- Message content goes to the n8n workflow and nowhere else. Do not log it, and do not store it beyond the conversation history the bot keeps today.
+- Do not add an outbound connection other than Discord, the configured n8n webhooks and the database.
+
+### Input handling
+
+- Treat everything from Discord and from n8n as untrusted: message content, command options, a workflow's answer.
+- An AI moderation verdict is only ever `allow`, `warn`, `timeout` or `delete`. Do not let a workflow's answer choose anything else.
+
+### Secrets and credentials
+
+- **Never commit secrets**, credentials, tokens or webhook URLs — not in code, not in comments, not in test fixtures.
+- Use environment variables for all secrets. The `.env` file is in `.gitignore`.
+- If you accidentally commit a secret, treat it as compromised immediately and rotate it. Then open a private security report.
+
+### AI-assisted code
+
+Most of this project is written with AI coding tools, as the [README](README.md#how-the-code-is-written-and-checked) describes, and contributions may be too. Do not submit AI output that you cannot explain and defend in review: read it, test it and take responsibility for it.
+
+### Pull request security checklist
+
+The pull request template carries this list; confirm it for every PR:
+
+```
+- [ ] No secrets, tokens, or webhook URLs are committed (`.env.example` is sanitised)
+- [ ] No new unvalidated environment variable is introduced; any new one is documented in `.env.example`
+- [ ] `npm audit` shows no new high/critical findings
+- [ ] ESLint passes with zero warnings
+- [ ] TypeScript compiles with zero errors
+```
+
+---
+
+## Submitting Changes
+
+1. **Fork** the repository and create a branch from `dev` (not `main`).
+2. Branch naming: `fix/short-description`, `feat/short-description`, `docs/short-description`, `security/short-description`.
+3. Make your changes, following this guide.
+4. Run the tests, the linter and the type check.
+5. Open a pull request against the `dev` branch.
+6. Fill out the PR template completely — incomplete PRs will be asked to add missing information.
+7. Respond to review comments. PRs that are not addressed within 30 days may be closed.
+
+`main` holds released code and changes only through a release pull request from `dev`.
+
+### PR description must include
+
+- **What** changed and **why**.
+- A reference to the related issue (`Closes #123` or `Relates to #123`).
+- For a schema change: the migration, and that it applies and rolls back.
+- For dependency additions: justification and `npm audit` output.
+
+---
+
+## Reporting Security Vulnerabilities
+
+**Do not open a public issue for security vulnerabilities.**
+
+Follow the process in [SECURITY.md](SECURITY.md).

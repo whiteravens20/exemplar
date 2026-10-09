@@ -44,17 +44,20 @@ updates:
 
   # Monitor GitHub Actions
   - package-ecosystem: "github-actions"
+    # Actions are pinned to commit SHAs; Dependabot moves the SHA and the
+    # version comment beside it together.
+    #
     # Let a newly published version settle for a week before proposing it. A
     # release can be yanked or a tag repointed in the hours after it lands, and
-    # none of these bumps is urgent. Dependabot security updates are exempt
-    # from cooldown and still open the moment an advisory lands.
+    # none of these bumps is urgent. A pinned action gets no Dependabot alert,
+    # so the "Actions audit" job in security.yml watches the advisory database
+    # instead.
     cooldown:
       default-days: 7
     directory: "/"
     target-branch: "dev"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "monthly"
       time: "06:00"
       timezone: "UTC"
     open-pull-requests-limit: 5
@@ -64,15 +67,30 @@ updates:
     labels:
       - "github-actions"
       - "dependencies"
+    groups:
+      # Minor and patch updates in one pull request; a major comes on its own
+      actions-non-breaking:
+        update-types:
+          - "minor"
+          - "patch"
 
   # Monitor Docker base images
   - package-ecosystem: "docker"
-    # Let a newly published version settle for a week before proposing it. A
-    # release can be yanked or a tag repointed in the hours after it lands, and
-    # none of these bumps is urgent. Dependabot security updates are exempt
-    # from cooldown and still open the moment an advisory lands.
+    # The Dockerfile pins node by version and digest. A new minor or patch
+    # moves the two together; a rebuild of the same version moves the digest
+    # alone.
+    #
+    # Let a newly published version settle for a week before proposing it, a
+    # rebuilt one as well. A release can be yanked or a tag repointed in the
+    # hours after it lands, and none of these bumps is urgent.
     cooldown:
       default-days: 7
+    # A new major of Node is a change to the project, made by hand together
+    # with `node-version` in the workflows.
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
     directory: "/"
     target-branch: "dev"
     schedule:
