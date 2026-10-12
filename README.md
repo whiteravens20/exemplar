@@ -172,7 +172,7 @@ Please report vulnerabilities privately as described in [SECURITY.md](SECURITY.m
 
 ## How the code is written and checked
 
-Exemplar is built by one maintainer using AI coding tools. The tools write most of the code, tests and documentation; the maintainer decides what gets built and is responsible for everything that is merged. There is no second human reviewer, so the project relies on checks that anyone can inspect.
+Exemplar is built using AI coding tools. The tools write most of the code, tests and documentation; the maintainer decides what gets built and is responsible for everything that is merged. The project relies on checks that anyone can inspect.
 
 **What a change goes through**
 
