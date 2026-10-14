@@ -9,7 +9,7 @@
 | `security.yml` | Push or PR to `main`/`dev`; weekly; manual | Dependency audit and registry signature check, dependency review, Trivy scans of the repository and of the Docker image, checks of the pinned actions |
 | `scorecard.yml` | Push to `dev`; weekly | OpenSSF Scorecard, published for the README badge |
 | `dependabot-auto-merge.yml` | Dependabot PRs | Auto-merges patch updates once required checks pass; labels major updates |
-| `release.yml` | Push of a `vX.Y.Z` tag | Verifies the tag is on `main`, builds and pushes the Docker image to GHCR, scans it with Trivy, creates the GitHub Release |
+| `release.yml` | Push of a `vX.Y.Z` tag | Verifies the tag is on `main`, builds the Docker image and pushes it to GHCR by its digest, scans it with Trivy, and only when the scan passed tags it and creates the GitHub Release |
 | `branch-protection-audit.yml` | Daily; manual | Fails if `main` branch protection drifts from the profile below |
 
 ## Branch model
@@ -45,7 +45,7 @@ To read the full protection config, the audit needs a fine-grained PAT with `Adm
    git push origin vX.Y.Z
    ```
 
-`release.yml` then publishes `ghcr.io/whiteravens20/exemplar` with the tags `X.Y.Z`, `X.Y`, `X`, `main` and `latest`, an alias of `main`, and creates the GitHub Release. The release body is the tag message plus notes generated from PR titles (grouped by `.github/release.yml`), with a source tarball attached. A tag that does not point at a commit on `main` is ignored.
+`release.yml` then pushes `ghcr.io/whiteravens20/exemplar` by its digest alone and scans it; only when the scan passed does it put the tags `X.Y.Z`, `X.Y`, `X`, `main` and `latest`, an alias of `main`, on that digest and create the GitHub Release. The release body is the tag message plus notes generated from PR titles (grouped by `.github/release.yml`), with a source tarball attached. A tag that does not point at a commit on `main` is ignored.
 
 The image scan, here and in `security.yml`, fails on unacknowledged HIGH/CRITICAL CVEs; acknowledge one by adding its ID with a justification to `.trivyignore`.
 
