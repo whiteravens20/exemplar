@@ -71,7 +71,7 @@ Should return:
 
 ## Manual Setup (Without Docker)
 
-Needs Node.js 22+, npm 11+ and PostgreSQL 14+.
+Needs Node.js 24+, npm 11+ and PostgreSQL 14+.
 
 ### 1️⃣ Install PostgreSQL
 ```bash

@@ -3,17 +3,12 @@
 # (.github/dependabot.yml).
 
 # Build stage
-FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS builder
+FROM node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS builder
 
 WORKDIR /app
 
 # Patch Alpine base packages
 RUN apk upgrade --no-cache
-
-# Upgrade npm to the version required by package.json `engines` (>=11.12.1).
-# node:22-alpine ships npm 10, which cannot validate lockfiles that use nested
-# overrides and fails `npm ci` with a spurious "does not satisfy" error.
-RUN npm install -g npm@latest
 
 # Copy .npmrc for supply-chain hardening (min-release-age, ignore-scripts)
 COPY .npmrc ./
@@ -40,7 +35,7 @@ RUN npm run build
 RUN npm prune --omit=dev --omit=optional --ignore-scripts
 
 # Runtime stage
-FROM node:22.23.3-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+FROM node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
 
 WORKDIR /app
 

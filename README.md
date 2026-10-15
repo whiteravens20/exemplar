@@ -7,7 +7,7 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 [![Release](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml/badge.svg)](https://github.com/whiteravens20/exemplar/actions/workflows/release.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/whiteravens20/exemplar/badge)](https://scorecard.dev/viewer/?uri=github.com/whiteravens20/exemplar)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Node.js 22+](https://img.shields.io/badge/Node.js-22%2B-green.svg)](https://nodejs.org/)
+[![Node.js 24+](https://img.shields.io/badge/Node.js-24%2B-green.svg)](https://nodejs.org/)
 
 ## Features
 
@@ -71,7 +71,7 @@ Exemplar is **self-hosted and single-server**. There is no public instance: you 
 
 ### Requirements
 
-- Node.js 22+ and npm 11+, or Docker with Compose
+- Node.js 24+ and npm 11+, or Docker with Compose
 - PostgreSQL 14+ (included in `docker-compose.yml`)
 - An n8n instance with a chat model (the bundled workflows use Ollama)
 - Optional: a SearXNG instance for the assistant's web search

@@ -37,7 +37,7 @@
 - [ ] Admins can execute moderation commands
 
 ### 5. Node.js & Dependencies (without Docker)
-- [ ] Node.js 22+ and npm 11+ installed
+- [ ] Node.js 24+ and npm 11+ installed
 - [ ] Dependencies installed: `npm install`
 - [ ] Project built: `npm run build`
 - [ ] Migrations applied: `npm run migrate:up`
