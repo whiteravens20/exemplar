@@ -364,7 +364,38 @@
   },
   "reactionRoles": {
     "auditGrant": "Rola za reakcję: dodano reakcję {{emoji}}",
-    "auditRevoke": "Rola za reakcję: usunięto reakcję {{emoji}}"
+    "auditRevoke": "Rola za reakcję: usunięto reakcję {{emoji}}",
+    "log": {
+      "actor": "Role za reakcje",
+      "grantedTitle": "Nadano rolę",
+      "revokedTitle": "Odebrano rolę",
+      "grantFailedTitle": "Nie nadano roli",
+      "revokeFailedTitle": "Nie odebrano roli",
+      "boundTitle": "Dodano rolę za reakcję",
+      "unboundTitle": "Usunięto rolę za reakcję",
+      "forgottenTitle": "Role za reakcje usunięte automatycznie",
+      "fields": {
+        "role": "Rola",
+        "reaction": "Reakcja",
+        "binding": "Powiązanie",
+        "bindings": "Powiązania",
+        "gives": "Daje"
+      },
+      "problems": {
+        "roleMissing": "Rola już nie istnieje.",
+        "everyone": "Nie można nadać @everyone.",
+        "managed": "Rolą zarządza integracja.",
+        "botPermission": "Nie mam uprawnienia Zarządzanie rolami.",
+        "botHierarchy": "Rola jest na poziomie mojej najwyższej roli lub wyżej. Przesuń moją rolę ponad nią.",
+        "discord": "Discord odrzucił zmianę: {{error}}"
+      },
+      "forgetCause": {
+        "messageDeleted": "Wiadomość została usunięta.",
+        "roleDeleted": "Rola została usunięta.",
+        "messageDeletedOffline": "Wiadomość została usunięta, gdy bot był offline.",
+        "roleDeletedOffline": "Rola została usunięta, gdy bot był offline."
+      }
+    }
   },
   "dashboard": {
     "title": "Panel moderacji",
@@ -480,6 +511,10 @@
       "unban": "odbanowanie",
       "delete": "usunięcie",
       "ai_flag": "flaga AI",
+      "role_grant": "nadanie roli",
+      "role_revoke": "odebranie roli",
+      "role_failed": "nieudana zmiana roli",
+      "reaction_role": "konfiguracja ról za reakcje",
       "feedback": "opinia"
     },
     "severities": {
@@ -501,7 +536,12 @@
       "timeout": "wyciszenie",
       "unmute": "zdjęcie wyciszenia",
       "unban": "odbanowanie",
-      "delete": "usunięcie"
+      "delete": "usunięcie",
+      "grant": "nadanie",
+      "revoke": "odebranie",
+      "bind": "dodanie powiązania",
+      "unbind": "usunięcie powiązania",
+      "forget": "automatyczne usunięcie powiązania"
     },
     "callback": {
       "invalidState": "Nieprawidłowe lub wygasłe żądanie logowania. Spróbuj ponownie.",

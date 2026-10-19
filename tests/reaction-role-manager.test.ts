@@ -15,12 +15,20 @@ vi.mock('../src/utils/logger.js', () => ({
   default: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }));
 
+vi.mock('../src/utils/admin-log.js', () => ({
+  logReactionRole: vi.fn(async () => undefined),
+  logReactionRoleFailure: vi.fn(async () => undefined),
+  logBindingsForgotten: vi.fn(async () => undefined),
+}));
+
 import reactionRoles from '../src/utils/reaction-role-manager.js';
 import reactionRoleRepo from '../src/db/repositories/reaction-role-repository.js';
+import * as adminLog from '../src/utils/admin-log.js';
 import configManager from '../src/config/config.js';
 import type { ReactionRoleRow } from '../src/types/database.js';
 
 const repo = vi.mocked(reactionRoleRepo);
+const log = vi.mocked(adminLog);
 const GUILD = 'guild';
 
 function row(id: number, messageId: string, emojiKey: string, roleId: string): ReactionRoleRow {
@@ -253,8 +261,9 @@ describe('ReactionRoleManager', () => {
   });
 
   it('touches the database on message or role deletion only when bound', async () => {
-    await reactionRoles.forgetMessages(['unbound'], 'message deleted');
-    await reactionRoles.forgetRoles(['r3'], 'role deleted');
+    const { guild } = setup();
+    await reactionRoles.forgetMessages(guild, ['unbound'], 'messageDeleted');
+    await reactionRoles.forgetRoles(guild, ['r3'], 'roleDeleted');
     expect(repo.deleteByMessages).not.toHaveBeenCalled();
     expect(repo.deleteByRoles).toHaveBeenCalledWith(['r3']);
     expect(reactionRoles.match('m2', '👍')).toEqual([]);
@@ -298,5 +307,81 @@ describe('ReactionRoleManager', () => {
     repo.delete.mockResolvedValueOnce(created);
     expect(await reactionRoles.unbind(10, 'admin')).toBe(created);
     expect(reactionRoles.binding(10)).toBeUndefined();
+  });
+});
+
+describe('ReactionRoleManager reports to the admin log', () => {
+  it('each role granted and removed by a reaction', async () => {
+    const { react, guild, member } = setup();
+    await react('m1', '👍', 'add');
+    await react('m1', '👍', 'remove');
+    expect(log.logReactionRole.mock.calls).toEqual([
+      [guild, member, bindings[0], 'r1', 'add'],
+      [guild, member, bindings[0], 'r1', 'remove'],
+    ]);
+    expect(log.logReactionRoleFailure).not.toHaveBeenCalled();
+  });
+
+  it('nothing for a reaction that changes no role', async () => {
+    const { react } = setup({ memberRoles: ['r1'] });
+    await react('m1', '👍', 'add');
+    expect(log.logReactionRole).not.toHaveBeenCalled();
+    expect(log.logReactionRoleFailure).not.toHaveBeenCalled();
+  });
+
+  it('a role the bot cannot hand out, with the problem', async () => {
+    const { react, guild, member } = setup();
+    await react('m3', '🔥', 'add');
+    expect(log.logReactionRoleFailure).toHaveBeenCalledWith(guild, member, bindings[4], 'r-high', 'add', {
+      kind: 'problem',
+      problem: 'botHierarchy',
+    });
+    expect(log.logReactionRole).not.toHaveBeenCalled();
+  });
+
+  it('a role change Discord refused, with its error', async () => {
+    const { react, guild, member } = setup();
+    member.roles.add.mockRejectedValueOnce(new Error('Missing Permissions'));
+    await react('m1', '👍', 'add');
+    expect(log.logReactionRoleFailure).toHaveBeenCalledWith(guild, member, bindings[0], 'r1', 'add', {
+      kind: 'discord',
+      error: 'Missing Permissions',
+    });
+    expect(log.logReactionRole).not.toHaveBeenCalled();
+  });
+
+  it('a binding whose role no longer exists', async () => {
+    const orphan = row(30, 'm7', '👍', 'deleted-role');
+    repo.findAll.mockResolvedValue([orphan]);
+    const { client, react, guild, member } = setup();
+    // Loaded while the role still existed; deleted later without an event.
+    guild.roles.cache.set('deleted-role', { id: 'deleted-role', position: 1, guild, managed: false });
+    await reactionRoles.load(client);
+    guild.roles.cache.delete('deleted-role');
+    await react('m7', '👍', 'add');
+    expect(log.logReactionRoleFailure).toHaveBeenCalledWith(guild, member, orphan, 'deleted-role', 'add', {
+      kind: 'roleMissing',
+    });
+  });
+
+  it('the bindings it drops, with the cause', async () => {
+    const { guild } = setup();
+    await reactionRoles.forgetRoles(guild, ['r3'], 'roleDeleted');
+    expect(log.logBindingsForgotten).toHaveBeenCalledWith(guild, [bindings[2]], 'roleDeleted');
+    await reactionRoles.forgetMessages(guild, ['unbound'], 'messageDeleted');
+    expect(log.logBindingsForgotten).toHaveBeenCalledTimes(1);
+  });
+
+  it('bindings dropped at startup as removed while offline', async () => {
+    const gone = row(2, 'gone', '👍', 'r1');
+    const orphan = row(3, 'm1', '🎮', 'deleted-role');
+    repo.findAll.mockResolvedValue([row(1, 'm1', '👍', 'r1'), gone, orphan]);
+    const { client } = setup({ goneMessages: ['gone'] });
+    await reactionRoles.load(client);
+    const causes = log.logBindingsForgotten.mock.calls.map(([, rows, cause]) => [rows.map((r) => r.id), cause]);
+    expect(causes).toEqual([
+      [[3], 'roleDeletedOffline'],
+      [[2], 'messageDeletedOffline'],
+    ]);
   });
 });

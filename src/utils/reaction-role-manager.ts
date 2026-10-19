@@ -15,6 +15,12 @@ import configManager from '../config/config.js';
 import { getConfiguredGuild } from './moderation-actions.js';
 import reactionRoleRepo from '../db/repositories/reaction-role-repository.js';
 import {
+  logBindingsForgotten,
+  logReactionRole,
+  logReactionRoleFailure,
+  type ForgetCause,
+} from './admin-log.js';
+import {
   Cooldown,
   KeyedQueue,
   REACTION_COMMAND_COOLDOWN_MS,
@@ -67,7 +73,7 @@ class ReactionRoleManager {
     const goneRoles = [...new Set(rows.map((row) => row.role_id))].filter(
       (roleId): roleId is string => roleId !== null && !guild.roles.cache.has(roleId)
     );
-    await this.forgetRoles(goneRoles, 'role deleted while offline');
+    await this.forgetRoles(guild, goneRoles, 'roleDeletedOffline');
 
     const messages = new Map(rows.map((row) => [row.message_id, row.channel_id]));
     const goneMessages: string[] = [];
@@ -91,7 +97,7 @@ class ReactionRoleManager {
         }
       }
     }
-    await this.forgetMessages(goneMessages, 'message deleted while offline');
+    await this.forgetMessages(guild, goneMessages, 'messageDeletedOffline');
   }
 
   bindings(messageId?: string): ReactionRoleRow[] {
@@ -139,24 +145,26 @@ class ReactionRoleManager {
     return row;
   }
 
-  async forgetMessages(messageIds: string[], reason: string): Promise<void> {
+  async forgetMessages(guild: Guild, messageIds: string[], cause: ForgetCause): Promise<void> {
     const removed = this.index.removeMessages(messageIds);
     if (removed.length === 0) return;
     await reactionRoleRepo.deleteByMessages(messageIds);
     logger.info('Reaction-role bindings removed', {
-      reason,
+      cause,
       bindingIds: removed.map((row) => row.id),
     });
+    await logBindingsForgotten(guild, removed, cause);
   }
 
-  async forgetRoles(roleIds: string[], reason: string): Promise<void> {
+  async forgetRoles(guild: Guild, roleIds: string[], cause: ForgetCause): Promise<void> {
     const removed = this.index.removeRoles(roleIds);
     if (removed.length === 0) return;
     await reactionRoleRepo.deleteByRoles(roleIds);
     logger.info('Reaction-role bindings removed', {
-      reason,
+      cause,
       bindingIds: removed.map((row) => row.id),
     });
+    await logBindingsForgotten(guild, removed, cause);
   }
 
   /** Entry point for the reaction add/remove events. */
@@ -234,12 +242,19 @@ class ReactionRoleManager {
     const role = guild.roles.cache.get(roleId);
     if (!role) {
       logger.warn('Reaction role skipped: role not found', context);
+      await logReactionRoleFailure(guild, member, binding, roleId, change, {
+        kind: 'roleMissing',
+      });
       return;
     }
     const problem = roleProblem(role, bot);
     if (problem) {
       logger.warn('Reaction role skipped: bot cannot manage the role', {
         ...context,
+        problem,
+      });
+      await logReactionRoleFailure(guild, member, binding, roleId, change, {
+        kind: 'problem',
         problem,
       });
       return;
@@ -267,7 +282,13 @@ class ReactionRoleManager {
         change,
         error: (error as Error).message,
       });
+      await logReactionRoleFailure(guild, member, binding, roleId, change, {
+        kind: 'discord',
+        error: (error as Error).message,
+      });
+      return;
     }
+    await logReactionRole(guild, member, binding, roleId, change);
   }
 
   /** DM the member the reply of the bound command, at most once per cooldown. */

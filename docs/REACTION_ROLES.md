@@ -113,7 +113,7 @@ implementing `reactionReply` in its module and naming it in
   one leaves roles as they are.
 - **Hierarchy.** Before each change the bot checks that it still has Manage
   Roles and that the role is still below its highest role. When a check fails,
-  the change is skipped and a warning is logged.
+  the change is skipped and the staff log says why.
 - **Audit log.** Role changes carry a reason such as *Reaction role: reacted
   with 🎮*.
 
@@ -128,6 +128,14 @@ At startup the bot fetches each bound message once and drops bindings whose
 message, channel or role no longer exists. When it cannot tell, for example
 because it lost access to a channel, it keeps the binding and logs a warning.
 While running, deleting a bound message or role deletes its bindings.
+
+## Staff log
+
+Each role granted or removed through a reaction, each change the bot could not
+make and why, each binding added or removed with `/reactionrole` and each
+binding dropped because its message or role is gone gets an entry in the
+mod-log channel (`MOD_LOG_CHANNEL_ID`) and in the dashboard's event log, as
+moderation does.
 
 ## Logs
 

@@ -338,7 +338,38 @@
   },
   "reactionRoles": {
     "auditGrant": "Reaction role: reacted with {{emoji}}",
-    "auditRevoke": "Reaction role: removed the {{emoji}} reaction"
+    "auditRevoke": "Reaction role: removed the {{emoji}} reaction",
+    "log": {
+      "actor": "Reaction roles",
+      "grantedTitle": "Role granted",
+      "revokedTitle": "Role removed",
+      "grantFailedTitle": "Role not granted",
+      "revokeFailedTitle": "Role not removed",
+      "boundTitle": "Reaction role added",
+      "unboundTitle": "Reaction role removed",
+      "forgottenTitle": "Reaction roles removed automatically",
+      "fields": {
+        "role": "Role",
+        "reaction": "Reaction",
+        "binding": "Binding",
+        "bindings": "Bindings",
+        "gives": "Gives"
+      },
+      "problems": {
+        "roleMissing": "The role no longer exists.",
+        "everyone": "@everyone can't be granted.",
+        "managed": "The role is managed by an integration.",
+        "botPermission": "I don't have the Manage Roles permission.",
+        "botHierarchy": "The role is at or above my highest role. Move my role above it.",
+        "discord": "Discord refused the change: {{error}}"
+      },
+      "forgetCause": {
+        "messageDeleted": "The message was deleted.",
+        "roleDeleted": "The role was deleted.",
+        "messageDeletedOffline": "The message was deleted while the bot was offline.",
+        "roleDeletedOffline": "The role was deleted while the bot was offline."
+      }
+    }
   },
   "dashboard": {
     "title": "Moderation Dashboard",
@@ -450,6 +481,10 @@
       "unban": "unban",
       "delete": "delete",
       "ai_flag": "AI flag",
+      "role_grant": "role granted",
+      "role_revoke": "role removed",
+      "role_failed": "role change failed",
+      "reaction_role": "reaction role setup",
       "feedback": "feedback"
     },
     "severities": {
@@ -471,7 +506,12 @@
       "timeout": "timeout",
       "unmute": "unmute",
       "unban": "unban",
-      "delete": "delete"
+      "delete": "delete",
+      "grant": "grant",
+      "revoke": "revoke",
+      "bind": "binding added",
+      "unbind": "binding removed",
+      "forget": "binding removed automatically"
     },
     "callback": {
       "invalidState": "Invalid or expired login request. Please try again.",
