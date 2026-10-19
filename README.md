@@ -30,6 +30,9 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 - A binding can instead DM the member the reply of `/rules` or `/help`.
 - Bindings survive restarts. Bindings of deleted messages and roles are cleaned up. See [docs/REACTION_ROLES.md](docs/REACTION_ROLES.md).
 
+### Staff log
+- The mod-log channel (`MOD_LOG_CHANNEL_ID`) and the dashboard get every moderation action, and also each role granted or removed through a reaction, each reaction-role change, `/flushdb` and each member who left the server, with the moderator when someone kicked or banned them.
+
 ### Languages
 - Everything the bot writes to Discord (commands, replies, embeds, DMs, mod-log) is translated. English and Polish ship with the bot; `BOT_LANGUAGE` picks the server's language.
 - Another language takes one translation file in `src/locales/`, with English filling any gaps. See [docs/I18N.md](docs/I18N.md).
