@@ -153,7 +153,7 @@ Without Docker, with PostgreSQL already running:
 
 ```bash
 # Install dependencies
-npm install
+npm ci
 
 # Build the project
 npm run build

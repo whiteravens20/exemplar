@@ -36,7 +36,7 @@ What actually happens. Include any error messages or unexpected output.
 
 | Field | Value |
 |---|---|
-| Node.js version | e.g. 22.x |
+| Node.js version | e.g. 24.x |
 | Bot version | from `package.json` |
 | Operating System | e.g. Ubuntu 24.04 |
 | Deployment method | Docker / direct Node.js |

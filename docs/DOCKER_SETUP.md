@@ -389,7 +389,7 @@ kubectl apply -f kubernetes.yaml
 
 ## Image Size
 
-The image is about 350 MB (Node.js 22 on Alpine plus the production
+The image is about 350 MB (Node.js 24 on Alpine plus the production
 dependencies). The build stage already drops the dev dependencies; the runtime
 stage holds only `dist/`, the production `node_modules` and the migrations.
 

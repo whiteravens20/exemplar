@@ -79,7 +79,7 @@ The `overrides` block in `package.json` is not covered by Dependabot. Review it 
 
 ### Container
 
-- [x] Multi-stage build; npm is removed from the runtime image
+- [x] Multi-stage build; npm, npx, corepack and yarn are removed from the runtime image
 - [x] Runs as a non-root user
 - [x] Alpine base image, pinned by version and digest
 - [x] `docker-compose.yml` runs the bot with a read-only root filesystem, all capabilities dropped, `no-new-privileges` and `/tmp` mounted `noexec`

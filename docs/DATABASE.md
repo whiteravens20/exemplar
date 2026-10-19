@@ -97,7 +97,7 @@ the Compose database:
    docker compose up -d postgres
    ```
 
-2. **Run migrations** (needs `npm install` and `npm run build` first):
+2. **Run migrations** (needs `npm ci` and `npm run build` first):
    ```bash
    npm run migrate:up
    ```
@@ -116,7 +116,7 @@ the Compose database:
    GRANT ALL PRIVILEGES ON DATABASE discord_bot TO bot_user;
    ```
 
-2. **Run migrations** (needs `npm install` and `npm run build` first):
+2. **Run migrations** (needs `npm ci` and `npm run build` first):
    ```bash
    npm run migrate:up
    ```
