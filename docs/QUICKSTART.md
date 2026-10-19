@@ -90,7 +90,7 @@ createdb discord_bot
 ```bash
 git clone https://github.com/whiteravens20/exemplar.git
 cd exemplar
-npm install
+npm ci
 npm run build
 ```
 

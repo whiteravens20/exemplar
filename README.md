@@ -134,7 +134,7 @@ Compose starts PostgreSQL, waits for it to be healthy, runs pending migrations a
 ### Node.js
 
 ```bash
-npm install
+npm ci
 npm run build
 npm run migrate:up
 npm start

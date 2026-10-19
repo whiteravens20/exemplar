@@ -38,7 +38,7 @@
 
 ### 5. Node.js & Dependencies (without Docker)
 - [ ] Node.js 24+ and npm 11+ installed
-- [ ] Dependencies installed: `npm install`
+- [ ] Dependencies installed: `npm ci`
 - [ ] Project built: `npm run build`
 - [ ] Migrations applied: `npm run migrate:up`
 
@@ -57,7 +57,7 @@ git clone https://github.com/whiteravens20/exemplar.git
 cd exemplar
 
 # 2. Installation
-npm install
+npm ci
 
 # 3. Configuration
 cp .env.example .env
@@ -84,7 +84,7 @@ Starts PostgreSQL, applies the migrations and starts the bot. See [DOCKER_SETUP.
 #### Option 2: PM2
 ```bash
 # Build and prepare the database
-npm install
+npm ci
 npm run build
 npm run migrate:up
 
@@ -104,7 +104,7 @@ pm2 logs discord-bot
 ```
 
 #### Option 3: Systemd Service
-Build the project (`npm install && npm run build && npm run migrate:up`) in the working directory first.
+Build the project (`npm ci && npm run build && npm run migrate:up`) in the working directory first.
 
 ```bash
 # Create service file

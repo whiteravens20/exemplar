@@ -52,13 +52,13 @@
 **A:** Check:
 1. `.env` - a missing required variable stops the bot with `Missing required configuration: <name>`
 2. The log: `docker compose logs discord-bot`, or `logs/combined.log` without Docker
-3. Without Docker: `npm install` and `npm run build` have been run
+3. Without Docker: `npm ci` and `npm run build` have been run
 4. `bash scripts/test-bot.sh` checks the Node.js version, the dependencies and the type check
 
 ### Q: How to run on VPS/Server?
 **A:** With Docker Compose, see [DOCKER_SETUP.md](DOCKER_SETUP.md). Without Docker, build once and keep the process alive with PM2:
 ```bash
-npm install
+npm ci
 npm run build
 npm run migrate:up
 npm install -g pm2
