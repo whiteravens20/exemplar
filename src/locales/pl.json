@@ -403,6 +403,23 @@
       }
     }
   },
+  "memberLeave": {
+    "title": "Członek opuścił serwer",
+    "fields": {
+      "cause": "Przyczyna",
+      "joined": "Data dołączenia",
+      "roles": "Role"
+    },
+    "left": "Wyjście z serwera z własnej woli.",
+    "kicked": "Wyrzucenie przez: {{moderator}}.",
+    "kickedReason": "Wyrzucenie przez: {{moderator}}. Powód: {{reason}}",
+    "banned": "Ban nałożony przez: {{moderator}}.",
+    "bannedReason": "Ban nałożony przez: {{moderator}}. Powód: {{reason}}",
+    "unknownModerator": "nieznany moderator",
+    "unknown": "Nie udało się ustalić, czy było to wyjście, czy usunięcie z serwera: {{error}}",
+    "noRoles": "brak",
+    "notKnown": "nieznana"
+  },
   "dashboard": {
     "title": "Panel moderacji",
     "login": {
@@ -522,6 +539,7 @@
       "role_failed": "nieudana zmiana roli",
       "reaction_role": "konfiguracja ról za reakcje",
       "data_flush": "wyczyszczenie danych",
+      "member_leave": "odejście z serwera",
       "feedback": "opinia"
     },
     "severities": {
@@ -549,7 +567,9 @@
       "bind": "dodanie powiązania",
       "unbind": "usunięcie powiązania",
       "forget": "automatyczne usunięcie powiązania",
-      "flush": "wyczyszczenie danych"
+      "flush": "wyczyszczenie danych",
+      "left": "wyjście",
+      "unknown": "nieznana"
     },
     "callback": {
       "invalidState": "Nieprawidłowe lub wygasłe żądanie logowania. Spróbuj ponownie.",

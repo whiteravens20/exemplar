@@ -13,6 +13,7 @@ import {
   logBindingChange,
   logBindingsForgotten,
   logDatabaseFlush,
+  logMemberLeave,
   logReactionRole,
   logReactionRoleFailure,
 } from '../src/utils/admin-log.js';
@@ -248,5 +249,103 @@ describe('a cleared database in the admin log', () => {
     );
     expect(sent().title).toBe(`🧹 ${t('commands.flushdb.logTitle')}`);
     expect(sent().fields[t('commands.flushdb.logDeletedField')]).toBe(reason);
+  });
+});
+
+describe('a departure in the admin log', () => {
+  it('records a member who left on their own, with join date and roles', async () => {
+    const { guild, member, sent } = setup();
+    await logMemberLeave(guild, member, { kind: 'left' });
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'member_leave',
+        severity: 'info',
+        actorType: 'human',
+        actorId: 'u1',
+        targetUserId: 'u1',
+        action: 'left',
+        reason: t('memberLeave.left'),
+        metadata: { joinedAt: '2026-01-02T03:04:05.000Z', roles: [{ id: 'r1', name: 'Gamer' }] },
+      })
+    );
+    const { title, fields } = sent();
+    expect(title).toBe(`📤 ${t('memberLeave.title')}`);
+    expect(fields[t('memberLeave.fields.cause')]).toBe(t('memberLeave.left'));
+    expect(fields[t('memberLeave.fields.joined')]).toBe(`<t:${Date.UTC(2026, 0, 2, 3, 4, 5) / 1000}:R>`);
+    // @everyone is not listed.
+    expect(fields[t('memberLeave.fields.roles')]).toBe('<@&r1>');
+  });
+
+  it('names the moderator and reason of a kick or ban done outside the bot', async () => {
+    const { guild, member, admin, sent } = setup();
+    await logMemberLeave(guild, member, { kind: 'kicked', executor: admin, reason: 'spam' });
+    const kicked = t('memberLeave.kickedReason', { moderator: 'admin', reason: 'spam' });
+    expect(record).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        severity: 'medium',
+        actorType: 'human',
+        actorId: 'a1',
+        action: 'kick',
+        reason: kicked,
+      })
+    );
+    expect(sent().fields[t('memberLeave.fields.cause')]).toBe(kicked);
+
+    await logMemberLeave(guild, member, { kind: 'banned', executor: null, reason: null });
+    const banned = t('memberLeave.banned', { moderator: t('memberLeave.unknownModerator') });
+    expect(record).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        action: 'ban',
+        actorId: null,
+        actorLabel: t('memberLeave.unknownModerator'),
+        reason: banned,
+      })
+    );
+  });
+
+  it('says so when the cause could not be read', async () => {
+    const { guild, member } = setup();
+    await logMemberLeave(guild, member, { kind: 'unknown', error: 'Missing Permissions' });
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        severity: 'low',
+        actorType: 'system',
+        actorId: null,
+        action: 'unknown',
+        reason: t('memberLeave.unknown', { error: 'Missing Permissions' }),
+      })
+    );
+  });
+
+  it('marks join date and roles unknown for a member the bot had not cached', async () => {
+    const { guild, user, sent } = setup();
+    const partial: any = { id: 'u1', user, partial: true, joinedTimestamp: null };
+    await logMemberLeave(guild, partial, { kind: 'left' });
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({ metadata: { joinedAt: null, roles: null } })
+    );
+    expect(sent().fields[t('memberLeave.fields.joined')]).toBe(t('memberLeave.notKnown'));
+    expect(sent().fields[t('memberLeave.fields.roles')]).toBe(t('memberLeave.notKnown'));
+  });
+
+  it('says a member had no roles', async () => {
+    const { guild, member, sent } = setup();
+    member.roles.cache = new Map([['g1', { id: 'g1', name: '@everyone' }]]);
+    await logMemberLeave(guild, member, { kind: 'left' });
+    expect(sent().fields[t('memberLeave.fields.roles')]).toBe(t('memberLeave.noRoles'));
+  });
+
+  it('lists only whole role mentions when they do not fit', async () => {
+    const { guild, member, sent } = setup();
+    const many = Array.from({ length: 60 }, (_, i) => {
+      const id = String(10_000_000_000_000_000n + BigInt(i));
+      return [id, { id, name: `role ${i}` }] as const;
+    });
+    member.roles.cache = new Map(many);
+    await logMemberLeave(guild, member, { kind: 'left' });
+    const value: string = sent().fields[t('memberLeave.fields.roles')];
+    expect(value.length).toBeLessThanOrEqual(1024);
+    expect(value.endsWith(' …')).toBe(true);
+    expect(value.replace(/ …$/, '').split(' ').every((m) => /^<@&\d+>$/.test(m))).toBe(true);
   });
 });

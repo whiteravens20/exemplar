@@ -34,6 +34,7 @@
      - Add Reactions
    - General:
      - Manage Roles (reaction roles; see [REACTION_ROLES.md](REACTION_ROLES.md))
+     - View Audit Log (tells a member who left the server from one who was kicked or banned)
    - Moderation:
      - Kick Members
      - Ban Members

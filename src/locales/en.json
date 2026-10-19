@@ -375,6 +375,23 @@
       }
     }
   },
+  "memberLeave": {
+    "title": "Member left the server",
+    "fields": {
+      "cause": "Cause",
+      "joined": "Joined",
+      "roles": "Roles"
+    },
+    "left": "Left on their own.",
+    "kicked": "Kicked by {{moderator}}.",
+    "kickedReason": "Kicked by {{moderator}}: {{reason}}",
+    "banned": "Banned by {{moderator}}.",
+    "bannedReason": "Banned by {{moderator}}: {{reason}}",
+    "unknownModerator": "an unknown moderator",
+    "unknown": "Couldn't tell whether they left or were removed: {{error}}",
+    "noRoles": "none",
+    "notKnown": "unknown"
+  },
   "dashboard": {
     "title": "Moderation Dashboard",
     "login": {
@@ -490,6 +507,7 @@
       "role_failed": "role change failed",
       "reaction_role": "reaction role setup",
       "data_flush": "data cleared",
+      "member_leave": "member left",
       "feedback": "feedback"
     },
     "severities": {
@@ -517,7 +535,9 @@
       "bind": "binding added",
       "unbind": "binding removed",
       "forget": "binding removed automatically",
-      "flush": "data cleared"
+      "flush": "data cleared",
+      "left": "left",
+      "unknown": "unknown"
     },
     "callback": {
       "invalidState": "Invalid or expired login request. Please try again.",

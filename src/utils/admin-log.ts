@@ -3,6 +3,7 @@ import {
   EmbedBuilder,
   type Guild,
   type GuildMember,
+  type PartialGuildMember,
   type TextChannel,
   type User,
 } from 'discord.js';
@@ -12,6 +13,7 @@ import logger from './logger.js';
 import { t } from './i18n.js';
 import type { BotRoleProblem } from './reaction-roles.js';
 import type { ReactionChange } from './reaction-role-manager.js';
+import type { Departure } from './member-departure.js';
 import type {
   ModerationActorType,
   ModerationEventType,
@@ -22,9 +24,9 @@ import type {
 /**
  * Entries for the server's staff about what happened besides moderation by the
  * bot: roles handed out through reactions, changes to the reaction-role
- * bindings and a cleared database. Each one goes to the dashboard's event log
- * and, when MOD_LOG_CHANNEL_ID is set, to the mod-log channel, as moderation
- * does.
+ * bindings, a cleared database and members who left. Each one goes to the
+ * dashboard's event log and, when MOD_LOG_CHANNEL_ID is set, to the mod-log
+ * channel, as moderation does.
  */
 
 /** Why bindings were removed without anyone running /reactionrole remove. */
@@ -40,12 +42,18 @@ export type RoleFailure =
   | { kind: 'problem'; problem: BotRoleProblem }
   | { kind: 'discord'; error: string };
 
+/** Who did something, as the log names them; a partial user may lack a tag. */
+interface Who {
+  id: string;
+  tag: string | null;
+}
+
 interface Entry {
   guild: Guild;
   eventType: ModerationEventType;
   severity: ModerationSeverity;
   actorType: ModerationActorType;
-  actor?: User;
+  actor?: Who | null;
   /** Shown when there is no actor, or in place of its tag. */
   actorLabel?: string;
   target?: User;
@@ -61,10 +69,12 @@ const COLOR = {
   failure: 0xe67e22,
   binding: 0x3498db,
   flush: 0xe74c3c,
+  left: 0x95a5a6,
+  removed: 0xe74c3c,
 };
 
 async function write(entry: Entry): Promise<void> {
-  const actorLabel = entry.actorLabel ?? entry.actor?.tag ?? null;
+  const actorLabel = entry.actorLabel ?? entry.actor?.tag ?? entry.actor?.id ?? null;
   await moderationLogRepo.record({
     guildId: entry.guild.id,
     eventType: entry.eventType,
@@ -101,8 +111,19 @@ function messageLink(row: ReactionRoleRow): string {
   return `https://discord.com/channels/${row.guild_id}/${row.channel_id}/${row.message_id}`;
 }
 
-function userValue(user: User): string {
-  return `${user.tag} (${user.id})`;
+/** Role mentions that fit in one embed field, whole ones only. */
+function mentionList(roleIds: string[]): string {
+  let out = '';
+  for (const id of roleIds) {
+    const next = out ? `${out} <@&${id}>` : `<@&${id}>`;
+    if (next.length > 1020) return `${out} …`;
+    out = next;
+  }
+  return out;
+}
+
+function userValue(user: Who): string {
+  return `${user.tag ?? user.id} (${user.id})`;
 }
 
 /** What a binding gives, as the mod-log shows it: a role mention or a command. */
@@ -297,6 +318,76 @@ export async function logDatabaseFlush(
       .addFields(
         { name: t('moderation.fields.moderator'), value: userValue(actor) },
         { name: t('commands.flushdb.logDeletedField'), value: reason }
+      ),
+  });
+}
+
+function departureText(departure: Exclude<Departure, { kind: 'byBot' }>): string {
+  switch (departure.kind) {
+    case 'left':
+      return t('memberLeave.left');
+    case 'kicked':
+    case 'banned': {
+      const moderator = departure.executor?.tag ?? t('memberLeave.unknownModerator');
+      return departure.reason
+        ? t(`memberLeave.${departure.kind}Reason`, { moderator, reason: departure.reason })
+        : t(`memberLeave.${departure.kind}`, { moderator });
+    }
+    case 'unknown':
+      return t('memberLeave.unknown', { error: departure.error });
+  }
+}
+
+/**
+ * A member left the server, on their own or removed by someone other than the
+ * bot (the bot logs its own kicks and bans as moderation).
+ */
+export async function logMemberLeave(
+  guild: Guild,
+  member: GuildMember | PartialGuildMember,
+  departure: Exclude<Departure, { kind: 'byBot' }>
+): Promise<void> {
+  const cause = departureText(departure);
+  const removed = departure.kind === 'kicked' || departure.kind === 'banned';
+  // A member the bot had not cached arrives without join date or roles.
+  const roles = member.partial
+    ? null
+    : [...member.roles.cache.values()].filter((role) => role.id !== guild.id);
+  const joinedAt = member.joinedTimestamp;
+  await write({
+    guild,
+    eventType: 'member_leave',
+    severity: removed ? 'medium' : departure.kind === 'left' ? 'info' : 'low',
+    actorType: departure.kind === 'unknown' ? 'system' : 'human',
+    actor: removed ? departure.executor : departure.kind === 'left' ? member.user : null,
+    actorLabel: removed && !departure.executor ? t('memberLeave.unknownModerator') : undefined,
+    target: member.user,
+    action: { left: 'left', kicked: 'kick', banned: 'ban', unknown: 'unknown' }[departure.kind],
+    reason: cause,
+    metadata: {
+      joinedAt: joinedAt ? new Date(joinedAt).toISOString() : null,
+      roles: roles?.map((role) => ({ id: role.id, name: role.name })) ?? null,
+    },
+    embed: new EmbedBuilder()
+      .setColor(removed ? COLOR.removed : departure.kind === 'left' ? COLOR.left : COLOR.failure)
+      .setTitle(`📤 ${t('memberLeave.title')}`)
+      .addFields(
+        { name: t('moderation.fields.user'), value: userValue(member.user), inline: true },
+        {
+          name: t('memberLeave.fields.joined'),
+          value: joinedAt ? `<t:${Math.floor(joinedAt / 1000)}:R>` : t('memberLeave.notKnown'),
+          inline: true,
+        },
+        { name: t('memberLeave.fields.cause'), value: cause.slice(0, 1024) },
+        {
+          name: t('memberLeave.fields.roles'),
+          value:
+            roles === null
+              ? t('memberLeave.notKnown')
+              : roles.length === 0
+                ? t('memberLeave.noRoles')
+                : mentionList(roles.map((role) => role.id)),
+        }
       ),
   });
 }
