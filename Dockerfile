@@ -59,8 +59,12 @@ COPY scripts/docker-entrypoint.sh ./scripts/
 # Make entrypoint script executable
 RUN chmod +x ./scripts/docker-entrypoint.sh
 
-# Remove npm (not needed in runtime; eliminates npm's own CVEs)
-RUN npm uninstall -g npm && rm -rf /usr/local/lib/node_modules/npm
+# Remove the package managers. The container starts with plain node, so npm,
+# npx, corepack and yarn are build-time tools only, and each brings its own
+# dependency tree, with its own advisories, into the image.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+           /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+           /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn-v*
 
 # Create non-root user for security. /app/logs exists in the image so that a
 # named volume mounted there starts out owned by that user; the root filesystem
