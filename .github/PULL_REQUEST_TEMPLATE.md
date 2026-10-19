@@ -10,6 +10,7 @@ Please check the relevant options:
 - [ ] Performance improvement
 - [ ] Code refactoring
 - [ ] Security fix
+- [ ] CI, build or tooling
 
 ## Related Issue
 Closes #(issue number)

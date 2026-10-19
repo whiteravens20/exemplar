@@ -129,7 +129,7 @@ docker compose logs -f discord-bot
 curl http://localhost:3000/health
 ```
 
-Compose starts PostgreSQL, waits for it to be healthy, runs pending migrations and starts the bot. Release images are published to `ghcr.io/whiteravens20/exemplar` (tags `X.Y.Z`, `X.Y`, `X`, `main` and its alias `latest`). See [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md).
+Compose starts PostgreSQL, waits for it to be healthy, runs pending migrations and starts the bot. Release images are published to `ghcr.io/whiteravens20/exemplar` (tags `X.Y.Z`, `X.Y`, `X`, `main` and its alias `latest`), each tag only once the scan of the image has passed. See [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md).
 
 ### Node.js
 
@@ -169,6 +169,25 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code
 ## Security
 
 Please report vulnerabilities privately as described in [SECURITY.md](SECURITY.md), not in public issues.
+
+## How the code is written and checked
+
+Exemplar is built using AI coding tools. The tools write most of the code, tests and documentation; the maintainer decides what gets built and is responsible for everything that is merged. The project relies on checks that anyone can inspect, and before a release is published a group of human testers tries the release candidate at the maintainer's request.
+
+**What a change goes through**
+
+- Every pull request runs lint, the test suite, type checking and a build, and is merged only after they pass ([test.yml](.github/workflows/test.yml)). The parts that act on your server have tests of their own: moderation actions, permission and role-hierarchy checks, the dashboard's sign-in, sessions and access control, and the rate limiter.
+- CodeQL, `npm audit` and Trivy scans of the repository and of the image run on pull requests and again every week ([codeql.yml](.github/workflows/codeql.yml), [security.yml](.github/workflows/security.yml)).
+- Pull requests other than automated dependency updates also get an automated review by an AI reviewer that looks for security, correctness and supply-chain problems. It is an extra check, not one of the gates.
+- Commits are signed, and the [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/whiteravens20/exemplar) results are public.
+
+**What the maintainer decided and read**
+
+- AI moderation checks every eligible message, and a late verdict is better than none: messages wait their turn, and a failed check is retried instead of dropped.
+- A verdict from the moderation workflow is carried out through the same action layer as a moderator's slash command, and the feature has a shadow mode that only reports what it would do, meant to be run first.
+- Changes to the code that acts on a server or guards access are read line by line by the maintainer: `src/utils/moderation-actions.ts`, `src/utils/permissions.ts` and the dashboard's sign-in, session and access-control modules in `src/api/dashboard/`.
+
+If something looks wrong, open an issue. For a vulnerability, follow [SECURITY.md](SECURITY.md).
 
 ## License
 

@@ -71,7 +71,7 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be repor
 
 **How to report:**
 
-1. 📧 Email the project maintainers privately (check README.md for contact info)
+1. Open a [private security report on GitHub](https://github.com/whiteravens20/exemplar/security/advisories/new); it is visible only to the maintainers
 2. 📝 Provide as much detail as possible:
    - What happened?
    - When and where did it happen?
