@@ -21,9 +21,10 @@ import type {
 
 /**
  * Entries for the server's staff about what happened besides moderation by the
- * bot: roles handed out through reactions and changes to the reaction-role
- * bindings. Each one goes to the dashboard's event log and, when
- * MOD_LOG_CHANNEL_ID is set, to the mod-log channel, as moderation does.
+ * bot: roles handed out through reactions, changes to the reaction-role
+ * bindings and a cleared database. Each one goes to the dashboard's event log
+ * and, when MOD_LOG_CHANNEL_ID is set, to the mod-log channel, as moderation
+ * does.
  */
 
 /** Why bindings were removed without anyone running /reactionrole remove. */
@@ -59,6 +60,7 @@ const COLOR = {
   revoke: 0x95a5a6,
   failure: 0xe67e22,
   binding: 0x3498db,
+  flush: 0xe74c3c,
 };
 
 async function write(entry: Entry): Promise<void> {
@@ -269,6 +271,32 @@ export async function logBindingsForgotten(
       .addFields(
         { name: t('reactionRoles.log.fields.bindings'), value: list },
         { name: t('moderation.fields.reason'), value: reason }
+      ),
+  });
+}
+
+/** An admin cleared the bot's data with /flushdb. */
+export async function logDatabaseFlush(
+  guild: Guild,
+  actor: User,
+  conversationMessages: number
+): Promise<void> {
+  const reason = t('commands.flushdb.logDeleted', { count: conversationMessages });
+  await write({
+    guild,
+    eventType: 'data_flush',
+    severity: 'high',
+    actorType: 'human',
+    actor,
+    action: 'flush',
+    reason,
+    metadata: { conversationMessages },
+    embed: new EmbedBuilder()
+      .setColor(COLOR.flush)
+      .setTitle(`🧹 ${t('commands.flushdb.logTitle')}`)
+      .addFields(
+        { name: t('moderation.fields.moderator'), value: userValue(actor) },
+        { name: t('commands.flushdb.logDeletedField'), value: reason }
       ),
   });
 }

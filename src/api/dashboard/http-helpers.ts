@@ -121,6 +121,7 @@ const EVENT_TYPES = new Set<ModerationEventType>([
   'role_revoke',
   'role_failed',
   'reaction_role',
+  'data_flush',
   'feedback',
 ]);
 const SEVERITIES = new Set<ModerationSeverity>([

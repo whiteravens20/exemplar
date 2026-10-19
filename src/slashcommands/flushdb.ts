@@ -9,6 +9,8 @@ import db from '../db/connection.js';
 import conversationRepo from '../db/repositories/conversation-repository.js';
 import analyticsRepo from '../db/repositories/analytics-repository.js';
 import { t } from '../utils/i18n.js';
+import { getConfiguredGuild } from '../utils/moderation-actions.js';
+import { logDatabaseFlush } from '../utils/admin-log.js';
 import { withAppAvailability, getDmAccess } from './shared.js';
 
 const command: SlashCommand = {
@@ -74,6 +76,10 @@ const command: SlashCommand = {
       adminId: interaction.user.id,
       adminUsername: interaction.user.username,
     });
+
+    // Run from a DM as well, so the entry goes to the configured server.
+    const guild = getConfiguredGuild(interaction.client);
+    if (guild) await logDatabaseFlush(guild, interaction.user, deletedCount);
   },
 };
 

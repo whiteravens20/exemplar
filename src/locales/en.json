@@ -59,7 +59,11 @@
       "databaseUnavailable": "❌ Database unavailable. The operation can't be run.",
       "confirmPrompt": "⚠️ **WARNING:** This deletes all conversations (bot + n8n AI Agent), rate limits and statistics.\n\nRun it again with `confirm: true` to confirm. Users and warnings are kept.",
       "done_one": "✅ The database has been cleared (users and warnings were kept).\n📊 Deleted **{{count}}** conversation message (bot + n8n AI Agent).",
-      "done_other": "✅ The database has been cleared (users and warnings were kept).\n📊 Deleted **{{count}}** conversation messages (bot + n8n AI Agent)."
+      "done_other": "✅ The database has been cleared (users and warnings were kept).\n📊 Deleted **{{count}}** conversation messages (bot + n8n AI Agent).",
+      "logTitle": "Bot data cleared",
+      "logDeletedField": "Deleted",
+      "logDeleted_one": "{{count}} conversation message, the rate limits, message statistics and command usage. Users and warnings were kept.",
+      "logDeleted_other": "{{count}} conversation messages, the rate limits, message statistics and command usage. Users and warnings were kept."
     },
     "flushmemory": {
       "description": "Clears your conversation history (bot + n8n AI Agent)",
@@ -485,6 +489,7 @@
       "role_revoke": "role removed",
       "role_failed": "role change failed",
       "reaction_role": "reaction role setup",
+      "data_flush": "data cleared",
       "feedback": "feedback"
     },
     "severities": {
@@ -511,7 +516,8 @@
       "revoke": "revoke",
       "bind": "binding added",
       "unbind": "binding removed",
-      "forget": "binding removed automatically"
+      "forget": "binding removed automatically",
+      "flush": "data cleared"
     },
     "callback": {
       "invalidState": "Invalid or expired login request. Please try again.",

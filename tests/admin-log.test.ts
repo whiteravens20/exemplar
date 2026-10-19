@@ -12,6 +12,7 @@ vi.mock('../src/utils/logger.js', () => ({
 import {
   logBindingChange,
   logBindingsForgotten,
+  logDatabaseFlush,
   logReactionRole,
   logReactionRoleFailure,
 } from '../src/utils/admin-log.js';
@@ -226,5 +227,26 @@ describe('reaction roles in the admin log', () => {
     await logBindingsForgotten(guild, [], 'messageDeleted');
     expect(record).not.toHaveBeenCalled();
     expect(send).not.toHaveBeenCalled();
+  });
+});
+
+describe('a cleared database in the admin log', () => {
+  it('records the admin and what was deleted', async () => {
+    const { guild, admin, sent } = setup();
+    await logDatabaseFlush(guild, admin, 12);
+    const reason = t('commands.flushdb.logDeleted', { count: 12 });
+    expect(record).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: 'data_flush',
+        severity: 'high',
+        actorType: 'human',
+        actorId: 'a1',
+        action: 'flush',
+        reason,
+        metadata: { conversationMessages: 12 },
+      })
+    );
+    expect(sent().title).toBe(`🧹 ${t('commands.flushdb.logTitle')}`);
+    expect(sent().fields[t('commands.flushdb.logDeletedField')]).toBe(reason);
   });
 });

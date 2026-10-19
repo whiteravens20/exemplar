@@ -123,6 +123,8 @@ export type ModerationEventType =
   | 'role_revoke'
   | 'role_failed'
   | 'reaction_role'
+  // The bot's data cleared with /flushdb.
+  | 'data_flush'
   // Reserved for the User Feedback & Rating System (issue #17).
   | 'feedback';
 
