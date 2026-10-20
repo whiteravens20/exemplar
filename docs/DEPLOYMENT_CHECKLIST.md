@@ -26,7 +26,7 @@
 - [ ] `N8N_API_KEY` set to the secret in the webhook's Header Auth credential
 - [ ] `DB_PASSWORD` set
 - [ ] `ALLOWED_ROLES_FOR_AI` configured (if needed)
-- [ ] `MOD_LOG_CHANNEL_ID` set (if moderation actions should be logged to a channel)
+- [ ] `MOD_LOG_CHANNEL_ID` set (if the staff log should go to a channel: moderation, reaction roles, `/flushdb`, members who left)
 - [ ] `BOT_LANGUAGE` set to the server's language
 - [ ] `HARDCODED_MENTION_RESPONSE` / `RESTRICTED_RESPONSE` customized (optional)
 

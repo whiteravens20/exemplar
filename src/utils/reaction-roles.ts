@@ -115,11 +115,20 @@ export type RoleProblem =
   | 'botHierarchy'
   | 'invokerHierarchy';
 
+/** The problems that concern the bot alone: all a check without an invoker finds. */
+export type BotRoleProblem = Exclude<RoleProblem, 'invokerHierarchy'>;
+
 /**
  * Why `bot` cannot hand out `role` — or, when `invoker` is given, why that
  * admin may not bind it (only roles below their own highest role, as Discord
  * itself enforces for role management). Null when the role is assignable.
  */
+export function roleProblem(role: Role, bot: GuildMember): BotRoleProblem | null;
+export function roleProblem(
+  role: Role,
+  bot: GuildMember,
+  invoker: GuildMember | undefined
+): RoleProblem | null;
 export function roleProblem(
   role: Role,
   bot: GuildMember,

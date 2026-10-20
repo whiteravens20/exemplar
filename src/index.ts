@@ -28,6 +28,7 @@ import messageDeleteEvent from './events/messageDelete.js';
 import messageReactionAddEvent from './events/messageReactionAdd.js';
 import messageReactionRemoveEvent from './events/messageReactionRemove.js';
 import guildRoleDeleteEvent from './events/guildRoleDelete.js';
+import guildMemberRemoveEvent from './events/guildMemberRemove.js';
 
 // Import slash commands
 import banCommand from './slashcommands/ban.js';
@@ -67,6 +68,8 @@ const client = new Client({
     Partials.Message, // Required for uncached messages
     Partials.Reaction, // Reaction roles on messages sent before the last restart
     Partials.User,
+    // Departures of members the bot had not cached (offline members on a large server)
+    Partials.GuildMember,
   ],
 });
 
@@ -107,6 +110,7 @@ const events = [
   messageReactionAddEvent,
   messageReactionRemoveEvent,
   guildRoleDeleteEvent,
+  guildMemberRemoveEvent,
 ];
 
 for (const event of events) {

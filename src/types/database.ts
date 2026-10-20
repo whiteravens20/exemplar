@@ -117,6 +117,16 @@ export type ModerationEventType =
   | 'unban'
   | 'delete'
   | 'ai_flag'
+  // Reaction roles: a role granted, removed or not changed, and the bindings
+  // added, removed or dropped.
+  | 'role_grant'
+  | 'role_revoke'
+  | 'role_failed'
+  | 'reaction_role'
+  // The bot's data cleared with /flushdb.
+  | 'data_flush'
+  // A member left, on their own or removed by someone other than the bot.
+  | 'member_leave'
   // Reserved for the User Feedback & Rating System (issue #17).
   | 'feedback';
 

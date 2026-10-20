@@ -117,6 +117,12 @@ const EVENT_TYPES = new Set<ModerationEventType>([
   'unban',
   'delete',
   'ai_flag',
+  'role_grant',
+  'role_revoke',
+  'role_failed',
+  'reaction_role',
+  'data_flush',
+  'member_leave',
   'feedback',
 ]);
 const SEVERITIES = new Set<ModerationSeverity>([

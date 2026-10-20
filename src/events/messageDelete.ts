@@ -5,7 +5,9 @@ import type { BotEvent } from '../types/discord.js';
 const event: BotEvent = {
   name: Events.MessageDelete,
   async execute(message: Message | PartialMessage) {
-    await reactionRoles.forgetMessages([message.id], 'message deleted');
+    // Bindings exist only on server messages.
+    if (!message.guild) return;
+    await reactionRoles.forgetMessages(message.guild, [message.id], 'messageDeleted');
   },
 };
 

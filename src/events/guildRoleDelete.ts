@@ -5,7 +5,7 @@ import type { BotEvent } from '../types/discord.js';
 const event: BotEvent = {
   name: Events.GuildRoleDelete,
   async execute(role: Role) {
-    await reactionRoles.forgetRoles([role.id], 'role deleted');
+    await reactionRoles.forgetRoles(role.guild, [role.id], 'roleDeleted');
   },
 };
 

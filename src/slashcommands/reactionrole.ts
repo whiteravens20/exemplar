@@ -16,6 +16,7 @@ import db from '../db/connection.js';
 import logger from '../utils/logger.js';
 import { t } from '../utils/i18n.js';
 import reactionRoles from '../utils/reaction-role-manager.js';
+import { logBindingChange } from '../utils/admin-log.js';
 import {
   REACTION_COMMANDS,
   parseEmoji,
@@ -196,6 +197,7 @@ async function add(
           link: message.url,
         })
   );
+  await logBindingChange(guild, row, interaction.user, 'add');
 }
 
 async function remove(
@@ -222,6 +224,7 @@ async function remove(
       target: targetLabel(guild, row),
     })
   );
+  await logBindingChange(guild, row, interaction.user, 'remove');
 }
 
 async function list(

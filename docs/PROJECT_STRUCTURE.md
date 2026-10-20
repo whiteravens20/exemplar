@@ -108,6 +108,7 @@ exemplar/
 │   │   ├── interactionCreate.ts  # Slash command + autocomplete handling
 │   │   ├── messageReactionAdd.ts messageReactionRemove.ts  # Reaction roles
 │   │   ├── messageDelete.ts guildRoleDelete.ts  # Reaction-role cleanup
+│   │   ├── guildMemberRemove.ts  # Members who leave, for the staff log
 │   │   └── error.ts              # Error handling
 │   │
 │   ├── 📁 utils/                 # Utilities
@@ -123,6 +124,8 @@ exemplar/
 │   │   ├── concurrency-limiter.ts # Limits simultaneous moderation requests
 │   │   ├── reaction-roles.ts     # Reaction-role parsing, checks, index
 │   │   ├── reaction-role-manager.ts # Reaction-role runtime
+│   │   ├── admin-log.ts          # Staff log entries besides moderation
+│   │   ├── member-departure.ts   # Left, kicked or banned, from the audit log
 │   │   └── stats-embed.ts        # Statistics embed formatting
 │   │
 │   ├── 📁 config/                # Configuration
@@ -199,6 +202,12 @@ exemplar/
 ### 🎭 Reaction Roles
 - **Files:** `src/utils/reaction-role-manager.ts`, `src/slashcommands/reactionrole.ts`
 - See [REACTION_ROLES.md](REACTION_ROLES.md).
+
+### 🗒️ Staff Log
+- **Files:** `src/utils/admin-log.ts`, `src/utils/member-departure.ts`, `src/events/guildMemberRemove.ts`
+- Reaction roles, reaction-role changes, `/flushdb` and members who left go to
+  the mod-log channel and the dashboard's event log, next to the moderation
+  entries.
 
 ### 🚦 Rate Limiting
 - **File:** `src/utils/rate-limiter.ts`
@@ -299,7 +308,7 @@ npm run release-package # Create release package
 - `HARDCODED_MENTION_RESPONSE` - Overrides the mention response
 - `RESTRICTED_RESPONSE` - Overrides the access denied message
 - `ALLOWED_ROLES_FOR_AI` - Authorized roles
-- `MOD_LOG_CHANNEL_ID` - Channel for moderation action logs
+- `MOD_LOG_CHANNEL_ID` - Channel of the staff log: moderation, reaction roles, `/flushdb`, members who left
 - `LOG_LEVEL` - Logging level (default: info)
 
 AI moderation, the dashboard and the remaining options are described in

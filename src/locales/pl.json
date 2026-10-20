@@ -65,7 +65,13 @@
       "done_one": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomość konwersacji (bot + n8n AI Agent).",
       "done_few": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomości konwersacji (bot + n8n AI Agent).",
       "done_many": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomości konwersacji (bot + n8n AI Agent).",
-      "done_other": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomości konwersacji (bot + n8n AI Agent)."
+      "done_other": "✅ Baza danych została wyczyszczona (zachowano użytkowników i ostrzeżenia).\n📊 Usunięto **{{count}}** wiadomości konwersacji (bot + n8n AI Agent).",
+      "logTitle": "Wyczyszczono dane bota",
+      "logDeletedField": "Usunięto",
+      "logDeleted_one": "{{count}} wiadomość konwersacji, rate limity, statystyki wiadomości i użycia komend. Zachowano użytkowników i ostrzeżenia.",
+      "logDeleted_few": "{{count}} wiadomości konwersacji, rate limity, statystyki wiadomości i użycia komend. Zachowano użytkowników i ostrzeżenia.",
+      "logDeleted_many": "{{count}} wiadomości konwersacji, rate limity, statystyki wiadomości i użycia komend. Zachowano użytkowników i ostrzeżenia.",
+      "logDeleted_other": "{{count}} wiadomości konwersacji, rate limity, statystyki wiadomości i użycia komend. Zachowano użytkowników i ostrzeżenia."
     },
     "flushmemory": {
       "description": "Czyści Twoją historię konwersacji (bot + n8n AI Agent)",
@@ -364,7 +370,55 @@
   },
   "reactionRoles": {
     "auditGrant": "Rola za reakcję: dodano reakcję {{emoji}}",
-    "auditRevoke": "Rola za reakcję: usunięto reakcję {{emoji}}"
+    "auditRevoke": "Rola za reakcję: usunięto reakcję {{emoji}}",
+    "log": {
+      "actor": "Role za reakcje",
+      "grantedTitle": "Nadano rolę",
+      "revokedTitle": "Odebrano rolę",
+      "grantFailedTitle": "Nie nadano roli",
+      "revokeFailedTitle": "Nie odebrano roli",
+      "boundTitle": "Dodano rolę za reakcję",
+      "unboundTitle": "Usunięto rolę za reakcję",
+      "forgottenTitle": "Role za reakcje usunięte automatycznie",
+      "fields": {
+        "role": "Rola",
+        "reaction": "Reakcja",
+        "binding": "Powiązanie",
+        "bindings": "Powiązania",
+        "gives": "Daje"
+      },
+      "problems": {
+        "roleMissing": "Rola już nie istnieje.",
+        "everyone": "Nie można nadać @everyone.",
+        "managed": "Rolą zarządza integracja.",
+        "botPermission": "Nie mam uprawnienia Zarządzanie rolami.",
+        "botHierarchy": "Rola jest na poziomie mojej najwyższej roli lub wyżej. Przesuń moją rolę ponad nią.",
+        "discord": "Discord odrzucił zmianę: {{error}}"
+      },
+      "forgetCause": {
+        "messageDeleted": "Wiadomość została usunięta.",
+        "roleDeleted": "Rola została usunięta.",
+        "messageDeletedOffline": "Wiadomość została usunięta, gdy bot był offline.",
+        "roleDeletedOffline": "Rola została usunięta, gdy bot był offline."
+      }
+    }
+  },
+  "memberLeave": {
+    "title": "Członek opuścił serwer",
+    "fields": {
+      "cause": "Przyczyna",
+      "joined": "Data dołączenia",
+      "roles": "Role"
+    },
+    "left": "Wyjście z serwera z własnej woli.",
+    "kicked": "Wyrzucenie przez: {{moderator}}.",
+    "kickedReason": "Wyrzucenie przez: {{moderator}}. Powód: {{reason}}",
+    "banned": "Ban nałożony przez: {{moderator}}.",
+    "bannedReason": "Ban nałożony przez: {{moderator}}. Powód: {{reason}}",
+    "unknownModerator": "nieznany moderator",
+    "unknown": "Nie udało się ustalić, czy było to wyjście, czy usunięcie z serwera: {{error}}",
+    "noRoles": "brak",
+    "notKnown": "nieznana"
   },
   "dashboard": {
     "title": "Panel moderacji",
@@ -480,6 +534,12 @@
       "unban": "odbanowanie",
       "delete": "usunięcie",
       "ai_flag": "flaga AI",
+      "role_grant": "nadanie roli",
+      "role_revoke": "odebranie roli",
+      "role_failed": "nieudana zmiana roli",
+      "reaction_role": "konfiguracja ról za reakcje",
+      "data_flush": "wyczyszczenie danych",
+      "member_leave": "odejście z serwera",
       "feedback": "opinia"
     },
     "severities": {
@@ -501,7 +561,15 @@
       "timeout": "wyciszenie",
       "unmute": "zdjęcie wyciszenia",
       "unban": "odbanowanie",
-      "delete": "usunięcie"
+      "delete": "usunięcie",
+      "grant": "nadanie",
+      "revoke": "odebranie",
+      "bind": "dodanie powiązania",
+      "unbind": "usunięcie powiązania",
+      "forget": "automatyczne usunięcie powiązania",
+      "flush": "wyczyszczenie danych",
+      "left": "wyjście",
+      "unknown": "nieznana"
     },
     "callback": {
       "invalidState": "Nieprawidłowe lub wygasłe żądanie logowania. Spróbuj ponownie.",

@@ -59,7 +59,11 @@
       "databaseUnavailable": "❌ Database unavailable. The operation can't be run.",
       "confirmPrompt": "⚠️ **WARNING:** This deletes all conversations (bot + n8n AI Agent), rate limits and statistics.\n\nRun it again with `confirm: true` to confirm. Users and warnings are kept.",
       "done_one": "✅ The database has been cleared (users and warnings were kept).\n📊 Deleted **{{count}}** conversation message (bot + n8n AI Agent).",
-      "done_other": "✅ The database has been cleared (users and warnings were kept).\n📊 Deleted **{{count}}** conversation messages (bot + n8n AI Agent)."
+      "done_other": "✅ The database has been cleared (users and warnings were kept).\n📊 Deleted **{{count}}** conversation messages (bot + n8n AI Agent).",
+      "logTitle": "Bot data cleared",
+      "logDeletedField": "Deleted",
+      "logDeleted_one": "{{count}} conversation message, the rate limits, message statistics and command usage. Users and warnings were kept.",
+      "logDeleted_other": "{{count}} conversation messages, the rate limits, message statistics and command usage. Users and warnings were kept."
     },
     "flushmemory": {
       "description": "Clears your conversation history (bot + n8n AI Agent)",
@@ -338,7 +342,55 @@
   },
   "reactionRoles": {
     "auditGrant": "Reaction role: reacted with {{emoji}}",
-    "auditRevoke": "Reaction role: removed the {{emoji}} reaction"
+    "auditRevoke": "Reaction role: removed the {{emoji}} reaction",
+    "log": {
+      "actor": "Reaction roles",
+      "grantedTitle": "Role granted",
+      "revokedTitle": "Role removed",
+      "grantFailedTitle": "Role not granted",
+      "revokeFailedTitle": "Role not removed",
+      "boundTitle": "Reaction role added",
+      "unboundTitle": "Reaction role removed",
+      "forgottenTitle": "Reaction roles removed automatically",
+      "fields": {
+        "role": "Role",
+        "reaction": "Reaction",
+        "binding": "Binding",
+        "bindings": "Bindings",
+        "gives": "Gives"
+      },
+      "problems": {
+        "roleMissing": "The role no longer exists.",
+        "everyone": "@everyone can't be granted.",
+        "managed": "The role is managed by an integration.",
+        "botPermission": "I don't have the Manage Roles permission.",
+        "botHierarchy": "The role is at or above my highest role. Move my role above it.",
+        "discord": "Discord refused the change: {{error}}"
+      },
+      "forgetCause": {
+        "messageDeleted": "The message was deleted.",
+        "roleDeleted": "The role was deleted.",
+        "messageDeletedOffline": "The message was deleted while the bot was offline.",
+        "roleDeletedOffline": "The role was deleted while the bot was offline."
+      }
+    }
+  },
+  "memberLeave": {
+    "title": "Member left the server",
+    "fields": {
+      "cause": "Cause",
+      "joined": "Joined",
+      "roles": "Roles"
+    },
+    "left": "Left on their own.",
+    "kicked": "Kicked by {{moderator}}.",
+    "kickedReason": "Kicked by {{moderator}}: {{reason}}",
+    "banned": "Banned by {{moderator}}.",
+    "bannedReason": "Banned by {{moderator}}: {{reason}}",
+    "unknownModerator": "an unknown moderator",
+    "unknown": "Couldn't tell whether they left or were removed: {{error}}",
+    "noRoles": "none",
+    "notKnown": "unknown"
   },
   "dashboard": {
     "title": "Moderation Dashboard",
@@ -450,6 +502,12 @@
       "unban": "unban",
       "delete": "delete",
       "ai_flag": "AI flag",
+      "role_grant": "role granted",
+      "role_revoke": "role removed",
+      "role_failed": "role change failed",
+      "reaction_role": "reaction role setup",
+      "data_flush": "data cleared",
+      "member_leave": "member left",
       "feedback": "feedback"
     },
     "severities": {
@@ -471,7 +529,15 @@
       "timeout": "timeout",
       "unmute": "unmute",
       "unban": "unban",
-      "delete": "delete"
+      "delete": "delete",
+      "grant": "grant",
+      "revoke": "revoke",
+      "bind": "binding added",
+      "unbind": "binding removed",
+      "forget": "binding removed automatically",
+      "flush": "data cleared",
+      "left": "left",
+      "unknown": "unknown"
     },
     "callback": {
       "invalidState": "Invalid or expired login request. Please try again.",

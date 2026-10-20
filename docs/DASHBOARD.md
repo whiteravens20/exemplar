@@ -2,7 +2,9 @@
 
 A secure, opt-in web interface for reviewing the bot's moderation activity:
 human and AI moderation actions, AI moderation decisions (with reasoning), and a
-per-user history view. It is read-only and disabled by default.
+per-user history view. It also keeps the rest of the staff log: reaction roles
+granted and removed, reaction-role changes, `/flushdb` and members who left the
+server. It is read-only and disabled by default.
 
 > Implements [issue #18](https://github.com/whiteravens20/exemplar/issues/18).
 
@@ -33,7 +35,7 @@ can be added without a migration.
 
 | column | notes |
 | --- | --- |
-| `event_type` | `warn`/`ban`/`kick`/`mute`/`unmute`/`unban`/`delete`/`ai_flag` (reserved: `feedback`) |
+| `event_type` | `warn`/`ban`/`kick`/`mute`/`unmute`/`unban`/`delete`/`ai_flag`, `role_grant`/`role_revoke`/`role_failed`/`reaction_role`, `data_flush`, `member_leave` (reserved: `feedback`) |
 | `severity` | `info`/`low`/`medium`/`high`/`critical` |
 | `actor_type` | `human`/`ai`/`system` |
 | `actor_id`, `actor_label` | who performed the action |
@@ -44,7 +46,9 @@ can be added without a migration.
 
 Events are written from the shared moderation layer (`src/utils/moderation-
 actions.ts`) and the AI moderation path (`src/utils/ai-moderation.ts`), so both
-manual commands and automated moderation are captured. Command usage is read
+manual commands and automated moderation are captured. The other entries come
+from `src/utils/admin-log.ts`, which writes each one here and to the mod-log
+channel. Command usage is read
 from the existing `command_usage` table. Rows are pruned after **90 days** by
 the database cleanup job.
 
