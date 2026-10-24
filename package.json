@@ -56,7 +56,7 @@
     "postcss": "8.5.26",
     "ip-address": "10.7.4",
     "discord.js": {
-      "undici": "6.28.1"
+      "undici": "6.29.1"
     }
   },
   "engines": {
