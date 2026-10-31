@@ -52,7 +52,7 @@
   },
   "overrides": {
     "minimatch": "10.2.6",
-    "follow-redirects": "1.16.1",
+    "follow-redirects": "1.16.2",
     "postcss": "8.5.26",
     "ip-address": "10.7.4",
     "discord.js": {
