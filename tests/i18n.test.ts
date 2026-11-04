@@ -1,6 +1,10 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   FALLBACK_LANGUAGE,
+  LANGUAGES,
   flattenKeys,
   i18n,
   loadLocales,
@@ -52,7 +56,7 @@ afterEach(async () => {
 
 describe('locale files', () => {
   it('ship English and Polish', () => {
-    expect(languages).toEqual(expect.arrayContaining(['en', 'pl']));
+    expect(LANGUAGES).toEqual(expect.arrayContaining(['en', 'pl']));
   });
 
   const englishValues = strings(FALLBACK_LANGUAGE);
@@ -117,6 +121,20 @@ describe('resolveLanguage', () => {
     expect(resolveLanguage(undefined, available)).toBe('en');
     expect(resolveLanguage('', available)).toBe('en');
     expect(resolveLanguage('xx', available)).toBe('en');
+  });
+});
+
+describe('loadLocales', () => {
+  it('reads the languages offered and leaves any other file out', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'locales-'));
+    try {
+      for (const code of ['en', 'pl', 'de']) {
+        fs.writeFileSync(path.join(dir, `${code}.json`), JSON.stringify({ hello: code }));
+      }
+      expect(Object.keys(loadLocales(dir)).sort()).toEqual([...LANGUAGES].sort());
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 

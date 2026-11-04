@@ -10,8 +10,8 @@ import type en from '../locales/en.json';
  *
  * Every user-facing string lives in `src/locales/<code>.json`, where the file
  * name is the language code. The bot speaks the language of the server it
- * serves, set with BOT_LANGUAGE (default English). A key the chosen language
- * lacks falls back to English, so adding a language only takes a new file.
+ * serves, set with BOT_LANGUAGE (default English), out of the languages in
+ * LANGUAGES. A key the chosen language lacks falls back to English.
  *
  * BOT_LANGUAGE is read straight from the environment, the way the logger reads
  * LOG_LEVEL, because the config module imports this one for its default texts.
@@ -25,7 +25,13 @@ declare module 'i18next' {
 
 export const FALLBACK_LANGUAGE = 'en';
 
-const LOCALES_DIR = path.join(
+/**
+ * The languages the bot offers. A file in `src/locales/` whose code is not
+ * listed here is not loaded: a translation is offered once its code is added.
+ */
+export const LANGUAGES = ['en', 'pl'] as const;
+
+export const LOCALES_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   '..',
   'locales'
@@ -34,13 +40,15 @@ const LOCALES_DIR = path.join(
 // Plural forms are keyed by CLDR category, e.g. `deleted_one`, `deleted_few`.
 const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
 
-/** Read every `<code>.json` in `dir` into an i18next resource map. */
-export function loadLocales(dir: string = LOCALES_DIR): Resource {
+/** Read the `<code>.json` of each language in `codes` from `dir` into an i18next resource map. */
+export function loadLocales(
+  dir: string = LOCALES_DIR,
+  codes: readonly string[] = LANGUAGES
+): Resource {
   const resources: Resource = {};
-  for (const file of fs.readdirSync(dir)) {
-    if (path.extname(file) !== '.json') continue;
-    resources[path.basename(file, '.json')] = {
-      translation: JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8')),
+  for (const code of codes) {
+    resources[code] = {
+      translation: JSON.parse(fs.readFileSync(path.join(dir, `${code}.json`), 'utf8')),
     };
   }
   return resources;

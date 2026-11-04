@@ -35,7 +35,7 @@ A self-hosted Discord bot that pairs an n8n-powered AI assistant in DMs with sla
 
 ### Languages
 - Everything the bot writes to Discord (commands, replies, embeds, DMs, mod-log) is translated. English and Polish ship with the bot; `BOT_LANGUAGE` picks the server's language.
-- Another language takes one translation file in `src/locales/`, with English filling any gaps. See [docs/I18N.md](docs/I18N.md).
+- Another language takes one translation file in `src/locales/` and its code in `LANGUAGES`, with English filling any gaps. See [docs/I18N.md](docs/I18N.md).
 
 ### Storage and operations
 - PostgreSQL for conversation history, rate limits, warnings (30-day expiry), usage analytics (90 days) and the moderation log.

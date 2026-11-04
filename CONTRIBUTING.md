@@ -46,7 +46,7 @@ Contributions that are **welcome**:
 - Security improvements or hardening
 - Test coverage gaps
 - Documentation corrections
-- Translations: a new language is one file in `src/locales/` (see [docs/I18N.md](docs/I18N.md))
+- Translations: a new language is one file in `src/locales/` and its code in `LANGUAGES` (see [docs/I18N.md](docs/I18N.md))
 - Features that fit a self-hosted bot for a single server
 
 Contributions we will **not accept**:
