@@ -319,7 +319,7 @@ AI moderation, the dashboard and the remaining options are described in
 ### Adding a Command
 1. Create file in `src/slashcommands/` (TypeScript)
 2. Implement SlashCommand interface from `src/types/discord.ts`
-3. Add its texts to every file in `src/locales/` and read them with `t()`
+3. Add its texts to the file of every language in `LANGUAGES` (`src/locales/`) and read them with `t()`
 4. Import and register in `src/index.ts`
 
 ### Adding an Event

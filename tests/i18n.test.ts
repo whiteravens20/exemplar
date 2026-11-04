@@ -1,6 +1,11 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   FALLBACK_LANGUAGE,
+  LANGUAGES,
+  LOCALES_DIR,
   flattenKeys,
   i18n,
   loadLocales,
@@ -10,9 +15,17 @@ import {
   t,
 } from '../src/utils/i18n.js';
 
-const resources = loadLocales();
-const languages = Object.keys(resources);
+// Every file in the folder is checked, a language not offered yet included.
+const languages = fs
+  .readdirSync(LOCALES_DIR)
+  .filter((file) => path.extname(file) === '.json')
+  .map((file) => path.basename(file, '.json'));
+const resources = loadLocales(LOCALES_DIR, languages);
 const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
+
+// A language the bot offers carries every key. A file not offered yet may be a
+// translation still in progress.
+const offered = (language: string) => (LANGUAGES as readonly string[]).includes(language);
 
 /** Every string of a language, keyed by its dotted path. */
 function strings(language: string): Map<string, string> {
@@ -20,7 +33,11 @@ function strings(language: string): Map<string, string> {
   return new Map(
     flattenKeys(tree).map((key) => [
       key,
-      String(i18n.getResource(language, 'translation', key)),
+      String(
+        key
+          .split('.')
+          .reduce<unknown>((node, part) => (node as Record<string, unknown>)[part], tree)
+      ),
     ])
   );
 }
@@ -52,7 +69,11 @@ afterEach(async () => {
 
 describe('locale files', () => {
   it('ship English and Polish', () => {
-    expect(languages).toEqual(expect.arrayContaining(['en', 'pl']));
+    expect(LANGUAGES).toEqual(expect.arrayContaining(['en', 'pl']));
+  });
+
+  it('have a file for every language offered', () => {
+    expect(languages).toEqual(expect.arrayContaining([...LANGUAGES]));
   });
 
   const englishValues = strings(FALLBACK_LANGUAGE);
@@ -62,9 +83,19 @@ describe('locale files', () => {
     const values = strings(language);
     const groups = byBaseKey(values);
 
-    it('has exactly the keys of the English file', () => {
-      expect(missingKeys(resources, language)).toEqual([]);
+    if (offered(language)) {
+      it('has every key of the English file', () => {
+        expect(missingKeys(resources, language)).toEqual([]);
+      });
+    }
+
+    it('has no key the English file lacks', () => {
       expect([...groups.keys()].filter((key) => !english.has(key))).toEqual([]);
+    });
+
+    it('has no empty text', () => {
+      const empty = [...values].filter(([, value]) => value.trim() === '').map(([key]) => key);
+      expect(empty).toEqual([]);
     });
 
     it("has every plural form the language's rules need", () => {
@@ -74,9 +105,10 @@ describe('locale files', () => {
         .sort();
       for (const [base, keys] of english) {
         if (!keys.some((key) => PLURAL_SUFFIX.test(key))) continue;
-        const forms = (groups.get(base) ?? [])
-          .map((key) => key.match(PLURAL_SUFFIX)?.[1] ?? '(none)')
-          .sort();
+        const own = groups.get(base);
+        // A text the language lacks is shown in English, all of its forms.
+        if (!own) continue;
+        const forms = own.map((key) => key.match(PLURAL_SUFFIX)?.[1] ?? '(none)').sort();
         expect(forms, base).toEqual(categories);
       }
     });
@@ -117,6 +149,20 @@ describe('resolveLanguage', () => {
     expect(resolveLanguage(undefined, available)).toBe('en');
     expect(resolveLanguage('', available)).toBe('en');
     expect(resolveLanguage('xx', available)).toBe('en');
+  });
+});
+
+describe('loadLocales', () => {
+  it('reads the languages offered and leaves any other file out', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'locales-'));
+    try {
+      for (const code of ['en', 'pl', 'de']) {
+        fs.writeFileSync(path.join(dir, `${code}.json`), JSON.stringify({ hello: code }));
+      }
+      expect(Object.keys(loadLocales(dir)).sort()).toEqual([...LANGUAGES].sort());
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
 
