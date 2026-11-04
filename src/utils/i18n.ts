@@ -26,8 +26,9 @@ declare module 'i18next' {
 export const FALLBACK_LANGUAGE = 'en';
 
 /**
- * The languages the bot offers. A file in `src/locales/` whose code is not
- * listed here is not loaded: a translation is offered once its code is added.
+ * The languages the bot offers, each with every key (the locale tests check
+ * it). A file in `src/locales/` whose code is not listed here is not loaded, so
+ * a translation still in progress never reaches a server.
  */
 export const LANGUAGES = ['en', 'pl'] as const;
 

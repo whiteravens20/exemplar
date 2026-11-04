@@ -156,7 +156,7 @@ Both must pass before you open a PR; CI runs them on every pull request.
 
 ### Texts
 
-Everything the bot writes on Discord or shows in the dashboard comes from the locale files, never from a string in the code. Add the key to every file in `src/locales/` and read it with `t()`; `npm test` fails when a language misses a key. Log messages stay in English. See [docs/I18N.md](docs/I18N.md).
+Everything the bot writes on Discord or shows in the dashboard comes from the locale files, never from a string in the code. Add the key to the file of every language in `LANGUAGES` and read it with `t()`; `npm test` fails when one of them misses a key. Log messages stay in English. See [docs/I18N.md](docs/I18N.md).
 
 ### Logging and errors
 

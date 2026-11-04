@@ -106,7 +106,7 @@ Compose starts PostgreSQL, applies the migrations and starts the bot. See [DOCKE
 - **AI moderation** (optional): messages in the channels you enrol are sent to a second n8n workflow, which answers `allow`, `warn`, `timeout` or `delete`. See [AI_MODERATION.md](AI_MODERATION.md).
 
 ### Q: Can I add more moderation commands?
-**A:** Yes! Create a new file in `src/slashcommands/` following `kick.ts`, add its texts to every file in `src/locales/` and register it in `src/index.ts`.
+**A:** Yes! Create a new file in `src/slashcommands/` following `kick.ts`, add its texts to the file of every language in `LANGUAGES` (`src/locales/`) and register it in `src/index.ts`.
 
 ### Q: What's the timeout limit?
 **A:** `/mute` takes a duration such as `30s`, `10m`, `2h` or `1d`, up to Discord's maximum of 28 days.
