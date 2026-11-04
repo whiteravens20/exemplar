@@ -71,6 +71,10 @@ const client = new Client({
     // Departures of members the bot had not cached (offline members on a large server)
     Partials.GuildMember,
   ],
+  // The texts come from the locale files and the operator's settings, and may
+  // name @everyone, @here or a role. Only users, and the author of a message
+  // the bot replies to, can be pinged.
+  allowedMentions: { parse: ['users'], repliedUser: true },
 });
 
 client.commands = new Collection<string, SlashCommand>();
