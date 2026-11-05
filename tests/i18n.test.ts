@@ -52,6 +52,17 @@ function byBaseKey(values: Map<string, string>): Map<string, string[]> {
   return groups;
 }
 
+/**
+ * The plural categories whole numbers fall into in a language: the forms a count can
+ * take. CLDR's rules test no more than the last six digits of a number, so 0 to 1000 and
+ * a million reach every category. Polish has `one`, `few` and `many`; its `other` is for
+ * fractions, and every count the bot shows is whole.
+ */
+function wholeNumberCategories(language: string): string[] {
+  const rules = new Intl.PluralRules(language);
+  return [...new Set([...Array(1001).keys(), 1_000_000].map((n) => rules.select(n)))].sort();
+}
+
 /** Interpolation variables used by a base key's forms, except `count`. */
 function placeholders(values: Map<string, string>, keys: string[]): string[] {
   const names = new Set<string>();
@@ -98,11 +109,8 @@ describe('locale files', () => {
       expect(empty).toEqual([]);
     });
 
-    it("has every plural form the language's rules need", () => {
-      const categories = new Intl.PluralRules(language)
-        .resolvedOptions()
-        .pluralCategories.map(String)
-        .sort();
+    it('has the plural forms whole numbers take in the language', () => {
+      const categories = wholeNumberCategories(language);
       for (const [base, keys] of english) {
         if (!keys.some((key) => PLURAL_SUFFIX.test(key))) continue;
         const own = groups.get(base);
