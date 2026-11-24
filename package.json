@@ -44,11 +44,11 @@
     "@types/express": "5.0.6",
     "@types/node": "26.6.6",
     "@types/pg": "8.23.1",
-    "eslint": "10.14.0",
+    "eslint": "10.15.0",
     "globals": "17.14.0",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.72.1",
-    "vitest": "5.0.5"
+    "typescript-eslint": "8.73.0",
+    "vitest": "5.1.0"
   },
   "overrides": {
     "follow-redirects": "1.16.2",
